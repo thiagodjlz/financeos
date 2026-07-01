@@ -100,6 +100,19 @@ URLs locais:
 
 ```text
 API health: http://localhost:8080/api/health
+Categorias: http://localhost:8080/api/categories
 Swagger UI: http://localhost:8080/api/docs
 OpenAPI: http://localhost:8080/api/openapi
+```
+
+Endpoints iniciais:
+
+```text
+GET    /api/health
+GET    /api/categories
+GET    /api/categories?type=EXPENSE
+GET    /api/categories/{id}
+POST   /api/categories
+PUT    /api/categories/{id}
+DELETE /api/categories/{id}
 ```
