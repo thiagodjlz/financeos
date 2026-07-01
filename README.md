@@ -101,6 +101,7 @@ URLs locais:
 ```text
 API health: http://localhost:8080/api/health
 Categorias: http://localhost:8080/api/categories
+Lancamentos: http://localhost:8080/api/transactions
 Swagger UI: http://localhost:8080/api/docs
 OpenAPI: http://localhost:8080/api/openapi
 ```
@@ -115,4 +116,11 @@ GET    /api/categories/{id}
 POST   /api/categories
 PUT    /api/categories/{id}
 DELETE /api/categories/{id}
+
+GET    /api/transactions
+GET    /api/transactions?type=EXPENSE&status=PENDING
+GET    /api/transactions/{id}
+POST   /api/transactions
+PUT    /api/transactions/{id}
+DELETE /api/transactions/{id}
 ```

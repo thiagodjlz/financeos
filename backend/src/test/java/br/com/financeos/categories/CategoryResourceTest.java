@@ -59,6 +59,8 @@ class CategoryResourceTest {
                 .body("name", equalTo(categoryName))
                 .body("type", equalTo("EXPENSE"))
                 .body("active", equalTo(true))
+                .body("createdAt", notNullValue())
+                .body("updatedAt", notNullValue())
                 .extract()
                 .path("id");
 
