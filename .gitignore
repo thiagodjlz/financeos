@@ -1,0 +1,9 @@
+.env
+.idea/
+.vscode/
+target/
+dist/
+node_modules/
+.tools/
+wsl-setup.log
+*.log
