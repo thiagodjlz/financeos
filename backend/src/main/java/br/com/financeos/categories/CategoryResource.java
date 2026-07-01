@@ -50,7 +50,7 @@ public class CategoryResource {
     public Response create(@Valid CategoryRequest request) {
         Category category = new Category();
         apply(category, request);
-        repository.persist(category);
+        repository.persistAndFlush(category);
 
         return Response.created(URI.create("/api/categories/" + category.id))
                 .entity(CategoryResponse.from(category))
