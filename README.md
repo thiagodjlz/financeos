@@ -102,6 +102,7 @@ URLs locais:
 API health: http://localhost:8080/api/health
 Categorias: http://localhost:8080/api/categories
 Lancamentos: http://localhost:8080/api/transactions
+Dashboard: http://localhost:8080/api/dashboard/summary?year=2026&month=6
 Swagger UI: http://localhost:8080/api/docs
 OpenAPI: http://localhost:8080/api/openapi
 ```
@@ -123,4 +124,7 @@ GET    /api/transactions/{id}
 POST   /api/transactions
 PUT    /api/transactions/{id}
 DELETE /api/transactions/{id}
+
+GET    /api/dashboard/summary
+GET    /api/dashboard/summary?year=2026&month=6
 ```
