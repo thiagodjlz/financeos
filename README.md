@@ -144,3 +144,39 @@ DELETE /api/transactions/{id}
 GET    /api/dashboard/summary
 GET    /api/dashboard/summary?year=2026&month=6
 ```
+
+## Frontend Angular
+
+Pre-requisito:
+
+- Node.js 22.23 ou superior
+
+Entrar na pasta do frontend:
+
+```bash
+cd frontend
+```
+
+Instalar dependencias:
+
+```bash
+npm install
+```
+
+Subir a tela em modo desenvolvimento:
+
+```bash
+npm start
+```
+
+URL local:
+
+```text
+http://localhost:4200
+```
+
+Por enquanto o frontend usa a API local em:
+
+```text
+http://localhost:8080/api
+```
