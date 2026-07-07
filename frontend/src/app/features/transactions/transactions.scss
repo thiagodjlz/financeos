@@ -1,45 +1,4 @@
-.content-grid {
-  display: grid;
-  grid-template-columns: 360px minmax(0, 1fr);
-  gap: 14px;
-}
-
-.table-panel {
-  min-width: 0;
-}
-
-.table-wrap {
-  overflow-x: auto;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  min-width: 760px;
-}
-
-th,
-td {
-  border-bottom: 1px solid #ece6d9;
-  padding: 11px 8px;
-  text-align: left;
-  vertical-align: middle;
-  white-space: nowrap;
-}
-
-th {
-  color: #65716b;
-  font-size: 12px;
-  text-transform: uppercase;
-}
-
 .negative {
   color: #b84a3f;
   font-weight: 800;
-}
-
-@media (max-width: 1080px) {
-  .content-grid {
-    grid-template-columns: 1fr;
-  }
 }

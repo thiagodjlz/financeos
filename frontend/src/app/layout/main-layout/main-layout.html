@@ -1,0 +1,40 @@
+<main class="app-shell">
+  <aside class="sidebar">
+    <div class="brand-block">
+      <div class="mark">F</div>
+      <div>
+        <h1>FinanceOS</h1>
+        <p>Controle financeiro</p>
+      </div>
+    </div>
+
+    <nav class="nav-list" aria-label="Principal">
+      <button *ngIf="authService.can('DASHBOARD', 'VIEW')" type="button" routerLink="/dashboard" routerLinkActive="active">
+        <span>Resumo</span>
+      </button>
+      <button *ngIf="authService.can('TRANSACTIONS', 'VIEW')" type="button" routerLink="/transactions" routerLinkActive="active">
+        <span>Lancamentos</span>
+      </button>
+      <button
+        *ngIf="authService.can('CATEGORIES', 'VIEW') || authService.can('ACCOUNTS', 'VIEW') || authService.can('CARDS', 'VIEW')"
+        type="button"
+        routerLink="/registers"
+        routerLinkActive="active"
+      >
+        <span>Cadastros</span>
+      </button>
+      <button *ngIf="authService.can('USERS', 'VIEW')" type="button" routerLink="/users" routerLinkActive="active">
+        <span>Usuarios</span>
+      </button>
+      <button *ngIf="authService.can('PROFILES', 'VIEW')" type="button" routerLink="/profiles" routerLinkActive="active">
+        <span>Perfis</span>
+      </button>
+    </nav>
+
+    <button type="button" class="logout-button" (click)="logout()">Sair</button>
+  </aside>
+
+  <section class="workspace">
+    <router-outlet />
+  </section>
+</main>

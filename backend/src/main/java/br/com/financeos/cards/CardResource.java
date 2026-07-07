@@ -5,7 +5,11 @@ import java.util.List;
 import java.util.UUID;
 
 import br.com.financeos.accounts.AccountRepository;
-import br.com.financeos.shared.DevUser;
+import br.com.financeos.profiles.Screen;
+import br.com.financeos.shared.AccessControl;
+import br.com.financeos.shared.Action;
+import br.com.financeos.shared.CurrentUser;
+import io.quarkus.security.Authenticated;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.BadRequestException;
@@ -24,19 +28,26 @@ import jakarta.ws.rs.core.Response;
 @Path("/cards")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@Authenticated
 public class CardResource {
 
     private final CardRepository repository;
     private final AccountRepository accountRepository;
+    private final CurrentUser currentUser;
+    private final AccessControl accessControl;
 
-    public CardResource(CardRepository repository, AccountRepository accountRepository) {
+    public CardResource(CardRepository repository, AccountRepository accountRepository, CurrentUser currentUser,
+            AccessControl accessControl) {
         this.repository = repository;
         this.accountRepository = accountRepository;
+        this.currentUser = currentUser;
+        this.accessControl = accessControl;
     }
 
     @GET
     public List<CardResponse> list() {
-        return repository.listActive(DevUser.ID).stream()
+        accessControl.require(Screen.CARDS, Action.VIEW);
+        return repository.listActive(currentUser.id()).stream()
                 .map(CardResponse::from)
                 .toList();
     }
@@ -44,7 +55,8 @@ public class CardResource {
     @GET
     @Path("/{id}")
     public CardResponse get(@PathParam("id") UUID id) {
-        return repository.findActiveByUserAndId(DevUser.ID, id)
+        accessControl.require(Screen.CARDS, Action.VIEW);
+        return repository.findActiveByUserAndId(currentUser.id(), id)
                 .map(CardResponse::from)
                 .orElseThrow(NotFoundException::new);
     }
@@ -52,10 +64,11 @@ public class CardResource {
     @POST
     @Transactional
     public Response create(@Valid CardRequest request) {
+        accessControl.require(Screen.CARDS, Action.CREATE);
         validateAccount(request.accountId());
 
         Card card = new Card();
-        card.userId = DevUser.ID;
+        card.userId = currentUser.id();
         apply(card, request);
         repository.persistAndFlush(card);
 
@@ -68,9 +81,10 @@ public class CardResource {
     @Path("/{id}")
     @Transactional
     public CardResponse update(@PathParam("id") UUID id, @Valid CardRequest request) {
+        accessControl.require(Screen.CARDS, Action.EDIT);
         validateAccount(request.accountId());
 
-        Card card = repository.findActiveByUserAndId(DevUser.ID, id)
+        Card card = repository.findActiveByUserAndId(currentUser.id(), id)
                 .orElseThrow(NotFoundException::new);
 
         apply(card, request);
@@ -81,7 +95,8 @@ public class CardResource {
     @Path("/{id}")
     @Transactional
     public Response deactivate(@PathParam("id") UUID id) {
-        Card card = repository.findActiveByUserAndId(DevUser.ID, id)
+        accessControl.require(Screen.CARDS, Action.DELETE);
+        Card card = repository.findActiveByUserAndId(currentUser.id(), id)
                 .orElseThrow(NotFoundException::new);
 
         card.active = false;
@@ -93,7 +108,7 @@ public class CardResource {
             return;
         }
 
-        accountRepository.findActiveByUserAndId(DevUser.ID, accountId)
+        accountRepository.findActiveByUserAndId(currentUser.id(), accountId)
                 .orElseThrow(() -> new BadRequestException("accountId must reference an active account"));
     }
 

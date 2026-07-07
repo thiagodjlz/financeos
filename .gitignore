@@ -7,3 +7,4 @@ node_modules/
 .tools/
 wsl-setup.log
 *.log
+backend/src/main/resources/*.pem

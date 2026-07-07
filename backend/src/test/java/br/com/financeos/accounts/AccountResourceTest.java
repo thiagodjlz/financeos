@@ -10,14 +10,22 @@ import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-import br.com.financeos.shared.DevUser;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.security.TestSecurity;
+import io.quarkus.test.security.jwt.Claim;
+import io.quarkus.test.security.jwt.JwtSecurity;
 import io.restassured.http.ContentType;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
 @QuarkusTest
+@TestSecurity(user = "dev@financeos.local")
+@JwtSecurity(claims = {
+        @Claim(key = "sub", value = "00000000-0000-0000-0000-000000000001")
+})
 class AccountResourceTest {
+
+    private static final UUID TEST_USER_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
 
     @Inject
     AccountRepository repository;
@@ -25,7 +33,7 @@ class AccountResourceTest {
     @AfterEach
     @Transactional
     void cleanup() {
-        repository.delete("userId = ?1 and name like ?2", DevUser.ID, "Teste Conta%");
+        repository.delete("userId = ?1 and name like ?2", TEST_USER_ID, "Teste Conta%");
     }
 
     @Test

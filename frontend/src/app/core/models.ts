@@ -68,6 +68,44 @@ export interface Card {
   active: boolean;
 }
 
+export interface AuthResponse {
+  token: string;
+  expiresIn: number;
+}
+
+export type Screen = 'DASHBOARD' | 'TRANSACTIONS' | 'CATEGORIES' | 'ACCOUNTS' | 'CARDS' | 'USERS' | 'PROFILES';
+export type Action = 'VIEW' | 'CREATE' | 'EDIT' | 'DELETE';
+
+export interface PermissionEntry {
+  screen: Screen;
+  canView: boolean;
+  canCreate: boolean;
+  canEdit: boolean;
+  canDelete: boolean;
+}
+
+export interface MeResponse {
+  name: string;
+  email: string;
+  superAdmin: boolean;
+  permissions: PermissionEntry[];
+}
+
+export interface Profile {
+  id: string;
+  name: string;
+  active: boolean;
+  permissions: PermissionEntry[];
+}
+
+export interface AppUserSummary {
+  id: string;
+  name: string;
+  email: string;
+  active: boolean;
+  profileId: string | null;
+}
+
 export interface Transaction {
   id: string;
   categoryId: string | null;

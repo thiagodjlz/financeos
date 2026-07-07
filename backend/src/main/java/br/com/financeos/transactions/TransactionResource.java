@@ -5,7 +5,11 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
-import br.com.financeos.shared.DevUser;
+import br.com.financeos.profiles.Screen;
+import br.com.financeos.shared.AccessControl;
+import br.com.financeos.shared.Action;
+import br.com.financeos.shared.CurrentUser;
+import io.quarkus.security.Authenticated;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
@@ -24,12 +28,17 @@ import jakarta.ws.rs.core.Response;
 @Path("/transactions")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@Authenticated
 public class TransactionResource {
 
     private final TransactionRepository repository;
+    private final CurrentUser currentUser;
+    private final AccessControl accessControl;
 
-    public TransactionResource(TransactionRepository repository) {
+    public TransactionResource(TransactionRepository repository, CurrentUser currentUser, AccessControl accessControl) {
         this.repository = repository;
+        this.currentUser = currentUser;
+        this.accessControl = accessControl;
     }
 
     @GET
@@ -40,7 +49,8 @@ public class TransactionResource {
             @QueryParam("endDate") LocalDate endDate,
             @QueryParam("categoryId") UUID categoryId) {
 
-        return repository.listByFilters(DevUser.ID, type, status, startDate, endDate, categoryId)
+        accessControl.require(Screen.TRANSACTIONS, Action.VIEW);
+        return repository.listByFilters(currentUser.id(), type, status, startDate, endDate, categoryId)
                 .stream()
                 .map(TransactionResponse::from)
                 .toList();
@@ -49,7 +59,8 @@ public class TransactionResource {
     @GET
     @Path("/{id}")
     public TransactionResponse get(@PathParam("id") UUID id) {
-        return repository.findByUserAndId(DevUser.ID, id)
+        accessControl.require(Screen.TRANSACTIONS, Action.VIEW);
+        return repository.findByUserAndId(currentUser.id(), id)
                 .map(TransactionResponse::from)
                 .orElseThrow(NotFoundException::new);
     }
@@ -57,8 +68,9 @@ public class TransactionResource {
     @POST
     @Transactional
     public Response create(@Valid TransactionRequest request) {
+        accessControl.require(Screen.TRANSACTIONS, Action.CREATE);
         FinancialTransaction transaction = new FinancialTransaction();
-        transaction.userId = DevUser.ID;
+        transaction.userId = currentUser.id();
         apply(transaction, request);
         repository.persistAndFlush(transaction);
 
@@ -71,7 +83,8 @@ public class TransactionResource {
     @Path("/{id}")
     @Transactional
     public TransactionResponse update(@PathParam("id") UUID id, @Valid TransactionRequest request) {
-        FinancialTransaction transaction = repository.findByUserAndId(DevUser.ID, id)
+        accessControl.require(Screen.TRANSACTIONS, Action.EDIT);
+        FinancialTransaction transaction = repository.findByUserAndId(currentUser.id(), id)
                 .orElseThrow(NotFoundException::new);
 
         apply(transaction, request);
@@ -82,7 +95,8 @@ public class TransactionResource {
     @Path("/{id}")
     @Transactional
     public Response cancel(@PathParam("id") UUID id) {
-        FinancialTransaction transaction = repository.findByUserAndId(DevUser.ID, id)
+        accessControl.require(Screen.TRANSACTIONS, Action.DELETE);
+        FinancialTransaction transaction = repository.findByUserAndId(currentUser.id(), id)
                 .orElseThrow(NotFoundException::new);
 
         transaction.status = TransactionStatus.CANCELED;

@@ -1,0 +1,77 @@
+<div class="status-bar" *ngIf="error()">{{ error() }}</div>
+
+<section class="content-grid">
+  <form class="panel form-panel" *ngIf="authService.can('USERS', 'CREATE') || editingId()" (ngSubmit)="save()">
+    <div class="panel-heading">
+      <h3>{{ editingId() ? 'Editar usuario' : 'Novo usuario' }}</h3>
+    </div>
+    <label>
+      Nome
+      <input name="name" [(ngModel)]="form.name" required />
+    </label>
+    <label>
+      E-mail
+      <input type="email" name="email" [(ngModel)]="form.email" required />
+    </label>
+    <label>
+      Senha <span *ngIf="editingId()">(deixe em branco para manter)</span>
+      <input type="password" name="password" [(ngModel)]="form.password" [required]="!editingId()" />
+    </label>
+    <label>
+      Perfil
+      <select name="profileId" [(ngModel)]="form.profileId" required>
+        <option value="">Selecione</option>
+        <option *ngFor="let profile of profiles()" [value]="profile.id">{{ profile.name }}</option>
+      </select>
+    </label>
+    <label *ngIf="editingId()">
+      <input type="checkbox" name="active" [(ngModel)]="form.active" /> Ativo
+    </label>
+    <div class="two-cols">
+      <button class="primary-button" type="submit" [disabled]="saving()">Salvar</button>
+      <button *ngIf="editingId()" class="ghost-button" type="button" (click)="cancelEdit()">Cancelar</button>
+    </div>
+  </form>
+
+  <section class="panel table-panel">
+    <div class="panel-heading">
+      <h3>Usuarios</h3>
+      <span>{{ users().length }}</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>E-mail</th>
+            <th>Perfil</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let user of users()">
+            <td>{{ user.name }}</td>
+            <td>{{ user.email }}</td>
+            <td>{{ profileName(user.profileId) }}</td>
+            <td><span class="status-pill">{{ user.active ? 'Ativo' : 'Inativo' }}</span></td>
+            <td>
+              <button *ngIf="authService.can('USERS', 'EDIT')" type="button" class="ghost-button" (click)="edit(user)">
+                Editar
+              </button>
+              <button
+                *ngIf="authService.can('USERS', 'DELETE') && user.active"
+                type="button"
+                class="ghost-button"
+                (click)="deactivate(user)"
+              >
+                Desativar
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="empty-state" *ngIf="!users().length">Nenhum usuario cadastrado</p>
+    </div>
+  </section>
+</section>

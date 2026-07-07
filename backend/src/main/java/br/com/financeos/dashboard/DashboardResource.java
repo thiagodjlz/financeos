@@ -4,7 +4,11 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 
 import br.com.financeos.dashboard.DashboardRepository.DashboardTotals;
-import br.com.financeos.shared.DevUser;
+import br.com.financeos.profiles.Screen;
+import br.com.financeos.shared.AccessControl;
+import br.com.financeos.shared.Action;
+import br.com.financeos.shared.CurrentUser;
+import io.quarkus.security.Authenticated;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -14,23 +18,29 @@ import jakarta.ws.rs.core.MediaType;
 
 @Path("/dashboard")
 @Produces(MediaType.APPLICATION_JSON)
+@Authenticated
 public class DashboardResource {
 
     private final DashboardRepository repository;
+    private final CurrentUser currentUser;
+    private final AccessControl accessControl;
 
-    public DashboardResource(DashboardRepository repository) {
+    public DashboardResource(DashboardRepository repository, CurrentUser currentUser, AccessControl accessControl) {
         this.repository = repository;
+        this.currentUser = currentUser;
+        this.accessControl = accessControl;
     }
 
     @GET
     @Path("/summary")
     public DashboardSummaryResponse summary(@QueryParam("year") Integer year, @QueryParam("month") Integer month)
             throws Exception {
+        accessControl.require(Screen.DASHBOARD, Action.VIEW);
         YearMonth period = resolvePeriod(year, month);
         LocalDate startDate = period.atDay(1);
         LocalDate endDate = period.atEndOfMonth();
 
-        DashboardTotals totals = repository.totals(DevUser.ID, startDate, endDate);
+        DashboardTotals totals = repository.totals(currentUser.id(), startDate, endDate);
 
         return new DashboardSummaryResponse(
                 new PeriodResponse(period.getYear(), period.getMonthValue(), startDate, endDate),
@@ -40,8 +50,8 @@ public class DashboardResource {
                 totals.paidExpense(),
                 totals.pendingExpense(),
                 totals.transactionCount(),
-                repository.categoryBreakdown(DevUser.ID, startDate, endDate),
-                repository.monthlyEvolution(DevUser.ID, period.getYear()));
+                repository.categoryBreakdown(currentUser.id(), startDate, endDate),
+                repository.monthlyEvolution(currentUser.id(), period.getYear()));
     }
 
     private static YearMonth resolvePeriod(Integer year, Integer month) {

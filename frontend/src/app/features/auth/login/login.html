@@ -1,0 +1,24 @@
+<div class="auth-shell">
+  <form class="panel form-panel auth-card" (ngSubmit)="submit()">
+    <div class="brand-block">
+      <div class="mark">F</div>
+      <div>
+        <h1>FinanceOS</h1>
+        <p>Controle financeiro</p>
+      </div>
+    </div>
+
+    <div class="status-bar" *ngIf="error()">{{ error() }}</div>
+
+    <label>
+      E-mail
+      <input type="email" name="email" [(ngModel)]="form.email" required autocomplete="email" />
+    </label>
+    <label>
+      Senha
+      <input type="password" name="password" [(ngModel)]="form.password" required autocomplete="current-password" />
+    </label>
+
+    <button class="primary-button" type="submit" [disabled]="saving()">Entrar</button>
+  </form>
+</div>

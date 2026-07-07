@@ -1,7 +1,7 @@
 <div class="status-bar" *ngIf="error()">{{ error() }}</div>
 
 <section class="register-grid">
-  <form class="panel form-panel" (ngSubmit)="saveCategory()">
+  <form class="panel form-panel" *ngIf="authService.can('CATEGORIES', 'CREATE')" (ngSubmit)="saveCategory()">
     <div class="panel-heading"><h3>Categoria</h3></div>
     <label>Nome <input name="categoryName" [(ngModel)]="categoryForm.name" required /></label>
     <label>
@@ -15,7 +15,7 @@
     <button class="primary-button" type="submit" [disabled]="saving()">Salvar</button>
   </form>
 
-  <form class="panel form-panel" (ngSubmit)="saveAccount()">
+  <form class="panel form-panel" *ngIf="authService.can('ACCOUNTS', 'CREATE')" (ngSubmit)="saveAccount()">
     <div class="panel-heading"><h3>Conta</h3></div>
     <label>Nome <input name="accountName" [(ngModel)]="accountForm.name" required /></label>
     <label>
@@ -32,7 +32,7 @@
     <button class="primary-button" type="submit" [disabled]="saving()">Salvar</button>
   </form>
 
-  <form class="panel form-panel" (ngSubmit)="saveCard()">
+  <form class="panel form-panel" *ngIf="authService.can('CARDS', 'CREATE')" (ngSubmit)="saveCard()">
     <div class="panel-heading"><h3>Cartao</h3></div>
     <label>Nome <input name="cardName" [(ngModel)]="cardForm.name" required /></label>
     <label>Bandeira <input name="brand" [(ngModel)]="cardForm.brand" /></label>
@@ -51,17 +51,21 @@
     <button class="primary-button" type="submit" [disabled]="saving()">Salvar</button>
   </form>
 
-  <section class="panel table-panel">
+  <section class="panel table-panel" *ngIf="authService.can('ACCOUNTS', 'VIEW') || authService.can('CARDS', 'VIEW')">
     <div class="panel-heading"><h3>Cadastros ativos</h3></div>
     <div class="compact-list">
-      <div class="list-row" *ngFor="let account of accounts()">
-        <div><strong>{{ account.name }}</strong><span>{{ account.type }}</span></div>
-        <b>{{ formatMoney(account.initialBalance) }}</b>
-      </div>
-      <div class="list-row" *ngFor="let card of cards()">
-        <div><strong>{{ card.name }}</strong><span>{{ card.brand || 'Cartao' }}</span></div>
-        <b>{{ formatMoney(card.creditLimit) }}</b>
-      </div>
+      <ng-container *ngIf="authService.can('ACCOUNTS', 'VIEW')">
+        <div class="list-row" *ngFor="let account of accounts()">
+          <div><strong>{{ account.name }}</strong><span>{{ account.type }}</span></div>
+          <b>{{ formatMoney(account.initialBalance) }}</b>
+        </div>
+      </ng-container>
+      <ng-container *ngIf="authService.can('CARDS', 'VIEW')">
+        <div class="list-row" *ngFor="let card of cards()">
+          <div><strong>{{ card.name }}</strong><span>{{ card.brand || 'Cartao' }}</span></div>
+          <b>{{ formatMoney(card.creditLimit) }}</b>
+        </div>
+      </ng-container>
     </div>
   </section>
 </section>
