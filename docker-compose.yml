@@ -23,6 +23,7 @@ services:
   backend:
     build:
       context: ./backend
+    image: financeos-backend:${APP_VERSION:-dev}
     container_name: financeos-backend
     restart: unless-stopped
     depends_on:
@@ -39,6 +40,7 @@ services:
   frontend:
     build:
       context: ./frontend
+    image: financeos-frontend:${APP_VERSION:-dev}
     container_name: financeos-frontend
     restart: unless-stopped
     depends_on:

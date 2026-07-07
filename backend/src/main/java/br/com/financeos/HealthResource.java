@@ -6,6 +6,8 @@ import java.sql.ResultSet;
 
 import javax.sql.DataSource;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -18,6 +20,9 @@ public class HealthResource {
     @Inject
     DataSource dataSource;
 
+    @ConfigProperty(name = "quarkus.application.version")
+    String version;
+
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public HealthResponse health() throws Exception {
@@ -25,10 +30,10 @@ public class HealthResource {
                 PreparedStatement statement = connection.prepareStatement("select current_database()");
                 ResultSet resultSet = statement.executeQuery()) {
             resultSet.next();
-            return new HealthResponse("UP", "FinanceOS API", resultSet.getString(1));
+            return new HealthResponse("UP", "FinanceOS API", version, resultSet.getString(1));
         }
     }
 
-    public record HealthResponse(String status, String service, String database) {
+    public record HealthResponse(String status, String service, String version, String database) {
     }
 }
