@@ -1,0 +1,12 @@
+.profiles-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.checkbox-cell {
+  text-align: center;
+
+  input {
+    width: auto;
+  }
+}

@@ -114,6 +114,19 @@ Endpoints iniciais:
 ```text
 GET    /api/health
 
+POST   /api/auth/login
+GET    /api/auth/me
+
+GET    /api/users
+POST   /api/users
+PUT    /api/users/{id}
+DELETE /api/users/{id}
+
+GET    /api/profiles
+POST   /api/profiles
+PUT    /api/profiles/{id}
+DELETE /api/profiles/{id}
+
 GET    /api/accounts
 GET    /api/accounts?type=CHECKING
 GET    /api/accounts/{id}
@@ -143,6 +156,29 @@ DELETE /api/transactions/{id}
 
 GET    /api/dashboard/summary
 GET    /api/dashboard/summary?year=2026&month=6
+```
+
+## Autenticacao e controle de acesso
+
+A API exige login (JWT) em todos os endpoints, exceto `/api/health` e `/api/auth/login`. Nao existe cadastro publico: novos usuarios sao criados por quem ja tem acesso a tela de Usuarios (`POST /api/users`), cada um vinculado a um Perfil que define, por tela do sistema (Dashboard, Lancamentos, Categorias, Contas, Cartoes, Usuarios, Perfis), as permissoes de visualizar/incluir/alterar/excluir.
+
+Usuario de desenvolvimento ja semeado (perfil "Administrador", acesso total):
+
+```text
+E-mail: dev@financeos.local
+Senha:  financeos_dev_2026
+```
+
+Existe tambem um usuario administrador oculto (`super_admin`), que nao aparece na tela de Usuarios e tem acesso total independente de perfil — usado para nunca ficar sem acesso ao sistema. As credenciais desse usuario nao ficam em nenhum arquivo do repositorio.
+
+### Chaves RSA (assinatura dos JWTs)
+
+O backend precisa de um par de chaves RSA em `backend/src/main/resources/privateKey.pem`/`publicKey.pem` (gitignored — nao ficam no repositorio). Para gerar um par novo:
+
+```bash
+cd backend/src/main/resources
+openssl genrsa -out privateKey.pem 2048
+openssl rsa -in privateKey.pem -pubout -out publicKey.pem
 ```
 
 ## Frontend Angular

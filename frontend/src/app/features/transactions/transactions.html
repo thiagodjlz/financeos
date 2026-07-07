@@ -1,7 +1,7 @@
 <div class="status-bar" *ngIf="error()">{{ error() }}</div>
 
 <section class="content-grid">
-  <form class="panel form-panel" (ngSubmit)="saveTransaction()">
+  <form class="panel form-panel" *ngIf="authService.can('TRANSACTIONS', 'CREATE')" (ngSubmit)="saveTransaction()">
     <div class="panel-heading">
       <h3>Novo lancamento</h3>
     </div>
@@ -88,7 +88,14 @@
             <td><span class="status-pill">{{ transaction.status }}</span></td>
             <td [class.negative]="transaction.type === 'EXPENSE'">{{ formatMoney(transaction.amount) }}</td>
             <td>
-              <button type="button" class="ghost-button" (click)="cancelTransaction(transaction)">Cancelar</button>
+              <button
+                *ngIf="authService.can('TRANSACTIONS', 'DELETE')"
+                type="button"
+                class="ghost-button"
+                (click)="cancelTransaction(transaction)"
+              >
+                Cancelar
+              </button>
             </td>
           </tr>
         </tbody>

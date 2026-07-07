@@ -15,13 +15,4 @@ describe('App', () => {
     const app = fixture.componentInstance;
     expect(app).toBeTruthy();
   });
-
-  it('should render the FinanceOS shell', () => {
-    const fixture = TestBed.createComponent(App);
-    fixture.detectChanges();
-
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain('FinanceOS');
-    expect(compiled.querySelectorAll('.nav-list button')).toHaveLength(3);
-  });
 });

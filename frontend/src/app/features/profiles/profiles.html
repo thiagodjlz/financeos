@@ -1,0 +1,64 @@
+<div class="status-bar" *ngIf="error()">{{ error() }}</div>
+
+<section class="profiles-grid">
+  <form class="panel form-panel" *ngIf="authService.can('PROFILES', 'CREATE') || editingId()" (ngSubmit)="save()">
+    <div class="panel-heading">
+      <h3>{{ editingId() ? 'Editar perfil' : 'Novo perfil' }}</h3>
+    </div>
+    <label>
+      Nome
+      <input name="name" [(ngModel)]="name" required />
+    </label>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Tela</th>
+            <th>Ver</th>
+            <th>Incluir</th>
+            <th>Alterar</th>
+            <th>Excluir</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let permission of permissions">
+            <td>{{ screenLabel(permission.screen) }}</td>
+            <td class="checkbox-cell"><input type="checkbox" [(ngModel)]="permission.canView" [name]="permission.screen + '-view'" /></td>
+            <td class="checkbox-cell"><input type="checkbox" [(ngModel)]="permission.canCreate" [name]="permission.screen + '-create'" /></td>
+            <td class="checkbox-cell"><input type="checkbox" [(ngModel)]="permission.canEdit" [name]="permission.screen + '-edit'" /></td>
+            <td class="checkbox-cell"><input type="checkbox" [(ngModel)]="permission.canDelete" [name]="permission.screen + '-delete'" /></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="two-cols">
+      <button class="primary-button" type="submit" [disabled]="saving()">Salvar</button>
+      <button *ngIf="editingId()" class="ghost-button" type="button" (click)="cancelEdit()">Cancelar</button>
+    </div>
+  </form>
+
+  <section class="panel table-panel">
+    <div class="panel-heading">
+      <h3>Perfis</h3>
+      <span>{{ profiles().length }}</span>
+    </div>
+    <div class="compact-list">
+      <div class="list-row" *ngFor="let profile of profiles()">
+        <div>
+          <strong>{{ profile.name }}</strong>
+        </div>
+        <div>
+          <button *ngIf="authService.can('PROFILES', 'EDIT')" type="button" class="ghost-button" (click)="edit(profile)">
+            Editar
+          </button>
+          <button *ngIf="authService.can('PROFILES', 'DELETE')" type="button" class="ghost-button" (click)="remove(profile)">
+            Excluir
+          </button>
+        </div>
+      </div>
+      <p class="empty-state" *ngIf="!profiles().length">Nenhum perfil cadastrado</p>
+    </div>
+  </section>
+</section>

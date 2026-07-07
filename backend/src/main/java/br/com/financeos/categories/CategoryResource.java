@@ -4,6 +4,10 @@ import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 
+import br.com.financeos.profiles.Screen;
+import br.com.financeos.shared.AccessControl;
+import br.com.financeos.shared.Action;
+import io.quarkus.security.Authenticated;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
@@ -22,16 +26,20 @@ import jakarta.ws.rs.core.Response;
 @Path("/categories")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@Authenticated
 public class CategoryResource {
 
     private final CategoryRepository repository;
+    private final AccessControl accessControl;
 
-    public CategoryResource(CategoryRepository repository) {
+    public CategoryResource(CategoryRepository repository, AccessControl accessControl) {
         this.repository = repository;
+        this.accessControl = accessControl;
     }
 
     @GET
     public List<CategoryResponse> list(@QueryParam("type") CategoryType type) {
+        accessControl.require(Screen.CATEGORIES, Action.VIEW);
         return repository.listActive(type).stream()
                 .map(CategoryResponse::from)
                 .toList();
@@ -40,6 +48,7 @@ public class CategoryResource {
     @GET
     @Path("/{id}")
     public CategoryResponse get(@PathParam("id") UUID id) {
+        accessControl.require(Screen.CATEGORIES, Action.VIEW);
         return repository.findActiveById(id)
                 .map(CategoryResponse::from)
                 .orElseThrow(NotFoundException::new);
@@ -48,6 +57,7 @@ public class CategoryResource {
     @POST
     @Transactional
     public Response create(@Valid CategoryRequest request) {
+        accessControl.require(Screen.CATEGORIES, Action.CREATE);
         Category category = new Category();
         apply(category, request);
         repository.persistAndFlush(category);
@@ -61,6 +71,7 @@ public class CategoryResource {
     @Path("/{id}")
     @Transactional
     public CategoryResponse update(@PathParam("id") UUID id, @Valid CategoryRequest request) {
+        accessControl.require(Screen.CATEGORIES, Action.EDIT);
         Category category = repository.findActiveById(id)
                 .orElseThrow(NotFoundException::new);
 
@@ -72,6 +83,7 @@ public class CategoryResource {
     @Path("/{id}")
     @Transactional
     public Response deactivate(@PathParam("id") UUID id) {
+        accessControl.require(Screen.CATEGORIES, Action.DELETE);
         Category category = repository.findActiveById(id)
                 .orElseThrow(NotFoundException::new);
 

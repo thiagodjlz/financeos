@@ -14,9 +14,16 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.security.TestSecurity;
+import io.quarkus.test.security.jwt.Claim;
+import io.quarkus.test.security.jwt.JwtSecurity;
 import io.restassured.http.ContentType;
 
 @QuarkusTest
+@TestSecurity(user = "dev@financeos.local")
+@JwtSecurity(claims = {
+        @Claim(key = "sub", value = "00000000-0000-0000-0000-000000000001")
+})
 class CategoryResourceTest {
 
     @Inject

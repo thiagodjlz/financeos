@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { money } from '../../core/formatters';
 import { AccountType, TransactionType } from '../../core/models';
 import { AccountService } from '../../core/services/account.service';
+import { AuthService } from '../../core/services/auth.service';
 import { CardService } from '../../core/services/card.service';
 import { CategoryService } from '../../core/services/category.service';
 
@@ -17,6 +18,7 @@ export class Registers implements OnInit {
   private readonly categoryService = inject(CategoryService);
   private readonly accountService = inject(AccountService);
   private readonly cardService = inject(CardService);
+  protected readonly authService = inject(AuthService);
 
   protected readonly loading = signal(false);
   protected readonly saving = signal(false);
@@ -55,8 +57,19 @@ export class Registers implements OnInit {
     this.loading.set(true);
     this.error.set('');
 
+    const tasks: Promise<void>[] = [];
+    if (this.authService.can('CATEGORIES', 'VIEW')) {
+      tasks.push(this.categoryService.refresh());
+    }
+    if (this.authService.can('ACCOUNTS', 'VIEW')) {
+      tasks.push(this.accountService.refresh());
+    }
+    if (this.authService.can('CARDS', 'VIEW')) {
+      tasks.push(this.cardService.refresh());
+    }
+
     try {
-      await Promise.all([this.categoryService.refresh(), this.accountService.refresh(), this.cardService.refresh()]);
+      await Promise.all(tasks);
     } catch {
       this.error.set('API indisponivel. Confirme se o backend Quarkus esta rodando em localhost:8080.');
     } finally {

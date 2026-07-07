@@ -5,7 +5,11 @@ import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 
-import br.com.financeos.shared.DevUser;
+import br.com.financeos.profiles.Screen;
+import br.com.financeos.shared.AccessControl;
+import br.com.financeos.shared.Action;
+import br.com.financeos.shared.CurrentUser;
+import io.quarkus.security.Authenticated;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
@@ -24,17 +28,23 @@ import jakarta.ws.rs.core.Response;
 @Path("/accounts")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@Authenticated
 public class AccountResource {
 
     private final AccountRepository repository;
+    private final CurrentUser currentUser;
+    private final AccessControl accessControl;
 
-    public AccountResource(AccountRepository repository) {
+    public AccountResource(AccountRepository repository, CurrentUser currentUser, AccessControl accessControl) {
         this.repository = repository;
+        this.currentUser = currentUser;
+        this.accessControl = accessControl;
     }
 
     @GET
     public List<AccountResponse> list(@QueryParam("type") AccountType type) {
-        return repository.listActive(DevUser.ID, type).stream()
+        accessControl.require(Screen.ACCOUNTS, Action.VIEW);
+        return repository.listActive(currentUser.id(), type).stream()
                 .map(AccountResponse::from)
                 .toList();
     }
@@ -42,7 +52,8 @@ public class AccountResource {
     @GET
     @Path("/{id}")
     public AccountResponse get(@PathParam("id") UUID id) {
-        return repository.findActiveByUserAndId(DevUser.ID, id)
+        accessControl.require(Screen.ACCOUNTS, Action.VIEW);
+        return repository.findActiveByUserAndId(currentUser.id(), id)
                 .map(AccountResponse::from)
                 .orElseThrow(NotFoundException::new);
     }
@@ -50,8 +61,9 @@ public class AccountResource {
     @POST
     @Transactional
     public Response create(@Valid AccountRequest request) {
+        accessControl.require(Screen.ACCOUNTS, Action.CREATE);
         Account account = new Account();
-        account.userId = DevUser.ID;
+        account.userId = currentUser.id();
         apply(account, request);
         repository.persistAndFlush(account);
 
@@ -64,7 +76,8 @@ public class AccountResource {
     @Path("/{id}")
     @Transactional
     public AccountResponse update(@PathParam("id") UUID id, @Valid AccountRequest request) {
-        Account account = repository.findActiveByUserAndId(DevUser.ID, id)
+        accessControl.require(Screen.ACCOUNTS, Action.EDIT);
+        Account account = repository.findActiveByUserAndId(currentUser.id(), id)
                 .orElseThrow(NotFoundException::new);
 
         apply(account, request);
@@ -75,7 +88,8 @@ public class AccountResource {
     @Path("/{id}")
     @Transactional
     public Response deactivate(@PathParam("id") UUID id) {
-        Account account = repository.findActiveByUserAndId(DevUser.ID, id)
+        accessControl.require(Screen.ACCOUNTS, Action.DELETE);
+        Account account = repository.findActiveByUserAndId(currentUser.id(), id)
                 .orElseThrow(NotFoundException::new);
 
         account.active = false;

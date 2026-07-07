@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { money } from '../../core/formatters';
 import { Transaction, TransactionStatus, TransactionType } from '../../core/models';
 import { AccountService } from '../../core/services/account.service';
+import { AuthService } from '../../core/services/auth.service';
 import { CardService } from '../../core/services/card.service';
 import { CategoryService } from '../../core/services/category.service';
 import { TransactionService } from '../../core/services/transaction.service';
@@ -19,6 +20,7 @@ export class Transactions implements OnInit {
   private readonly categoryService = inject(CategoryService);
   private readonly accountService = inject(AccountService);
   private readonly cardService = inject(CardService);
+  protected readonly authService = inject(AuthService);
 
   protected readonly loading = signal(false);
   protected readonly saving = signal(false);
