@@ -1,0 +1,99 @@
+<div class="status-bar" *ngIf="error()">{{ error() }}</div>
+
+<section class="content-grid">
+  <form class="panel form-panel" (ngSubmit)="saveTransaction()">
+    <div class="panel-heading">
+      <h3>Novo lancamento</h3>
+    </div>
+    <label>
+      Data
+      <input type="date" name="transactionDate" [(ngModel)]="transactionForm.transactionDate" required />
+    </label>
+    <label>
+      Descricao
+      <input name="description" [(ngModel)]="transactionForm.description" maxlength="255" required />
+    </label>
+    <label>
+      Valor
+      <input type="number" name="amount" [(ngModel)]="transactionForm.amount" min="0.01" step="0.01" required />
+    </label>
+    <div class="two-cols">
+      <label>
+        Tipo
+        <select name="type" [(ngModel)]="transactionForm.type">
+          <option value="EXPENSE">Despesa</option>
+          <option value="INCOME">Receita</option>
+        </select>
+      </label>
+      <label>
+        Status
+        <select name="status" [(ngModel)]="transactionForm.status">
+          <option value="PENDING">Pendente</option>
+          <option value="PAID">Pago</option>
+        </select>
+      </label>
+    </div>
+    <label>
+      Categoria
+      <select name="categoryId" [(ngModel)]="transactionForm.categoryId">
+        <option value="">Sem categoria</option>
+        <option *ngFor="let category of categories()" [value]="category.id">{{ category.name }}</option>
+      </select>
+    </label>
+    <div class="two-cols">
+      <label>
+        Conta
+        <select name="accountId" [(ngModel)]="transactionForm.accountId">
+          <option value="">-</option>
+          <option *ngFor="let account of accounts()" [value]="account.id">{{ account.name }}</option>
+        </select>
+      </label>
+      <label>
+        Cartao
+        <select name="cardId" [(ngModel)]="transactionForm.cardId">
+          <option value="">-</option>
+          <option *ngFor="let card of cards()" [value]="card.id">{{ card.name }}</option>
+        </select>
+      </label>
+    </div>
+    <button class="primary-button" type="submit" [disabled]="saving()">Salvar</button>
+  </form>
+
+  <section class="panel table-panel">
+    <div class="panel-heading">
+      <h3>Ultimos lancamentos</h3>
+      <span>{{ transactions().length }}</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Descricao</th>
+            <th>Categoria</th>
+            <th>Conta</th>
+            <th>Cartao</th>
+            <th>Status</th>
+            <th>Valor</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let transaction of transactions()">
+            <td>{{ transaction.transactionDate }}</td>
+            <td>{{ transaction.description }}</td>
+            <td>{{ categoryName(transaction.categoryId) }}</td>
+            <td>{{ accountName(transaction.accountId) }}</td>
+            <td>{{ cardName(transaction.cardId) }}</td>
+            <td><span class="status-pill">{{ transaction.status }}</span></td>
+            <td [class.negative]="transaction.type === 'EXPENSE'">{{ formatMoney(transaction.amount) }}</td>
+            <td>
+              <button type="button" class="ghost-button" (click)="cancelTransaction(transaction)">Cancelar</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="empty-state" *ngIf="!transactions().length">Sem lancamentos cadastrados</p>
+    </div>
+  </section>
+</section>

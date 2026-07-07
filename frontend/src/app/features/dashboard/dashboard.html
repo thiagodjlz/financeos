@@ -1,0 +1,71 @@
+<header class="topbar">
+  <div>
+    <p class="eyebrow">Painel financeiro</p>
+    <h2>{{ formatMonthName(period.month) | titlecase }} {{ period.year }}</h2>
+  </div>
+
+  <div class="period-controls">
+    <input aria-label="Ano" type="number" [(ngModel)]="period.year" min="2023" max="2035" />
+    <select aria-label="Mes" [(ngModel)]="period.month">
+      <option *ngFor="let month of [1,2,3,4,5,6,7,8,9,10,11,12]" [ngValue]="month">
+        {{ formatMonthName(month) | titlecase }}
+      </option>
+    </select>
+    <button type="button" class="primary-button" (click)="load()" [disabled]="loading()">Atualizar</button>
+  </div>
+</header>
+
+<div class="status-bar" *ngIf="error()">{{ error() }}</div>
+
+<section class="dashboard-grid">
+  <div class="metric-card income">
+    <span>Receitas</span>
+    <strong>{{ formatMoney(summary()?.totalIncome) }}</strong>
+  </div>
+  <div class="metric-card expense">
+    <span>Despesas</span>
+    <strong>{{ formatMoney(summary()?.totalExpense) }}</strong>
+  </div>
+  <div class="metric-card balance">
+    <span>Saldo</span>
+    <strong>{{ formatMoney(summary()?.balance) }}</strong>
+  </div>
+  <div class="metric-card pending">
+    <span>Pendentes</span>
+    <strong>{{ formatMoney(summary()?.pendingExpense) }}</strong>
+  </div>
+
+  <section class="panel wide">
+    <div class="panel-heading">
+      <h3>Evolucao anual</h3>
+      <span>{{ summary()?.transactionCount ?? 0 }} lancamentos no periodo</span>
+    </div>
+    <div class="month-strip">
+      <div class="month-row" *ngFor="let item of summary()?.monthlyEvolution">
+        <span>{{ formatMonthName(item.month) | titlecase }}</span>
+        <div class="bar-track">
+          <div class="bar income-bar" [style.width.%]="item.income ? 100 : 0"></div>
+          <div class="bar expense-bar" [style.width.%]="item.expense ? 100 : 0"></div>
+        </div>
+        <strong>{{ formatMoney(item.balance) }}</strong>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-heading">
+      <h3>Categorias</h3>
+      <span>{{ summary()?.categoryBreakdown?.length ?? 0 }}</span>
+    </div>
+    <div class="compact-list">
+      <div class="list-row" *ngFor="let item of summary()?.categoryBreakdown">
+        <div>
+          <strong>{{ item.categoryName }}</strong>
+          <span>{{ item.type === 'INCOME' ? 'Receita' : 'Despesa' }}</span>
+        </div>
+        <b>{{ formatMoney(item.totalAmount) }}</b>
+      </div>
+      <p class="empty-state" *ngIf="!summary()?.categoryBreakdown?.length">Sem dados no periodo</p>
+    </div>
+  </section>
+</section>

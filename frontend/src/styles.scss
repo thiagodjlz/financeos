@@ -7,3 +7,147 @@ body {
 body {
   min-width: 320px;
 }
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+.status-bar {
+  margin-bottom: 16px;
+  border: 1px solid #e2b466;
+  border-radius: 8px;
+  padding: 12px 14px;
+  background: #fff8e8;
+  color: #7a5117;
+}
+
+.panel {
+  border: 1px solid #ddd7ca;
+  border-radius: 8px;
+  background: #fffdf8;
+  box-shadow: 0 10px 28px rgb(43 37 25 / 8%);
+  padding: 18px;
+}
+
+.panel-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+
+  h3 {
+    margin: 0;
+    font-size: 17px;
+  }
+
+  span {
+    color: #65716b;
+    font-size: 13px;
+  }
+}
+
+.form-panel {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+label {
+  display: grid;
+  gap: 6px;
+  color: #59645f;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+input,
+select {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #d7d0c1;
+  border-radius: 8px;
+  padding: 10px 11px;
+  background: #ffffff;
+  color: #202422;
+}
+
+.two-cols {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.primary-button,
+.ghost-button {
+  border: 0;
+  border-radius: 8px;
+  min-height: 40px;
+  padding: 0 14px;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.primary-button {
+  background: #2f7d62;
+  color: #ffffff;
+}
+
+.primary-button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.ghost-button {
+  border: 1px solid #d7d0c1;
+  background: #ffffff;
+  color: #59645f;
+}
+
+.status-pill {
+  display: inline-flex;
+  border-radius: 999px;
+  padding: 4px 8px;
+  background: #eef2ed;
+  color: #4f5d55;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.compact-list {
+  display: grid;
+  gap: 10px;
+}
+
+.list-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  border-bottom: 1px solid #ece6d9;
+  padding-bottom: 10px;
+
+  strong,
+  span {
+    display: block;
+  }
+
+  span {
+    color: #65716b;
+    font-size: 12px;
+    margin-top: 3px;
+  }
+}
+
+.empty-state {
+  margin: 14px 0 0;
+  color: #65716b;
+}
+
+@media (max-width: 680px) {
+  .two-cols {
+    grid-template-columns: 1fr;
+  }
+}
