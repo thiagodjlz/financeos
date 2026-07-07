@@ -1,0 +1,19 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "frontend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["start"],
+      "port": 4200,
+      "cwd": "frontend"
+    },
+    {
+      "name": "backend",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "C:\\Projetos\\FinanceOS\\backend\\mvnw.cmd", "quarkus:dev"],
+      "port": 8080,
+      "cwd": "backend"
+    }
+  ]
+}

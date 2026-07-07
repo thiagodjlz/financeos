@@ -1,0 +1,67 @@
+<div class="status-bar" *ngIf="error()">{{ error() }}</div>
+
+<section class="register-grid">
+  <form class="panel form-panel" (ngSubmit)="saveCategory()">
+    <div class="panel-heading"><h3>Categoria</h3></div>
+    <label>Nome <input name="categoryName" [(ngModel)]="categoryForm.name" required /></label>
+    <label>
+      Tipo
+      <select name="categoryType" [(ngModel)]="categoryForm.type">
+        <option value="EXPENSE">Despesa</option>
+        <option value="INCOME">Receita</option>
+      </select>
+    </label>
+    <label>Cor <input type="color" name="categoryColor" [(ngModel)]="categoryForm.color" /></label>
+    <button class="primary-button" type="submit" [disabled]="saving()">Salvar</button>
+  </form>
+
+  <form class="panel form-panel" (ngSubmit)="saveAccount()">
+    <div class="panel-heading"><h3>Conta</h3></div>
+    <label>Nome <input name="accountName" [(ngModel)]="accountForm.name" required /></label>
+    <label>
+      Tipo
+      <select name="accountType" [(ngModel)]="accountForm.type">
+        <option value="CHECKING">Corrente</option>
+        <option value="SAVINGS">Poupanca</option>
+        <option value="WALLET">Carteira</option>
+        <option value="INVESTMENT">Investimento</option>
+        <option value="OTHER">Outra</option>
+      </select>
+    </label>
+    <label>Saldo inicial <input type="number" name="initialBalance" [(ngModel)]="accountForm.initialBalance" min="0" step="0.01" /></label>
+    <button class="primary-button" type="submit" [disabled]="saving()">Salvar</button>
+  </form>
+
+  <form class="panel form-panel" (ngSubmit)="saveCard()">
+    <div class="panel-heading"><h3>Cartao</h3></div>
+    <label>Nome <input name="cardName" [(ngModel)]="cardForm.name" required /></label>
+    <label>Bandeira <input name="brand" [(ngModel)]="cardForm.brand" /></label>
+    <label>
+      Conta
+      <select name="cardAccount" [(ngModel)]="cardForm.accountId">
+        <option value="">-</option>
+        <option *ngFor="let account of accounts()" [value]="account.id">{{ account.name }}</option>
+      </select>
+    </label>
+    <div class="two-cols">
+      <label>Fechamento <input type="number" name="closingDay" [(ngModel)]="cardForm.closingDay" min="1" max="31" /></label>
+      <label>Vencimento <input type="number" name="dueDay" [(ngModel)]="cardForm.dueDay" min="1" max="31" /></label>
+    </div>
+    <label>Limite <input type="number" name="creditLimit" [(ngModel)]="cardForm.creditLimit" min="0" step="0.01" /></label>
+    <button class="primary-button" type="submit" [disabled]="saving()">Salvar</button>
+  </form>
+
+  <section class="panel table-panel">
+    <div class="panel-heading"><h3>Cadastros ativos</h3></div>
+    <div class="compact-list">
+      <div class="list-row" *ngFor="let account of accounts()">
+        <div><strong>{{ account.name }}</strong><span>{{ account.type }}</span></div>
+        <b>{{ formatMoney(account.initialBalance) }}</b>
+      </div>
+      <div class="list-row" *ngFor="let card of cards()">
+        <div><strong>{{ card.name }}</strong><span>{{ card.brand || 'Cartao' }}</span></div>
+        <b>{{ formatMoney(card.creditLimit) }}</b>
+      </div>
+    </div>
+  </section>
+</section>

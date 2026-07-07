@@ -1,0 +1,11 @@
+.register-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(240px, 1fr));
+  gap: 14px;
+}
+
+@media (max-width: 1080px) {
+  .register-grid {
+    grid-template-columns: 1fr;
+  }
+}
