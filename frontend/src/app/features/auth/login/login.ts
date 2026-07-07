@@ -3,6 +3,7 @@ import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import { APP_NAME, APP_VERSION } from '../../../core/version';
 
 @Component({
   selector: 'app-login',
@@ -13,6 +14,9 @@ import { AuthService } from '../../../core/services/auth.service';
 export class Login {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+
+  protected readonly appName = APP_NAME;
+  protected readonly appVersion = APP_VERSION;
 
   protected readonly saving = signal(false);
   protected readonly error = signal('');

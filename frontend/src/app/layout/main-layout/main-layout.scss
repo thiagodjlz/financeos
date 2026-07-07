@@ -78,6 +78,23 @@
   }
 }
 
+.sidebar-footer {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #344a41;
+}
+
+.current-user {
+  margin: 0 0 4px;
+  color: #d9e3dc;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.app-footer {
+  color: #7c8981;
+}
+
 .workspace {
   min-width: 0;
   padding: 26px;
@@ -110,6 +127,10 @@
   .logout-button {
     width: auto;
     margin-top: 0;
+  }
+
+  .sidebar-footer {
+    display: none;
   }
 }
 

@@ -32,6 +32,11 @@
     </nav>
 
     <button type="button" class="logout-button" (click)="logout()">Sair</button>
+
+    <footer class="sidebar-footer">
+      <p class="current-user" *ngIf="authService.me() as me">{{ me.name }}</p>
+      <p class="app-footer">{{ appName }} &middot; v{{ appVersion }}</p>
+    </footer>
   </aside>
 
   <section class="workspace">

@@ -146,6 +146,11 @@ select {
   color: #65716b;
 }
 
+.app-footer {
+  font-size: 12px;
+  text-align: center;
+}
+
 .content-grid {
   display: grid;
   grid-template-columns: 360px minmax(0, 1fr);

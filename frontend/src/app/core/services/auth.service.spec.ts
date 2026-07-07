@@ -47,6 +47,7 @@ describe('AuthService', () => {
     expect(service.can('DASHBOARD', 'VIEW')).toBe(true);
     expect(service.can('DASHBOARD', 'CREATE')).toBe(false);
     expect(service.can('TRANSACTIONS', 'VIEW')).toBe(false);
+    expect(service.me()?.name).toBe('Dev');
   });
 
   it('grants every permission when the user is a super admin', async () => {
@@ -81,6 +82,7 @@ describe('AuthService', () => {
 
     expect(service.token()).toBeNull();
     expect(service.isAuthenticated()).toBe(false);
+    expect(service.me()).toBeNull();
     expect(service.can('DASHBOARD', 'VIEW')).toBe(false);
   });
 });

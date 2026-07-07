@@ -1,6 +1,9 @@
 .auth-shell {
-  display: grid;
-  place-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
   min-height: 100vh;
   padding: 24px;
 }
@@ -8,6 +11,10 @@
 .auth-card {
   width: 100%;
   max-width: 360px;
+}
+
+.app-footer {
+  color: #8a9189;
 }
 
 .brand-block {
@@ -37,11 +44,4 @@
   background: #d7b46a;
   color: #17231f;
   font-weight: 800;
-}
-
-.auth-switch {
-  margin: 4px 0 0;
-  color: #59645f;
-  font-size: 13px;
-  text-align: center;
 }

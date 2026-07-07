@@ -12,6 +12,7 @@ export class AuthService {
   readonly token = signal<string | null>(localStorage.getItem(TOKEN_KEY));
   readonly superAdmin = signal(false);
   readonly permissions = signal<PermissionEntry[]>([]);
+  readonly me = signal<MeResponse | null>(null);
 
   private profileLoaded = false;
   private profilePromise: Promise<void> | null = null;
@@ -28,6 +29,7 @@ export class AuthService {
     this.setToken(null);
     this.superAdmin.set(false);
     this.permissions.set([]);
+    this.me.set(null);
     this.profileLoaded = false;
     this.profilePromise = null;
   }
@@ -75,6 +77,7 @@ export class AuthService {
     const me = await firstValueFrom(this.http.get<MeResponse>(`${API_BASE}/auth/me`));
     this.superAdmin.set(me.superAdmin);
     this.permissions.set(me.permissions);
+    this.me.set(me);
     this.profileLoaded = true;
   }
 
