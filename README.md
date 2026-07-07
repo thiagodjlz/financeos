@@ -211,8 +211,36 @@ URL local:
 http://localhost:4200
 ```
 
-Por enquanto o frontend usa a API local em:
+O frontend fala com a API por caminho relativo (`/api`). Em `ng serve`, um proxy (`frontend/proxy.conf.json`) encaminha `/api` para `http://localhost:8080`; em producao (Docker), quem faz esse papel e o nginx do container do frontend.
+
+## Docker (stack completa)
+
+Sobe Postgres + backend + frontend, cada um em sua propria imagem:
+
+```bash
+docker compose up -d --build
+```
 
 ```text
-http://localhost:8080/api
+Frontend: http://localhost (porta configuravel via FRONTEND_PORT)
+Backend:  http://127.0.0.1:8080 (porta configuravel via BACKEND_PORT; exposto so localmente, sem --build o nginx do frontend ja fala com o backend pela rede interna do compose)
+```
+
+Parar a stack (mantem os dados do Postgres):
+
+```bash
+docker compose down
+```
+
+Rebuildar so um servico depois de mudar codigo:
+
+```bash
+docker compose up -d --build backend
+docker compose up -d --build frontend
+```
+
+Para desenvolvimento com hot-reload continua valendo o fluxo de sempre — só o Postgres em container, backend via `mvnw quarkus:dev` e frontend via `npm start`:
+
+```bash
+docker compose up -d postgres
 ```
