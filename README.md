@@ -244,3 +244,31 @@ Para desenvolvimento com hot-reload continua valendo o fluxo de sempre — só o
 ```bash
 docker compose up -d postgres
 ```
+
+## Versionamento
+
+O projeto usa `MAJOR.MINOR.PATCH` (arquivo `VERSION` na raiz e a fonte de verdade):
+
+```text
+versao  (MAJOR) - mudancas grandes/quebra de compatibilidade
+release (MINOR) - mudancas menores/novas funcionalidades
+build   (PATCH) - ajustes de bug
+```
+
+Subir uma parte (sempre manual, nunca automatico):
+
+```powershell
+powershell -File scripts/bump-version.ps1 -Parte build
+powershell -File scripts/bump-version.ps1 -Parte release
+powershell -File scripts/bump-version.ps1 -Parte versao
+```
+
+O script atualiza junto `VERSION`, `frontend/package.json`, `frontend/package-lock.json`, `backend/pom.xml`, `frontend/src/app/core/version.ts` (rodape do login e do sistema) e `APP_VERSION` em `.env`/`.env.example`. Nao cria tag git nem commita — revise o diff e commite do seu jeito.
+
+A versao tambem fica exposta em `GET /api/health` (campo `version`, lido automaticamente do `pom.xml` pelo Quarkus). Depois de subir a versao, rebuilde e publique:
+
+```bash
+docker compose up -d --build
+```
+
+Isso gera imagens ja tagueadas com a versao atual (`financeos-backend:X.Y.Z`, `financeos-frontend:X.Y.Z`, visiveis em `docker images`) em vez de sempre sobrescrever uma tag generica. Nota: `.env` nao e versionado (so `.env.example`) — numa maquina nova, copie `.env.example` para `.env` antes de subir a stack.
