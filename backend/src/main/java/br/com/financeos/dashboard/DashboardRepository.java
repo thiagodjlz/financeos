@@ -29,11 +29,11 @@ public class DashboardRepository {
     public DashboardTotals totals(UUID userId, LocalDate startDate, LocalDate endDate) throws Exception {
         String sql = """
                 select
-                    coalesce(sum(case when type = 'INCOME' and status <> 'CANCELED' then amount else 0 end), 0) as total_income,
+                    coalesce(sum(case when type = 'INCOME' and (status is null or status <> 'CANCELED') then amount else 0 end), 0) as total_income,
                     coalesce(sum(case when type = 'EXPENSE' and status <> 'CANCELED' then amount else 0 end), 0) as total_expense,
                     coalesce(sum(case when type = 'EXPENSE' and status = 'PAID' then amount else 0 end), 0) as paid_expense,
                     coalesce(sum(case when type = 'EXPENSE' and status = 'PENDING' then amount else 0 end), 0) as pending_expense,
-                    count(*) filter (where status <> 'CANCELED') as transaction_count
+                    count(*) filter (where status is null or status <> 'CANCELED') as transaction_count
                 from transactions
                 where user_id = ?
                   and transaction_date between ? and ?
@@ -69,7 +69,7 @@ public class DashboardRepository {
                 from transactions t
                 left join categories c on c.id = t.category_id
                 where t.user_id = ?
-                  and t.status <> 'CANCELED'
+                  and (t.status is null or t.status <> 'CANCELED')
                   and t.transaction_date between ? and ?
                 group by t.category_id, c.name, t.type
                 order by total_amount desc, category_name
@@ -102,7 +102,7 @@ public class DashboardRepository {
         String sql = """
                 select
                     extract(month from transaction_date)::int as month,
-                    coalesce(sum(case when type = 'INCOME' and status <> 'CANCELED' then amount else 0 end), 0) as income,
+                    coalesce(sum(case when type = 'INCOME' and (status is null or status <> 'CANCELED') then amount else 0 end), 0) as income,
                     coalesce(sum(case when type = 'EXPENSE' and status <> 'CANCELED' then amount else 0 end), 0) as expense
                 from transactions
                 where user_id = ?
