@@ -105,8 +105,6 @@ public class TransactionResource {
 
     private static void apply(FinancialTransaction transaction, TransactionRequest request) {
         transaction.categoryId = request.categoryId();
-        transaction.accountId = request.accountId();
-        transaction.cardId = request.cardId();
         transaction.transactionDate = request.transactionDate();
         transaction.description = request.description().trim();
         transaction.amount = request.amount();

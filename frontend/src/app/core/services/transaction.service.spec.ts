@@ -27,8 +27,6 @@ describe('TransactionService', () => {
       {
         id: '1',
         categoryId: null,
-        accountId: null,
-        cardId: null,
         transactionDate: '2026-06-01',
         description: 'Mercado',
         amount: 100,
@@ -51,8 +49,6 @@ describe('TransactionService', () => {
     req.flush({
       id: '2',
       categoryId: null,
-      accountId: null,
-      cardId: null,
       transactionDate: '2026-06-02',
       description: 'Novo lancamento',
       amount: 50,

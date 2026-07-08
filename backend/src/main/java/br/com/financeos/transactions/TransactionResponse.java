@@ -8,8 +8,6 @@ import java.util.UUID;
 public record TransactionResponse(
         UUID id,
         UUID categoryId,
-        UUID accountId,
-        UUID cardId,
         LocalDate transactionDate,
         String description,
         BigDecimal amount,
@@ -26,8 +24,6 @@ public record TransactionResponse(
         return new TransactionResponse(
                 transaction.id,
                 transaction.categoryId,
-                transaction.accountId,
-                transaction.cardId,
                 transaction.transactionDate,
                 transaction.description,
                 transaction.amount,

@@ -3,9 +3,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { money } from '../../core/formatters';
 import { Transaction, TransactionStatus, TransactionType } from '../../core/models';
-import { AccountService } from '../../core/services/account.service';
 import { AuthService } from '../../core/services/auth.service';
-import { CardService } from '../../core/services/card.service';
 import { CategoryService } from '../../core/services/category.service';
 import { TransactionService } from '../../core/services/transaction.service';
 
@@ -18,8 +16,6 @@ import { TransactionService } from '../../core/services/transaction.service';
 export class Transactions implements OnInit {
   private readonly transactionService = inject(TransactionService);
   private readonly categoryService = inject(CategoryService);
-  private readonly accountService = inject(AccountService);
-  private readonly cardService = inject(CardService);
   protected readonly authService = inject(AuthService);
 
   protected readonly loading = signal(false);
@@ -28,8 +24,6 @@ export class Transactions implements OnInit {
 
   protected readonly transactions = this.transactionService.transactions;
   protected readonly categories = this.categoryService.categories;
-  protected readonly accounts = this.accountService.accounts;
-  protected readonly cards = this.cardService.cards;
 
   protected transactionForm = {
     transactionDate: new Date().toISOString().slice(0, 10),
@@ -38,8 +32,6 @@ export class Transactions implements OnInit {
     type: 'EXPENSE' as TransactionType,
     status: 'PENDING' as TransactionStatus,
     categoryId: '',
-    accountId: '',
-    cardId: '',
   };
 
   ngOnInit(): void {
@@ -51,12 +43,7 @@ export class Transactions implements OnInit {
     this.error.set('');
 
     try {
-      await Promise.all([
-        this.transactionService.refresh(),
-        this.categoryService.refresh(),
-        this.accountService.refresh(),
-        this.cardService.refresh(),
-      ]);
+      await Promise.all([this.transactionService.refresh(), this.categoryService.refresh()]);
     } catch {
       this.error.set('API indisponivel. Confirme se o backend Quarkus esta rodando em localhost:8080.');
     } finally {
@@ -73,8 +60,6 @@ export class Transactions implements OnInit {
         ...this.transactionForm,
         amount: Number(this.transactionForm.amount),
         categoryId: this.emptyToNull(this.transactionForm.categoryId),
-        accountId: this.emptyToNull(this.transactionForm.accountId),
-        cardId: this.emptyToNull(this.transactionForm.cardId),
       });
       await this.transactionService.refresh();
 
@@ -103,14 +88,6 @@ export class Transactions implements OnInit {
 
   protected categoryName(id: string | null): string {
     return this.categories().find((category) => category.id === id)?.name ?? 'Sem categoria';
-  }
-
-  protected accountName(id: string | null): string {
-    return this.accounts().find((account) => account.id === id)?.name ?? '-';
-  }
-
-  protected cardName(id: string | null): string {
-    return this.cards().find((card) => card.id === id)?.name ?? '-';
   }
 
   protected formatMoney(value: number | null | undefined): string {

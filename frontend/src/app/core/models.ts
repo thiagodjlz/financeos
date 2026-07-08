@@ -109,8 +109,6 @@ export interface AppUserSummary {
 export interface Transaction {
   id: string;
   categoryId: string | null;
-  accountId: string | null;
-  cardId: string | null;
   transactionDate: string;
   description: string;
   amount: number;
