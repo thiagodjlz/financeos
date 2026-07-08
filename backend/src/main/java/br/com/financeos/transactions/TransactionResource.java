@@ -109,7 +109,9 @@ public class TransactionResource {
         transaction.description = request.description().trim();
         transaction.amount = request.amount();
         transaction.type = request.type();
-        transaction.status = request.status() == null ? TransactionStatus.PENDING : request.status();
+        transaction.status = request.type() == TransactionType.INCOME
+                ? null
+                : (request.status() == null ? TransactionStatus.PENDING : request.status());
         transaction.source = request.source() == null ? TransactionSource.MANUAL : request.source();
         transaction.installmentNumber = request.installmentNumber();
         transaction.installmentTotal = request.installmentTotal();

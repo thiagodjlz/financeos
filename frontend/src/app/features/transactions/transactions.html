@@ -20,12 +20,12 @@
     <div class="two-cols">
       <label>
         Tipo
-        <select name="type" [(ngModel)]="transactionForm.type">
+        <select name="type" [(ngModel)]="transactionForm.type" (ngModelChange)="onTypeChange()">
           <option value="EXPENSE">Despesa</option>
           <option value="INCOME">Receita</option>
         </select>
       </label>
-      <label>
+      <label *ngIf="transactionForm.type !== 'INCOME'">
         Status
         <select name="status" [(ngModel)]="transactionForm.status">
           <option value="PENDING">Pendente</option>
@@ -37,7 +37,7 @@
       Categoria
       <select name="categoryId" [(ngModel)]="transactionForm.categoryId">
         <option value="">Sem categoria</option>
-        <option *ngFor="let category of categories()" [value]="category.id">{{ category.name }}</option>
+        <option *ngFor="let category of filteredCategories()" [value]="category.id">{{ category.name }}</option>
       </select>
     </label>
     <button class="primary-button" type="submit" [disabled]="saving()">Salvar</button>

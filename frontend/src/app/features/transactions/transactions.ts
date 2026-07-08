@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { money } from '../../core/formatters';
-import { Transaction, TransactionStatus, TransactionType } from '../../core/models';
+import { Category, Transaction, TransactionStatus, TransactionType } from '../../core/models';
 import { AuthService } from '../../core/services/auth.service';
 import { CategoryService } from '../../core/services/category.service';
 import { TransactionService } from '../../core/services/transaction.service';
@@ -24,13 +24,14 @@ export class Transactions implements OnInit {
 
   protected readonly transactions = this.transactionService.transactions;
   protected readonly categories = this.categoryService.categories;
+  protected readonly filteredCategories = signal<Category[]>([]);
 
   protected transactionForm = {
     transactionDate: new Date().toISOString().slice(0, 10),
     description: '',
     amount: 0,
     type: 'EXPENSE' as TransactionType,
-    status: 'PENDING' as TransactionStatus,
+    status: 'PENDING' as TransactionStatus | null,
     categoryId: '',
   };
 
@@ -43,12 +44,28 @@ export class Transactions implements OnInit {
     this.error.set('');
 
     try {
-      await Promise.all([this.transactionService.refresh(), this.categoryService.refresh()]);
+      await Promise.all([
+        this.transactionService.refresh(),
+        this.categoryService.refresh(),
+        this.loadCategoriesForType(this.transactionForm.type),
+      ]);
     } catch {
       this.error.set('API indisponivel. Confirme se o backend Quarkus esta rodando em localhost:8080.');
     } finally {
       this.loading.set(false);
     }
+  }
+
+  protected async onTypeChange(): Promise<void> {
+    await this.loadCategoriesForType(this.transactionForm.type);
+
+    if (!this.filteredCategories().some((category) => category.id === this.transactionForm.categoryId)) {
+      this.transactionForm.categoryId = '';
+    }
+  }
+
+  private async loadCategoriesForType(type: TransactionType): Promise<void> {
+    this.filteredCategories.set(await this.categoryService.listByType(type));
   }
 
   protected async saveTransaction(): Promise<void> {
@@ -59,6 +76,7 @@ export class Transactions implements OnInit {
       await this.transactionService.create({
         ...this.transactionForm,
         amount: Number(this.transactionForm.amount),
+        status: this.transactionForm.type === 'INCOME' ? null : this.transactionForm.status,
         categoryId: this.emptyToNull(this.transactionForm.categoryId),
       });
       await this.transactionService.refresh();
