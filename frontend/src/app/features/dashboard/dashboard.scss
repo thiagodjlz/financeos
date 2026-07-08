@@ -78,6 +78,20 @@
   grid-column: span 3;
 }
 
+.category-section {
+  & + & {
+    margin-top: 18px;
+  }
+
+  h4 {
+    margin: 0 0 10px;
+    color: #59645f;
+    font-size: 13px;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+}
+
 .month-strip {
   display: grid;
   gap: 10px;

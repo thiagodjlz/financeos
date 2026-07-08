@@ -46,7 +46,7 @@ public class DashboardResource {
                 new PeriodResponse(period.getYear(), period.getMonthValue(), startDate, endDate),
                 totals.totalIncome(),
                 totals.totalExpense(),
-                totals.totalIncome().subtract(totals.totalExpense()),
+                totals.totalIncome().subtract(totals.paidExpense()),
                 totals.paidExpense(),
                 totals.pendingExpense(),
                 totals.transactionCount(),

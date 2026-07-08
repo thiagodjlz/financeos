@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { money, monthName } from '../../core/formatters';
+import { CategoryBreakdown, TransactionType } from '../../core/models';
 import { DashboardService } from '../../core/services/dashboard.service';
 
 @Component({
@@ -45,5 +46,9 @@ export class Dashboard implements OnInit {
 
   protected formatMonthName(month: number): string {
     return monthName(month);
+  }
+
+  protected categoriesByType(type: TransactionType): CategoryBreakdown[] {
+    return this.summary()?.categoryBreakdown.filter((item) => item.type === type) ?? [];
   }
 }
