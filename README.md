@@ -215,10 +215,16 @@ O frontend fala com a API por caminho relativo (`/api`). Em `ng serve`, um proxy
 
 ## Docker (stack completa)
 
-Sobe Postgres + backend + frontend, cada um em sua propria imagem:
+Sobe Postgres + backend + frontend, cada um em sua propria imagem. Use sempre `--build` (ou o script abaixo) — `docker compose up` sozinho **nao reconstroi as imagens**, entao um container pode continuar rodando codigo antigo silenciosamente depois de um merge, e ate falhar ao subir se uma migration nova ja foi aplicada no banco por outra imagem/execucao mais recente:
 
 ```bash
 docker compose up -d --build
+```
+
+Ou, no Windows:
+
+```powershell
+powershell -File scripts/docker-up.ps1
 ```
 
 ```text
@@ -237,6 +243,13 @@ Rebuildar so um servico depois de mudar codigo:
 ```bash
 docker compose up -d --build backend
 docker compose up -d --build frontend
+```
+
+Ou, no Windows:
+
+```powershell
+powershell -File scripts/docker-up.ps1 -Servico backend
+powershell -File scripts/docker-up.ps1 -Servico frontend
 ```
 
 Para desenvolvimento com hot-reload continua valendo o fluxo de sempre — só o Postgres em container, backend via `mvnw quarkus:dev` e frontend via `npm start`:
