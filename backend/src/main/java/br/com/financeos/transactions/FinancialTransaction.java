@@ -46,7 +46,7 @@ public class FinancialTransaction extends PanacheEntityBase {
     public TransactionType type;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @Column(length = 20)
     public TransactionStatus status = TransactionStatus.PENDING;
 
     @Enumerated(EnumType.STRING)

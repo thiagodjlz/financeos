@@ -113,6 +113,6 @@ export interface Transaction {
   description: string;
   amount: number;
   type: TransactionType;
-  status: TransactionStatus;
+  status: TransactionStatus | null;
   source: string;
 }
