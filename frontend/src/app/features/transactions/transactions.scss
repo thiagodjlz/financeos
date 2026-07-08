@@ -23,19 +23,31 @@ td .two-cols {
   min-width: 180px;
 }
 
-.exit-confirm {
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
   display: flex;
   align-items: center;
-  gap: 8px;
-  border-radius: 8px;
-  padding: 6px 10px;
-  background: #fff8e8;
-  color: #7a5117;
-  font-size: 13px;
-  font-weight: 700;
+  justify-content: center;
+  z-index: 100;
+  background: rgb(30 27 20 / 45%);
+}
 
-  .ghost-button {
-    min-height: 26px;
-    padding: 0 8px;
+.modal-card {
+  width: min(340px, calc(100vw - 32px));
+  border-radius: 10px;
+  padding: 20px;
+  background: #fffdf8;
+  box-shadow: 0 20px 48px rgb(43 37 25 / 24%);
+
+  p {
+    margin: 0 0 18px;
+    font-weight: 700;
   }
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
 }

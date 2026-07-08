@@ -53,11 +53,13 @@
 
   <section class="panel">
     <div class="panel-heading">
-      <h3>Categorias</h3>
-      <span>{{ summary()?.categoryBreakdown?.length ?? 0 }}</span>
+      <h3>Detalhamento</h3>
     </div>
     <div class="category-section">
-      <h4>Receitas &gt; Categorias</h4>
+      <div class="category-section-header income">
+        <span>Receitas</span>
+        <strong>{{ formatMoney(summary()?.totalIncome) }}</strong>
+      </div>
       <div class="compact-list">
         <div class="list-row" *ngFor="let item of categoriesByType('INCOME')">
           <strong>{{ item.categoryName }}</strong>
@@ -67,7 +69,10 @@
       </div>
     </div>
     <div class="category-section">
-      <h4>Despesas &gt; Categorias</h4>
+      <div class="category-section-header expense">
+        <span>Despesas</span>
+        <strong>{{ formatMoney(summary()?.totalExpense) }}</strong>
+      </div>
       <div class="compact-list">
         <div class="list-row" *ngFor="let item of categoriesByType('EXPENSE')">
           <strong>{{ item.categoryName }}</strong>
@@ -75,6 +80,10 @@
         </div>
         <p class="empty-state" *ngIf="!categoriesByType('EXPENSE').length">Sem dados no periodo</p>
       </div>
+    </div>
+    <div class="panel-footer">
+      <span>Total</span>
+      <strong>{{ summary()?.categoryBreakdown?.length ?? 0 }}</strong>
     </div>
   </section>
 </section>

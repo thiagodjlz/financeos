@@ -121,11 +121,6 @@
                   Salvar
                 </button>
                 <button type="button" class="ghost-button" (click)="requestExit()">Sair</button>
-                <div class="exit-confirm" *ngIf="confirmingExit()">
-                  <span>Deseja sair sem salvar?</span>
-                  <button type="button" class="ghost-button" (click)="confirmExitYes()">Sim</button>
-                  <button type="button" class="ghost-button" (click)="confirmExitNo()">Nao</button>
-                </div>
               </td>
             </tr>
           </ng-container>
@@ -135,3 +130,13 @@
     </div>
   </section>
 </section>
+
+<div class="modal-backdrop" *ngIf="confirmingExit()" (click)="confirmExitNo()">
+  <div class="modal-card" (click)="$event.stopPropagation()">
+    <p>Deseja sair sem salvar?</p>
+    <div class="modal-actions">
+      <button type="button" class="ghost-button" (click)="confirmExitNo()">Nao</button>
+      <button type="button" class="primary-button" (click)="confirmExitYes()">Sim</button>
+    </div>
+  </div>
+</div>
