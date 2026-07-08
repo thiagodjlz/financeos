@@ -2,3 +2,52 @@
   color: #b84a3f;
   font-weight: 800;
 }
+
+.row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+
+  .ghost-button,
+  .primary-button {
+    min-height: 32px;
+    padding: 0 10px;
+    font-size: 13px;
+  }
+}
+
+td .two-cols {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 6px;
+  min-width: 180px;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  background: rgb(30 27 20 / 45%);
+}
+
+.modal-card {
+  width: min(340px, calc(100vw - 32px));
+  border-radius: 10px;
+  padding: 20px;
+  background: #fffdf8;
+  box-shadow: 0 20px 48px rgb(43 37 25 / 24%);
+
+  p {
+    margin: 0 0 18px;
+    font-weight: 700;
+  }
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}

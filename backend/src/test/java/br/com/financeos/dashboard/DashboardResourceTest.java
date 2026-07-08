@@ -52,17 +52,17 @@ class DashboardResourceTest {
                 .body("period.year", equalTo(2026))
                 .body("period.month", equalTo(6))
                 .body("totalIncome", equalTo(5000.00F))
-                .body("totalExpense", equalTo(1500.00F))
-                .body("balance", equalTo(3500.00F))
+                .body("totalExpense", equalTo(1200.00F))
+                .body("balance", equalTo(3800.00F))
                 .body("paidExpense", equalTo(1200.00F))
                 .body("pendingExpense", equalTo(300.00F))
                 .body("transactionCount", equalTo(3))
                 .body("categoryBreakdown.find { it.categoryName == 'Sem categoria' && it.type == 'INCOME' }.totalAmount",
                         equalTo(5000.00F))
                 .body("categoryBreakdown.find { it.categoryName == 'Sem categoria' && it.type == 'EXPENSE' }.totalAmount",
-                        equalTo(1500.00F))
+                        equalTo(1200.00F))
                 .body("monthlyEvolution[5].income", equalTo(5000.00F))
-                .body("monthlyEvolution[5].expense", equalTo(1500.00F))
+                .body("monthlyEvolution[5].expense", equalTo(1200.00F))
                 .body("monthlyEvolution[6].expense", equalTo(40.00F));
     }
 

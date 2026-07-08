@@ -61,26 +61,82 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let transaction of transactions()">
-            <td>{{ transaction.transactionDate }}</td>
-            <td>{{ transaction.description }}</td>
-            <td>{{ categoryName(transaction.categoryId) }}</td>
-            <td><span class="status-pill">{{ transaction.status }}</span></td>
-            <td [class.negative]="transaction.type === 'EXPENSE'">{{ formatMoney(transaction.amount) }}</td>
-            <td>
-              <button
-                *ngIf="authService.can('TRANSACTIONS', 'DELETE')"
-                type="button"
-                class="ghost-button"
-                (click)="cancelTransaction(transaction)"
-              >
-                Cancelar
-              </button>
-            </td>
-          </tr>
+          <ng-container *ngFor="let transaction of transactions()">
+            <tr *ngIf="editingId() !== transaction.id">
+              <td>{{ transaction.transactionDate }}</td>
+              <td>{{ transaction.description }}</td>
+              <td>{{ categoryName(transaction.categoryId) }}</td>
+              <td><span class="status-pill">{{ statusLabel(transaction.status) }}</span></td>
+              <td [class.negative]="transaction.type === 'EXPENSE'">{{ formatMoney(transaction.amount) }}</td>
+              <td class="row-actions">
+                <button
+                  *ngIf="authService.can('TRANSACTIONS', 'EDIT')"
+                  type="button"
+                  class="ghost-button"
+                  [disabled]="editingId() !== null"
+                  (click)="startEdit(transaction)"
+                >
+                  Editar
+                </button>
+                <button
+                  *ngIf="authService.can('TRANSACTIONS', 'DELETE')"
+                  type="button"
+                  class="ghost-button"
+                  (click)="cancelTransaction(transaction)"
+                >
+                  Cancelar
+                </button>
+              </td>
+            </tr>
+            <tr *ngIf="editingId() === transaction.id">
+              <td>
+                <input type="date" name="editDate" [(ngModel)]="editForm.transactionDate" />
+              </td>
+              <td>
+                <input name="editDescription" [(ngModel)]="editForm.description" maxlength="255" />
+              </td>
+              <td>
+                <select name="editCategoryId" [(ngModel)]="editForm.categoryId">
+                  <option value="">Sem categoria</option>
+                  <option *ngFor="let category of editCategories()" [value]="category.id">{{ category.name }}</option>
+                </select>
+              </td>
+              <td>
+                <div class="two-cols">
+                  <select name="editType" [(ngModel)]="editForm.type" (ngModelChange)="onEditTypeChange()">
+                    <option value="EXPENSE">Despesa</option>
+                    <option value="INCOME">Receita</option>
+                  </select>
+                  <select name="editStatus" *ngIf="editForm.type !== 'INCOME'" [(ngModel)]="editForm.status">
+                    <option value="PENDING">Pendente</option>
+                    <option value="PAID">Pago</option>
+                  </select>
+                </div>
+              </td>
+              <td>
+                <input type="number" name="editAmount" [(ngModel)]="editForm.amount" min="0.01" step="0.01" />
+              </td>
+              <td class="row-actions">
+                <button type="button" class="primary-button" [disabled]="saving()" (click)="saveEdit(transaction)">
+                  Salvar
+                </button>
+                <button type="button" class="ghost-button" (click)="requestExit()">Sair</button>
+              </td>
+            </tr>
+          </ng-container>
         </tbody>
       </table>
       <p class="empty-state" *ngIf="!transactions().length">Sem lancamentos cadastrados</p>
     </div>
   </section>
 </section>
+
+<div class="modal-backdrop" *ngIf="confirmingExit()" (click)="confirmExitNo()">
+  <div class="modal-card" (click)="$event.stopPropagation()">
+    <p>Deseja sair sem salvar?</p>
+    <div class="modal-actions">
+      <button type="button" class="ghost-button" (click)="confirmExitNo()">Nao</button>
+      <button type="button" class="primary-button" (click)="confirmExitYes()">Sim</button>
+    </div>
+  </div>
+</div>

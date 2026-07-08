@@ -5,13 +5,12 @@
   </div>
 
   <div class="period-controls">
-    <input aria-label="Ano" type="number" [(ngModel)]="period.year" min="2023" max="2035" />
-    <select aria-label="Mes" [(ngModel)]="period.month">
+    <input aria-label="Ano" type="number" [(ngModel)]="period.year" min="2023" max="2035" (change)="load()" />
+    <select aria-label="Mes" [(ngModel)]="period.month" (change)="load()">
       <option *ngFor="let month of [1,2,3,4,5,6,7,8,9,10,11,12]" [ngValue]="month">
         {{ formatMonthName(month) | titlecase }}
       </option>
     </select>
-    <button type="button" class="primary-button" (click)="load()" [disabled]="loading()">Atualizar</button>
   </div>
 </header>
 
@@ -26,13 +25,13 @@
     <span>Despesas</span>
     <strong>{{ formatMoney(summary()?.totalExpense) }}</strong>
   </div>
-  <div class="metric-card balance">
-    <span>Saldo</span>
-    <strong>{{ formatMoney(summary()?.balance) }}</strong>
-  </div>
   <div class="metric-card pending">
     <span>Pendentes</span>
     <strong>{{ formatMoney(summary()?.pendingExpense) }}</strong>
+  </div>
+  <div class="metric-card balance">
+    <span>Saldo</span>
+    <strong>{{ formatMoney(summary()?.balance) }}</strong>
   </div>
 
   <section class="panel wide">
@@ -54,18 +53,37 @@
 
   <section class="panel">
     <div class="panel-heading">
-      <h3>Categorias</h3>
-      <span>{{ summary()?.categoryBreakdown?.length ?? 0 }}</span>
+      <h3>Detalhamento</h3>
     </div>
-    <div class="compact-list">
-      <div class="list-row" *ngFor="let item of summary()?.categoryBreakdown">
-        <div>
-          <strong>{{ item.categoryName }}</strong>
-          <span>{{ item.type === 'INCOME' ? 'Receita' : 'Despesa' }}</span>
-        </div>
-        <b>{{ formatMoney(item.totalAmount) }}</b>
+    <div class="category-section">
+      <div class="category-section-header income">
+        <span>Receitas</span>
+        <strong>{{ formatMoney(summary()?.totalIncome) }}</strong>
       </div>
-      <p class="empty-state" *ngIf="!summary()?.categoryBreakdown?.length">Sem dados no periodo</p>
+      <div class="compact-list">
+        <div class="list-row" *ngFor="let item of categoriesByType('INCOME')">
+          <strong>{{ item.categoryName }}</strong>
+          <b>{{ formatMoney(item.totalAmount) }}</b>
+        </div>
+        <p class="empty-state" *ngIf="!categoriesByType('INCOME').length">Sem dados no periodo</p>
+      </div>
+    </div>
+    <div class="category-section">
+      <div class="category-section-header expense">
+        <span>Despesas</span>
+        <strong>{{ formatMoney(summary()?.totalExpense) }}</strong>
+      </div>
+      <div class="compact-list">
+        <div class="list-row" *ngFor="let item of categoriesByType('EXPENSE')">
+          <strong>{{ item.categoryName }}</strong>
+          <b>{{ formatMoney(item.totalAmount) }}</b>
+        </div>
+        <p class="empty-state" *ngIf="!categoriesByType('EXPENSE').length">Sem dados no periodo</p>
+      </div>
+    </div>
+    <div class="panel-footer">
+      <span>Total</span>
+      <strong>{{ summary()?.categoryBreakdown?.length ?? 0 }}</strong>
     </div>
   </section>
 </section>
