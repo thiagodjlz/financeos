@@ -40,22 +40,6 @@
         <option *ngFor="let category of categories()" [value]="category.id">{{ category.name }}</option>
       </select>
     </label>
-    <div class="two-cols">
-      <label>
-        Conta
-        <select name="accountId" [(ngModel)]="transactionForm.accountId">
-          <option value="">-</option>
-          <option *ngFor="let account of accounts()" [value]="account.id">{{ account.name }}</option>
-        </select>
-      </label>
-      <label>
-        Cartao
-        <select name="cardId" [(ngModel)]="transactionForm.cardId">
-          <option value="">-</option>
-          <option *ngFor="let card of cards()" [value]="card.id">{{ card.name }}</option>
-        </select>
-      </label>
-    </div>
     <button class="primary-button" type="submit" [disabled]="saving()">Salvar</button>
   </form>
 
@@ -71,8 +55,6 @@
             <th>Data</th>
             <th>Descricao</th>
             <th>Categoria</th>
-            <th>Conta</th>
-            <th>Cartao</th>
             <th>Status</th>
             <th>Valor</th>
             <th></th>
@@ -83,8 +65,6 @@
             <td>{{ transaction.transactionDate }}</td>
             <td>{{ transaction.description }}</td>
             <td>{{ categoryName(transaction.categoryId) }}</td>
-            <td>{{ accountName(transaction.accountId) }}</td>
-            <td>{{ cardName(transaction.cardId) }}</td>
             <td><span class="status-pill">{{ transaction.status }}</span></td>
             <td [class.negative]="transaction.type === 'EXPENSE'">{{ formatMoney(transaction.amount) }}</td>
             <td>

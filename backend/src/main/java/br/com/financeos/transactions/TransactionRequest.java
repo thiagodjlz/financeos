@@ -12,8 +12,6 @@ import jakarta.validation.constraints.Size;
 
 public record TransactionRequest(
         UUID categoryId,
-        UUID accountId,
-        UUID cardId,
         @NotNull LocalDate transactionDate,
         @NotBlank @Size(max = 255) String description,
         @NotNull @DecimalMin(value = "0.01") BigDecimal amount,

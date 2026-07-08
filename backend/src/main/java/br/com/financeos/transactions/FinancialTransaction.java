@@ -32,12 +32,6 @@ public class FinancialTransaction extends PanacheEntityBase {
     @Column(name = "category_id")
     public UUID categoryId;
 
-    @Column(name = "account_id")
-    public UUID accountId;
-
-    @Column(name = "card_id")
-    public UUID cardId;
-
     @Column(name = "transaction_date", nullable = false)
     public LocalDate transactionDate;
 
