@@ -58,7 +58,7 @@
     <div class="category-section">
       <div class="category-section-header income">
         <span>Receitas</span>
-        <strong>{{ formatMoney(summary()?.totalIncome) }}</strong>
+        <strong>{{ categoriesByType('INCOME').length }}</strong>
       </div>
       <div class="compact-list">
         <div class="list-row" *ngFor="let item of categoriesByType('INCOME')">
@@ -71,7 +71,7 @@
     <div class="category-section">
       <div class="category-section-header expense">
         <span>Despesas</span>
-        <strong>{{ formatMoney(summary()?.totalExpense) }}</strong>
+        <strong>{{ categoriesByType('EXPENSE').length }}</strong>
       </div>
       <div class="compact-list">
         <div class="list-row" *ngFor="let item of categoriesByType('EXPENSE')">
