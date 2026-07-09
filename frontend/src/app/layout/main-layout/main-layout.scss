@@ -4,10 +4,19 @@
   min-height: 100vh;
 }
 
+.app-shell.shell-collapsed {
+  grid-template-columns: 72px minmax(0, 1fr);
+}
+
 .sidebar {
   background: #22302b;
   color: #f8f6ef;
   padding: 28px 20px;
+  transition: padding 0.15s ease;
+}
+
+.sidebar.collapsed {
+  padding: 28px 12px;
 }
 
 .brand-block {
@@ -15,6 +24,7 @@
   gap: 12px;
   align-items: center;
   margin-bottom: 36px;
+  position: relative;
 
   h1 {
     margin: 0;
@@ -37,6 +47,26 @@
   background: #d7b46a;
   color: #17231f;
   font-weight: 800;
+  flex-shrink: 0;
+}
+
+.collapse-toggle {
+  margin-left: auto;
+  border: 1px solid #465a50;
+  border-radius: 6px;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  color: #d9e3dc;
+  cursor: pointer;
+  flex-shrink: 0;
+
+  &:hover {
+    background: #344a41;
+    color: #ffffff;
+  }
 }
 
 .nav-list {
@@ -52,6 +82,35 @@
     color: #d9e3dc;
     text-align: left;
     cursor: pointer;
+  }
+
+  button.active,
+  button:hover {
+    background: #344a41;
+    color: #ffffff;
+  }
+}
+
+.nav-group {
+  display: grid;
+  gap: 4px;
+}
+
+.nav-children {
+  display: grid;
+  gap: 4px;
+  padding-left: 14px;
+
+  button {
+    width: 100%;
+    border: 0;
+    border-radius: 8px;
+    padding: 10px 14px;
+    background: transparent;
+    color: #d9e3dc;
+    text-align: left;
+    cursor: pointer;
+    font-size: 13px;
   }
 
   button.active,

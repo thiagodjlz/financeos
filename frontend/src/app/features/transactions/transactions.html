@@ -96,8 +96,11 @@
                 <input name="editDescription" [(ngModel)]="editForm.description" maxlength="255" />
               </td>
               <td>
-                <select name="editCategoryId" [(ngModel)]="editForm.categoryId">
+                <select name="editCategoryId" [(ngModel)]="editForm.categoryId" (ngModelChange)="onEditCategoryIdChange()">
                   <option value="">Sem categoria</option>
+                  <option *ngIf="editPreselectedInactiveCategory() as inactiveCategory" [value]="inactiveCategory.id">
+                    {{ inactiveCategory.name }} (Inativo)
+                  </option>
                   <option *ngFor="let category of editCategories()" [value]="category.id">{{ category.name }}</option>
                 </select>
               </td>

@@ -9,8 +9,6 @@ const SCREENS: { code: Screen; label: string }[] = [
   { code: 'DASHBOARD', label: 'Resumo' },
   { code: 'TRANSACTIONS', label: 'Lancamentos' },
   { code: 'CATEGORIES', label: 'Categorias' },
-  { code: 'ACCOUNTS', label: 'Contas' },
-  { code: 'CARDS', label: 'Cartoes' },
   { code: 'USERS', label: 'Usuarios' },
   { code: 'PROFILES', label: 'Perfis' },
 ];

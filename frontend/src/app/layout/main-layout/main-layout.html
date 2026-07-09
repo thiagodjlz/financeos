@@ -1,39 +1,47 @@
-<main class="app-shell">
-  <aside class="sidebar">
+<main class="app-shell" [class.shell-collapsed]="collapsed()">
+  <aside class="sidebar" [class.collapsed]="collapsed()">
     <div class="brand-block">
       <div class="mark">F</div>
-      <div>
+      <div *ngIf="!collapsed()">
         <h1>FinanceOS</h1>
         <p>Controle financeiro</p>
       </div>
+      <button type="button" class="collapse-toggle" (click)="toggleCollapsed()" [attr.aria-label]="collapsed() ? 'Expandir menu' : 'Recolher menu'">
+        {{ collapsed() ? '»' : '«' }}
+      </button>
     </div>
 
     <nav class="nav-list" aria-label="Principal">
       <button *ngIf="authService.can('DASHBOARD', 'VIEW')" type="button" routerLink="/dashboard" routerLinkActive="active">
-        <span>Resumo</span>
+        <span *ngIf="!collapsed()">Resumo</span>
       </button>
       <button *ngIf="authService.can('TRANSACTIONS', 'VIEW')" type="button" routerLink="/transactions" routerLinkActive="active">
-        <span>Lancamentos</span>
+        <span *ngIf="!collapsed()">Lancamentos</span>
       </button>
-      <button
-        *ngIf="authService.can('CATEGORIES', 'VIEW') || authService.can('ACCOUNTS', 'VIEW') || authService.can('CARDS', 'VIEW')"
-        type="button"
-        routerLink="/registers"
-        routerLinkActive="active"
-      >
-        <span>Cadastros</span>
-      </button>
+      <div class="nav-group" *ngIf="authService.can('CATEGORIES', 'VIEW')">
+        <button type="button" class="nav-parent" [class.active]="isRegistersActive()" (click)="toggleRegisters()">
+          <span *ngIf="!collapsed()">Cadastros</span>
+        </button>
+        <div class="nav-children" *ngIf="registersExpanded() && !collapsed()">
+          <button type="button" routerLink="/categories" routerLinkActive="active">
+            <span>Categoria</span>
+          </button>
+        </div>
+      </div>
       <button *ngIf="authService.can('USERS', 'VIEW')" type="button" routerLink="/users" routerLinkActive="active">
-        <span>Usuarios</span>
+        <span *ngIf="!collapsed()">Usuarios</span>
       </button>
       <button *ngIf="authService.can('PROFILES', 'VIEW')" type="button" routerLink="/profiles" routerLinkActive="active">
-        <span>Perfis</span>
+        <span *ngIf="!collapsed()">Perfis</span>
       </button>
     </nav>
 
-    <button type="button" class="logout-button" (click)="logout()">Sair</button>
+    <button type="button" class="logout-button" (click)="logout()">
+      <span *ngIf="!collapsed()">Sair</span>
+      <span *ngIf="collapsed()">&#9099;</span>
+    </button>
 
-    <footer class="sidebar-footer">
+    <footer class="sidebar-footer" *ngIf="!collapsed()">
       <p class="current-user" *ngIf="authService.me() as me">{{ me.name }}</p>
       <p class="app-footer">{{ appName }} &middot; v{{ appVersion }}</p>
     </footer>

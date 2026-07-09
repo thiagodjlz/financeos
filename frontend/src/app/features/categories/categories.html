@@ -1,0 +1,75 @@
+<div class="status-bar" *ngIf="error()">{{ error() }}</div>
+
+<section class="content-grid">
+  <form
+    class="panel form-panel"
+    *ngIf="authService.can('CATEGORIES', 'CREATE') || (editingId() && authService.can('CATEGORIES', 'EDIT'))"
+    (ngSubmit)="save()"
+  >
+    <div class="panel-heading">
+      <h3>{{ editingId() ? 'Editar categoria' : 'Nova categoria' }}</h3>
+    </div>
+    <label>
+      Nome
+      <input name="name" [(ngModel)]="form.name" required />
+    </label>
+    <label>
+      Tipo
+      <select name="type" [(ngModel)]="form.type">
+        <option value="EXPENSE">Despesa</option>
+        <option value="INCOME">Receita</option>
+      </select>
+    </label>
+    <label>
+      Cor
+      <input type="color" name="color" [(ngModel)]="form.color" />
+    </label>
+    <label>
+      Icone
+      <input name="icon" [(ngModel)]="form.icon" />
+    </label>
+    <label>
+      Situacao
+      <select name="active" [(ngModel)]="form.active">
+        <option [ngValue]="true">Ativo</option>
+        <option [ngValue]="false">Inativo</option>
+      </select>
+    </label>
+    <div class="two-cols">
+      <button class="primary-button" type="submit" [disabled]="saving()">Salvar</button>
+      <button *ngIf="editingId()" class="ghost-button" type="button" (click)="cancelEdit()">Cancelar</button>
+    </div>
+  </form>
+
+  <section class="panel table-panel">
+    <div class="panel-heading">
+      <h3>Ultimos registros</h3>
+      <span>{{ categories().length }}</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Tipo</th>
+            <th>Situacao</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let category of categories()">
+            <td>{{ category.name }}</td>
+            <td>{{ category.type === 'EXPENSE' ? 'Despesa' : 'Receita' }}</td>
+            <td><span class="status-pill">{{ category.active ? 'Ativo' : 'Inativo' }}</span></td>
+            <td>
+              <button *ngIf="authService.can('CATEGORIES', 'EDIT')" type="button" class="ghost-button" (click)="edit(category)">
+                Editar
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="empty-state" *ngIf="!categories().length">Nenhuma categoria cadastrada</p>
+    </div>
+  </section>
+</section>

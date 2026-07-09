@@ -10,9 +10,9 @@ import jakarta.enterprise.context.ApplicationScoped;
 @ApplicationScoped
 public class CategoryRepository implements PanacheRepositoryBase<Category, UUID> {
 
-    public List<Category> listActive(CategoryType type) {
+    public List<Category> list(CategoryType type) {
         if (type == null) {
-            return list("active = true order by type, name");
+            return list("order by type, name");
         }
 
         return list("active = true and type = ?1 order by name", type);

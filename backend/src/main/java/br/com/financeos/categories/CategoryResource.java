@@ -40,7 +40,7 @@ public class CategoryResource {
     @GET
     public List<CategoryResponse> list(@QueryParam("type") CategoryType type) {
         accessControl.require(Screen.CATEGORIES, Action.VIEW);
-        return repository.listActive(type).stream()
+        return repository.list(type).stream()
                 .map(CategoryResponse::from)
                 .toList();
     }
@@ -72,7 +72,7 @@ public class CategoryResource {
     @Transactional
     public CategoryResponse update(@PathParam("id") UUID id, @Valid CategoryRequest request) {
         accessControl.require(Screen.CATEGORIES, Action.EDIT);
-        Category category = repository.findActiveById(id)
+        Category category = repository.findByIdOptional(id)
                 .orElseThrow(NotFoundException::new);
 
         apply(category, request);
@@ -97,6 +97,7 @@ public class CategoryResource {
         category.parentId = request.parentId();
         category.color = blankToNull(request.color());
         category.icon = blankToNull(request.icon());
+        category.active = request.active() == null ? true : request.active();
     }
 
     private static String blankToNull(String value) {
