@@ -1,0 +1,28 @@
+# Lancamentos / Transacoes
+
+Fonte: `backend/src/main/java/br/com/financeos/transactions/`.
+
+## Campos
+
+`userId, categoryId` (ambos opcionais exceto `userId`), `transactionDate, description, amount, type, status, source, installmentNumber, installmentTotal, notes`.
+
+- `TransactionType`: `INCOME, EXPENSE`.
+- `TransactionStatus`: `PENDING (default), PAID, CANCELED`, **nullable desde a V8** (`make_transactions_status_nullable`) — lancamentos `INCOME` sao sempre gravados com `status = null` (ver "Regras"); `EXPENSE` sempre tem status nao-nulo.
+- `TransactionSource`: `MANUAL (default), EXCEL_IMPORT, RECURRENCE` — as duas ultimas indicam features de import/recorrencia **ainda nao implementadas**: o schema (`import_batches`, `import_rows`, V1) existe mas nao ha pacote/entidade Java correspondente ainda. Se uma issue pedir import de Excel ou recorrencia, isso e feature nova do zero, nao ajuste de algo existente.
+- **`accountId`/`cardId` nao existem mais** (removidos na V7 — colunas dropadas, campos tirados dos DTOs/entidade): lancamentos nao tem mais nenhum vinculo com Conta ou Cartao, nem no banco nem na UI. Nao reintroduzir sem confirmar com o dono do produto; o vinculo historico ja gravado foi perdido de forma intencional.
+
+## Regras
+
+- `amount >= 0.01` (`@DecimalMin` + constraint no banco `amount >= 0`); `installmentNumber`/`installmentTotal` `>= 1` se presentes, mas **nada valida `installmentNumber <= installmentTotal`** nem que os dois venham juntos — ponto de atencao se uma tarefa mexer em parcelamento.
+- **`status = null` para receitas**: `TransactionResource.apply()` (compartilhado por `POST /transactions` e `PUT /transactions/{id}`) forca `status = null` quando `type == INCOME`, independente do que vier no request; para `EXPENSE`, mantem o `status` recebido ou usa `PENDING` como default. `DELETE /transactions/{id}` (cancelamento) continua gravando `status = CANCELED` mesmo para receitas, sem excecao — e o unico caso em que uma receita fica com status nao-nulo.
+- **Sem hard delete**: `DELETE /transactions/{id}` so muda `status` para `CANCELED` (cancelamento, nao remocao); transacoes canceladas continuam consultaveis e ate editaveis (ver "Frontend", reativa ao salvar) e saem dos totais do dashboard.
+- Filtros (`listByFilters`): `type/status/startDate/endDate/categoryId`, sempre escopados por `userId`.
+- **Sem validacao de posse cruzada**: nada verifica que `categoryId` pertence ao usuario atual, nem que a categoria escolhida bate com o `type` do lancamento (esse ultimo filtro so existe no frontend, ver abaixo) — o backend aceita qualquer combinacao.
+- `PUT /transactions/{id}` (`TransactionResource.update`) reaproveita o mesmo `apply()` do `POST`, protegido por `accessControl.require(Screen.TRANSACTIONS, Action.EDIT)`; e o endpoint usado pela edicao inline do frontend (ver "Frontend").
+
+## Frontend (`frontend/src/app/features/transactions/`)
+
+- O formulario de novo lancamento e a linha de edicao inline filtram o dropdown de Categoria pelo `type` escolhido, via `GET /categories?type=INCOME|EXPENSE` (`CategoryService.listByType`) — trocar o tipo com uma categoria incompativel ja selecionada limpa a selecao. Isso e so filtro de exibicao no frontend; o backend nao valida essa combinacao (ver "Sem validacao de posse cruzada" acima).
+- O campo Status some do formulario/linha de edicao quando `type = INCOME` (espelhando a regra de backend acima); para `EXPENSE` oferece so "Pendente"/"Pago" (nunca "Cancelado" como opcao escolhivel).
+- Edicao inline (por linha da tabela "Ultimos lancamentos"): apenas uma linha por vez em modo de edicao (botao "Editar" das demais fica desabilitado); ao entrar em edicao, "Editar"/"Cancelar" viram "Salvar"/"Sair". "Sair" com alguma alteracao pendente pede confirmacao ("Deseja sair sem salvar?") antes de descartar e recarregar da API. Um lancamento `CANCELED` pode ser editado normalmente e reativa (sai do estado `CANCELED`) ao salvar — comportamento intencional, sem tratamento especial.
+- Status e sempre exibido traduzido (`transactionStatusLabel()` em `core/formatters.ts`): `PENDING -> "Pendente"`, `PAID -> "Pago"`, `CANCELED -> "Cancelado"`; nenhum valor cru do enum aparece na UI.
