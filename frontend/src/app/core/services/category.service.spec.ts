@@ -41,4 +41,14 @@ describe('CategoryService', () => {
 
     await expect(createPromise).resolves.toMatchObject({ id: '2' });
   });
+
+  it('updates a category via PUT /categories/{id}', async () => {
+    const updatePromise = service.update('2', { name: 'Salario CLT', type: 'INCOME', active: false });
+
+    const req = httpMock.expectOne(`${API_BASE}/categories/2`);
+    expect(req.request.method).toBe('PUT');
+    req.flush({ id: '2', parentId: null, name: 'Salario CLT', type: 'INCOME', color: null, icon: null, active: false });
+
+    await expect(updatePromise).resolves.toMatchObject({ id: '2', active: false });
+  });
 });

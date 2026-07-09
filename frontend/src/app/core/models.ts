@@ -2,7 +2,6 @@ export const API_BASE = '/api';
 
 export type TransactionType = 'INCOME' | 'EXPENSE';
 export type TransactionStatus = 'PENDING' | 'PAID' | 'CANCELED';
-export type AccountType = 'CHECKING' | 'SAVINGS' | 'WALLET' | 'INVESTMENT' | 'OTHER';
 
 export interface Period {
   year: number;
@@ -49,31 +48,12 @@ export interface Category {
   active: boolean;
 }
 
-export interface Account {
-  id: string;
-  name: string;
-  type: AccountType;
-  initialBalance: number;
-  active: boolean;
-}
-
-export interface Card {
-  id: string;
-  accountId: string | null;
-  name: string;
-  brand: string | null;
-  creditLimit: number | null;
-  closingDay: number | null;
-  dueDay: number | null;
-  active: boolean;
-}
-
 export interface AuthResponse {
   token: string;
   expiresIn: number;
 }
 
-export type Screen = 'DASHBOARD' | 'TRANSACTIONS' | 'CATEGORIES' | 'ACCOUNTS' | 'CARDS' | 'USERS' | 'PROFILES';
+export type Screen = 'DASHBOARD' | 'TRANSACTIONS' | 'CATEGORIES' | 'USERS' | 'PROFILES';
 export type Action = 'VIEW' | 'CREATE' | 'EDIT' | 'DELETE';
 
 export interface PermissionEntry {

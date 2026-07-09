@@ -37,6 +37,7 @@ export class Transactions implements OnInit {
 
   protected readonly editingId = signal<string | null>(null);
   protected readonly editCategories = signal<Category[]>([]);
+  protected readonly editPreselectedInactiveCategory = signal<Category | null>(null);
   protected readonly confirmingExit = signal(false);
 
   protected editForm = {
@@ -147,15 +148,29 @@ export class Transactions implements OnInit {
     this.editSnapshot = { ...this.editForm };
     this.confirmingExit.set(false);
     this.editingId.set(transaction.id);
+    this.updatePreselectedInactiveCategory(transaction.categoryId);
     void this.loadCategoriesForEdit(transaction.type);
+  }
+
+  protected onEditCategoryIdChange(): void {
+    const preselected = this.editPreselectedInactiveCategory();
+    if (preselected && preselected.id !== this.editForm.categoryId) {
+      this.editPreselectedInactiveCategory.set(null);
+    }
   }
 
   protected async onEditTypeChange(): Promise<void> {
     await this.loadCategoriesForEdit(this.editForm.type);
+    this.editPreselectedInactiveCategory.set(null);
 
     if (!this.editCategories().some((category) => category.id === this.editForm.categoryId)) {
       this.editForm.categoryId = '';
     }
+  }
+
+  private updatePreselectedInactiveCategory(categoryId: string | null): void {
+    const category = this.categories().find((item) => item.id === categoryId);
+    this.editPreselectedInactiveCategory.set(category && !category.active ? category : null);
   }
 
   private async loadCategoriesForEdit(type: TransactionType): Promise<void> {

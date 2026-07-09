@@ -97,4 +97,87 @@ class CategoryResourceTest {
                 .then()
                 .statusCode(404);
     }
+
+    @Test
+    void shouldCreateInactiveCategoryWhenActiveIsFalse() {
+        String categoryName = "Teste Lazer " + UUID.randomUUID();
+
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "name": "%s",
+                          "type": "EXPENSE",
+                          "active": false
+                        }
+                        """.formatted(categoryName))
+                .when().post("/categories")
+                .then()
+                .statusCode(201)
+                .body("active", equalTo(false));
+    }
+
+    @Test
+    void shouldReactivateCategoryViaUpdate() {
+        String categoryName = "Teste Lazer " + UUID.randomUUID();
+
+        String id = given()
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "name": "%s",
+                          "type": "EXPENSE",
+                          "active": false
+                        }
+                        """.formatted(categoryName))
+                .when().post("/categories")
+                .then()
+                .statusCode(201)
+                .extract()
+                .path("id");
+
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "name": "%s",
+                          "type": "EXPENSE",
+                          "active": true
+                        }
+                        """.formatted(categoryName))
+                .when().put("/categories/{id}", id)
+                .then()
+                .statusCode(200)
+                .body("active", equalTo(true));
+    }
+
+    @Test
+    void shouldExcludeInactiveCategoryFromTypeFilterButIncludeInFullList() {
+        String categoryName = "Teste Lazer " + UUID.randomUUID();
+
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "name": "%s",
+                          "type": "EXPENSE",
+                          "active": false
+                        }
+                        """.formatted(categoryName))
+                .when().post("/categories")
+                .then()
+                .statusCode(201);
+
+        given()
+                .when().get("/categories?type=EXPENSE")
+                .then()
+                .statusCode(200)
+                .body("name", org.hamcrest.Matchers.not(org.hamcrest.Matchers.hasItem(categoryName)));
+
+        given()
+                .when().get("/categories")
+                .then()
+                .statusCode(200)
+                .body("name", org.hamcrest.Matchers.hasItem(categoryName));
+    }
 }

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { APP_NAME, APP_VERSION } from '../../core/version';
@@ -12,10 +12,25 @@ import { APP_NAME, APP_VERSION } from '../../core/version';
 })
 export class MainLayout {
   protected readonly authService = inject(AuthService);
-  private readonly router = inject(Router);
+  protected readonly router = inject(Router);
 
   protected readonly appName = APP_NAME;
   protected readonly appVersion = APP_VERSION;
+
+  protected readonly collapsed = signal(false);
+  protected readonly registersExpanded = signal(false);
+
+  protected toggleCollapsed(): void {
+    this.collapsed.set(!this.collapsed());
+  }
+
+  protected toggleRegisters(): void {
+    this.registersExpanded.set(!this.registersExpanded());
+  }
+
+  protected isRegistersActive(): boolean {
+    return this.router.url.startsWith('/categories');
+  }
 
   protected logout(): void {
     this.authService.logout();

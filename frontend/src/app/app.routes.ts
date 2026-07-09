@@ -24,8 +24,9 @@ export const routes: Routes = [
         loadComponent: () => import('./features/transactions/transactions').then((m) => m.Transactions),
       },
       {
-        path: 'registers',
-        loadComponent: () => import('./features/registers/registers').then((m) => m.Registers),
+        path: 'categories',
+        canActivate: [permissionGuard('CATEGORIES', 'VIEW')],
+        loadComponent: () => import('./features/categories/categories').then((m) => m.Categories),
       },
       {
         path: 'users',

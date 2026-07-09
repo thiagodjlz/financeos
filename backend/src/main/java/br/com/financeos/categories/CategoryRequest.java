@@ -11,5 +11,6 @@ public record CategoryRequest(
         @NotNull CategoryType type,
         UUID parentId,
         @Size(max = 20) String color,
-        @Size(max = 80) String icon) {
+        @Size(max = 80) String icon,
+        Boolean active) {
 }
