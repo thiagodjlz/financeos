@@ -1,4 +1,7 @@
-<div class="status-bar" *ngIf="error()">{{ error() }}</div>
+<div class="status-bar dismissible" *ngIf="error()">
+  {{ error() }}
+  <button type="button" class="status-close" (click)="dismissError()" aria-label="Fechar">×</button>
+</div>
 
 <section class="content-grid">
   <form class="panel form-panel" *ngIf="authService.can('USERS', 'CREATE') || editingId()" (ngSubmit)="save()">
@@ -15,6 +18,7 @@
         (input)="clearFieldError('name')"
         required
       />
+      <small class="field-error" *ngIf="isFieldInvalid('name')">{{ fieldError('name') }}</small>
     </label>
     <label>
       E-mail
@@ -27,6 +31,7 @@
         (input)="clearFieldError('email')"
         required
       />
+      <small class="field-error" *ngIf="isFieldInvalid('email')">{{ fieldError('email') }}</small>
     </label>
     <label>
       Senha <span *ngIf="editingId()">(deixe em branco para manter)</span>
@@ -39,6 +44,7 @@
         (input)="clearFieldError('password')"
         [required]="!editingId()"
       />
+      <small class="field-error" *ngIf="isFieldInvalid('password')">{{ fieldError('password') }}</small>
     </label>
     <label>
       Perfil
@@ -53,6 +59,7 @@
         <option value="">Selecione</option>
         <option *ngFor="let profile of profiles()" [value]="profile.id">{{ profile.name }}</option>
       </select>
+      <small class="field-error" *ngIf="isFieldInvalid('profileId')">{{ fieldError('profileId') }}</small>
     </label>
     <label *ngIf="editingId()">
       <input type="checkbox" name="active" [(ngModel)]="form.active" /> Ativo

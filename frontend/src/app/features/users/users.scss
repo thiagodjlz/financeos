@@ -9,3 +9,34 @@ select.invalid {
   border-color: #c0392b;
   box-shadow: 0 0 0 1px #c0392b;
 }
+
+input.invalid:focus,
+select.invalid:focus {
+  outline: 2px solid #c0392b;
+  outline-offset: 1px;
+}
+
+.field-error {
+  color: #c0392b;
+  font-size: 12px;
+  font-weight: 400;
+  text-transform: none;
+}
+
+.status-bar.dismissible {
+  position: relative;
+  padding-right: 40px;
+}
+
+.status-close {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  border: none;
+  background: none;
+  color: inherit;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+}
