@@ -8,4 +8,4 @@ O argumento (`$1`/`$ARGUMENTS`) e o numero da issue. Resolva a pasta via glob `s
 
 1. Chame a tool `Agent` com `subagent_type: pipeline-builder`, `run_in_background: false`, passando o caminho da pasta `specs/<numero>-<slug>/`.
 2. Depois do retorno, leia `build-report.md` e mostre ao usuario o resultado (backend/frontend) e os caminhos dos artefatos gerados.
-3. Se tudo passou, termine informando: "Build OK. Rode `/pipeline:open-pr <numero>` para abrir o Pull Request (isso vai empurrar a branch para o GitHub)." Se algo falhou, informe o que falhou e que o proximo passo e `/pipeline:implement <numero>` de novo. Nao rode o proximo comando sozinho.
+3. Se tudo passou, termine informando: "Build OK. Rode `/pipeline:docker-restart <numero>` para reiniciar a stack Docker local com a imagem atualizada." Se algo falhou, informe o que falhou e que o proximo passo e `/pipeline:implement <numero>` de novo. Nao rode o proximo comando sozinho.

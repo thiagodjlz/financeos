@@ -7,7 +7,7 @@ Fontes: `backend/src/main/java/br/com/financeos/{auth,profiles,shared,users}`, m
 - `AppUser` (`users/AppUser.java`): `id, name, email(unico), passwordHash, active, profileId, superAdmin, createdAt, updatedAt`.
 - `Profile` (`profiles/Profile.java`): `id, name, active` — representa um perfil/papel.
 - `ProfilePermission`: linha por `(profileId, screen)` com flags `canView/canCreate/canEdit/canDelete`. Unique `(profile_id, screen)` (V5).
-- `Screen` enum: `DASHBOARD, TRANSACTIONS, CATEGORIES, ACCOUNTS, CARDS, USERS, PROFILES`.
+- `Screen` enum: `DASHBOARD, TRANSACTIONS, CATEGORIES, USERS, PROFILES` (`ACCOUNTS`/`CARDS` removidos na issue #20, junto com a remocao completa de Contas/Cartoes do sistema — ver `knowledge/accounts.md`/`knowledge/cards.md`).
 - `Action` enum (`shared/Action.java`): `VIEW, CREATE, EDIT, DELETE`.
 
 ## Login e JWT (`auth/AuthResource.java`)
@@ -22,7 +22,7 @@ Chamado como `accessControl.require(Screen.X, Action.Y)` na primeira linha de pr
 - `user.superAdmin == true` -> libera tudo, ignora `ProfilePermission` completamente.
 - Caso contrario, busca a `ProfilePermission` do `profileId` do usuario para a `Screen` pedida e checa o flag da `Action`. **Sem linha de permissao para aquela tela = nega** (default e deny, nao allow).
 - 403 (`ForbiddenException`) se negado; 401 (`NotAuthorizedException`) se o subject do JWT nao bate com nenhum usuario.
-- `effectivePermissions()` (usado por `/auth/me`) sempre retorna as 7 `Screen` (preenche faltantes com deny-all).
+- `effectivePermissions()` (usado por `/auth/me`) sempre retorna as 5 `Screen` (preenche faltantes com deny-all).
 
 **Regra cruzada**: qualquer endpoint novo (backend) precisa comecar chamando `accessControl.require(...)`. Se a mudanca adicionar uma tela nova, precisa adicionar o valor ao enum `Screen` e considerar seed de permissoes numa migration.
 
@@ -36,7 +36,7 @@ Chamado como `accessControl.require(Screen.X, Action.Y)` na primeira linha de pr
 
 - Update de permissoes e sempre **substituicao total**: deleta todas as `ProfilePermission` do perfil e reinsere as enviadas (sem patch parcial).
 - **Nao pode excluir perfil em uso**: `DELETE /profiles/{id}` retorna 409 se existir algum `AppUser` com esse `profileId`.
-- `resolvePermissions()` sempre devolve as 7 telas (completa gaps com deny-all) — qualquer consumidor da API pode assumir uma matriz completa.
+- `resolvePermissions()` sempre devolve as 5 telas (completa gaps com deny-all) — qualquer consumidor da API pode assumir uma matriz completa.
 
 ## Frontend (`frontend/src/app/core`)
 

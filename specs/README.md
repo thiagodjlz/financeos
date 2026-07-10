@@ -1,4 +1,4 @@
-# Esteira de implementacao (issue -> spec -> plano -> estimativa -> implementacao -> qualidade -> build -> PR)
+# Esteira de implementacao (issue -> spec -> plano -> estimativa -> implementacao -> qualidade -> build -> docker -> PR)
 
 Cada issue do GitHub processada pela esteira automatizada vira uma pasta aqui:
 
@@ -10,7 +10,8 @@ specs/<numero-da-issue>-<slug>/
   implementation-notes.md    # etapa 4 - /pipeline:implement
   quality-report.md          # etapa 5 - /pipeline:quality-check
   build-report.md            # etapa 6 - /pipeline:build
-  pr.md                       # etapa 7 - /pipeline:open-pr
+  docker-report.md           # etapa 7 - /pipeline:docker-restart
+  pr.md                       # etapa 8 - /pipeline:open-pr
 ```
 
 `<slug>` e um resumo curto em kebab-case do titulo da issue (ex.: `42-exportar-lancamentos-csv`). Todos os comandos da esteira recebem o **numero da issue** como argumento e resolvem a pasta via glob `specs/<numero>-*`.
@@ -26,6 +27,7 @@ Rode os comandos na ordem, um de cada vez. Cada um termina te dizendo qual e o p
 /pipeline:implement <numero>
 /pipeline:quality-check <numero>
 /pipeline:build <numero>
+/pipeline:docker-restart <numero>
 /pipeline:open-pr <numero>
 ```
 
@@ -41,7 +43,7 @@ issue: 42
 url: https://github.com/thiagodjlz/financeos/issues/42
 title: "Titulo original da issue"
 domains: [transactions, dashboard]   # ver knowledge/README.md - so os dominios afetados
-stage: spec                          # spec | planned | estimated | implemented | quality-checked | built | pr-open
+stage: spec                          # spec | planned | estimated | implemented | quality-checked | built | docker-restarted | pr-open
 branch: feature/issue-42-exportar-lancamentos-csv   # preenchido a partir da etapa "implement"
 created: 2026-07-07
 ---
@@ -62,6 +64,7 @@ Isso mantem cada etapa com contexto pequeno e previsivel — e o mecanismo princ
 - **implementation-notes.md**: branch usada, arquivos efetivamente alterados, decisoes tomadas, desvios em relacao ao `plan.md` e por que.
 - **quality-report.md**: resultado de `./mvnw test` e `npm test`/`ng build`, resumo pass/fail, detalhe de falhas.
 - **build-report.md**: resultado de `./mvnw package` e `npm run build`, artefatos gerados, sucesso/falha.
+- **docker-report.md**: resultado do reinicio da stack Docker local (`docker compose up -d --build`) com a imagem atualizada, ou registro de que a stack estava parada e nada foi feito.
 - **pr.md**: URL do Pull Request aberto, resumo do que foi incluido.
 
 ## Etapa opcional apos o PR: sincronizar conhecimento

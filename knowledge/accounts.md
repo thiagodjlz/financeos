@@ -1,15 +1,7 @@
 # Contas
 
-Fonte: `backend/src/main/java/br/com/financeos/accounts/`.
+**Removido por completo na issue #20** (2026-07-08): a funcionalidade de Contas deixou de existir no sistema. Foram removidos o pacote de backend `accounts/` (entidade, resource, repository, DTOs), o endpoint `/accounts`, a tabela `accounts` (dropada via migration `V9__remove_accounts_and_cards.sql`, dados perdidos definitivamente), o valor `ACCOUNTS` do enum `Screen` (backend e tipo espelho no frontend) e toda a UI relacionada (`AccountService`, formulario/lista de Conta na antiga tela de Cadastros).
 
-## Campos
+`Transacoes` ja nao referenciava `accounts` desde a issue relativa a V7 (`accountId` removido de Lancamentos antes desta remocao), entao a remocao nao teve impacto de integridade referencial.
 
-`userId, name, type(AccountType), initialBalance(BigDecimal, default 0), active`.
-`AccountType`: `CHECKING, SAVINGS, WALLET, INVESTMENT, OTHER`.
-
-## Regras
-
-- Unique `(user_id, name)` (V1).
-- **Escopo estrito por usuario**: toda leitura/escrita filtra por `userId = currentUser.id()`.
-- **Soft delete**: `DELETE` so seta `active=false`, nunca remove a linha (cartoes/transacoes referenciam com `ON DELETE SET NULL`).
-- `initialBalance` e apenas o valor inicial armazenado — **nao ha calculo de saldo corrente** no `AccountResource`/`AccountRepository`; os totais do dashboard sao baseados em transacoes, nao em contas (ver [dashboard.md](dashboard.md)).
+Nao reintroduzir Contas (endpoint, tela ou vinculo com Lancamentos/Cartoes) sem confirmar explicitamente com o dono do produto — este arquivo fica apenas como registro do que existiu, nao descreve mais um dominio ativo do sistema.

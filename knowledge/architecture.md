@@ -2,8 +2,8 @@
 
 ## Stack
 
-- **Backend**: Java + Quarkus, Panache (JPA simplificado), JAX-RS. Sem camada de "service" separada — as classes `*Resource` (JAX-RS) contem a regra de negocio diretamente e chamam `*Repository` (Panache) para persistencia. Pacote por feature em `backend/src/main/java/br/com/financeos/{accounts,auth,cards,categories,dashboard,profiles,shared,transactions,users}`.
-- **Migrations**: Flyway, `backend/src/main/resources/db/migration/V<n>__descricao.sql`. Nunca editar uma migration ja commitada — sempre criar uma nova `V<n+1>`.
+- **Backend**: Java + Quarkus, Panache (JPA simplificado), JAX-RS. Sem camada de "service" separada — as classes `*Resource` (JAX-RS) contem a regra de negocio diretamente e chamam `*Repository` (Panache) para persistencia. Pacote por feature em `backend/src/main/java/br/com/financeos/{auth,categories,dashboard,profiles,shared,transactions,users}` (`accounts`/`cards` existiram ate a issue #20, quando Contas e Cartoes foram removidos por completo do sistema — ver `knowledge/accounts.md`/`knowledge/cards.md`).
+- **Migrations**: Flyway, `backend/src/main/resources/db/migration/V<n>__descricao.sql`. Nunca editar uma migration ja commitada — sempre criar uma nova `V<n+1>`. `check` constraints criados inline sem nome explicito (ex.: o de `profile_permissions.screen` na V5) recebem nome autogerado pelo Postgres por convencao (`<tabela>_<coluna>_check`), mas isso deve ser **confirmado no banco** (`select conname from pg_constraint where conrelid = '<tabela>'::regclass and contype = 'c';`) antes de escrever `DROP CONSTRAINT <nome>` numa migration nova — um nome errado quebra a migration e a aplicacao inteira nao sobe (ver issue #20, `V9__remove_accounts_and_cards.sql`).
 - **Frontend**: Angular standalone (sem NgModules), em `frontend/src/app`. `core/` = services/guards/interceptors/models compartilhados; `features/<nome>/` = tela (componente + `.html` + `.scss`); `layout/` = shell da aplicacao.
 - **Banco**: PostgreSQL via `docker compose up -d postgres`.
 - **Auth**: JWT (SmallRye JWT), chaves RSA em `backend/src/main/resources/{privateKey,publicKey}.pem` (gitignored).

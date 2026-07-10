@@ -8,6 +8,7 @@ Regras de negocio e modelo de dados nao ficam aqui — ficam em [knowledge/](kno
 
 ## Convencoes
 
+- Converse sempre em portugues com o usuario.
 - Commits e Pull Requests em portugues.
 - Sem comentarios no codigo a menos que expliquem um "porque" nao-obvio.
 - Todo endpoint novo do backend comeca chamando `accessControl.require(Screen.X, Action.Y)` — ver [knowledge/auth-and-permissions.md](knowledge/auth-and-permissions.md).
@@ -24,6 +25,7 @@ Para transformar uma issue do GitHub em Pull Request com confirmacao a cada etap
 /pipeline:implement <numero>
 /pipeline:quality-check <numero>
 /pipeline:build <numero>
+/pipeline:docker-restart <numero>
 /pipeline:open-pr <numero>
 ```
 

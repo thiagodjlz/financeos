@@ -1,6 +1,6 @@
 ---
 name: open-pr
-description: Etapa 7 (final) da esteira de implementacao - empurra a branch para o GitHub e abre o Pull Request. Acao visivel externamente.
+description: Etapa 8 (final) da esteira de implementacao - empurra a branch para o GitHub e abre o Pull Request. Acao visivel externamente.
 argument-hint: <numero-da-issue>
 ---
 
