@@ -7,19 +7,49 @@
     </div>
     <label>
       Nome
-      <input name="name" [(ngModel)]="form.name" required />
+      <input
+        name="name"
+        #nameInput
+        [(ngModel)]="form.name"
+        [class.invalid]="isFieldInvalid('name')"
+        (input)="clearFieldError('name')"
+        required
+      />
     </label>
     <label>
       E-mail
-      <input type="email" name="email" [(ngModel)]="form.email" required />
+      <input
+        type="email"
+        name="email"
+        #emailInput
+        [(ngModel)]="form.email"
+        [class.invalid]="isFieldInvalid('email')"
+        (input)="clearFieldError('email')"
+        required
+      />
     </label>
     <label>
       Senha <span *ngIf="editingId()">(deixe em branco para manter)</span>
-      <input type="password" name="password" [(ngModel)]="form.password" [required]="!editingId()" />
+      <input
+        type="password"
+        name="password"
+        #passwordInput
+        [(ngModel)]="form.password"
+        [class.invalid]="isFieldInvalid('password')"
+        (input)="clearFieldError('password')"
+        [required]="!editingId()"
+      />
     </label>
     <label>
       Perfil
-      <select name="profileId" [(ngModel)]="form.profileId" required>
+      <select
+        name="profileId"
+        #profileSelect
+        [(ngModel)]="form.profileId"
+        [class.invalid]="isFieldInvalid('profileId')"
+        (change)="clearFieldError('profileId')"
+        required
+      >
         <option value="">Selecione</option>
         <option *ngFor="let profile of profiles()" [value]="profile.id">{{ profile.name }}</option>
       </select>
