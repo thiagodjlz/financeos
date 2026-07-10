@@ -3,7 +3,7 @@ issue: 26
 url: https://github.com/thiagodjlz/financeos/issues/26
 title: "Traduzir legenda dos campos"
 domains: [users]
-stage: implemented
+stage: quality-checked
 branch: feature/issue-26-traduzir-legendas-campos
 created: 2026-07-10
 ---
