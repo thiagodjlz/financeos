@@ -3,3 +3,9 @@ label span {
   font-weight: 400;
   text-transform: none;
 }
+
+input.invalid,
+select.invalid {
+  border-color: #c0392b;
+  box-shadow: 0 0 0 1px #c0392b;
+}
