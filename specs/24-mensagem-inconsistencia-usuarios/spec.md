@@ -3,7 +3,7 @@ issue: 24
 url: https://github.com/thiagodjlz/financeos/issues/24
 title: "Usuários - Alterar formato da mensagem de inconsistência"
 domains: [users]
-stage: docker-restarted
+stage: pr-open
 branch: feature/issue-24-mensagem-inconsistencia-usuarios
 created: 2026-07-09
 ---
