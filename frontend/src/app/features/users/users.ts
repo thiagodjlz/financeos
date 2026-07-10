@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
-import { Component, ElementRef, OnInit, ViewChild, inject, signal } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AppUserSummary } from '../../core/models';
 import { AuthService } from '../../core/services/auth.service';
@@ -16,13 +16,15 @@ const FIELD_LABELS: Record<string, string> = {
 
 const FIELD_ORDER = ['name', 'email', 'password', 'profileId'] as const;
 
+const ERROR_DISMISS_MS = 5000;
+
 @Component({
   selector: 'app-users',
   imports: [CommonModule, FormsModule],
   templateUrl: './users.html',
   styleUrl: './users.scss',
 })
-export class Users implements OnInit {
+export class Users implements OnInit, OnDestroy {
   private readonly userService = inject(UserService);
   private readonly profileService = inject(ProfileService);
   protected readonly authService = inject(AuthService);
@@ -36,7 +38,9 @@ export class Users implements OnInit {
   protected readonly saving = signal(false);
   protected readonly error = signal('');
   protected readonly editingId = signal<string | null>(null);
-  protected readonly invalidFields = signal<Set<string>>(new Set());
+  protected readonly fieldErrors = signal<Map<string, string>>(new Map());
+
+  private errorTimeout?: ReturnType<typeof setTimeout>;
 
   protected readonly users = this.userService.users;
   protected readonly profiles = this.profileService.profiles;
@@ -53,14 +57,20 @@ export class Users implements OnInit {
     void this.loadData();
   }
 
+  ngOnDestroy(): void {
+    if (this.errorTimeout) {
+      clearTimeout(this.errorTimeout);
+    }
+  }
+
   protected async loadData(): Promise<void> {
     this.loading.set(true);
-    this.error.set('');
+    this.dismissError();
 
     try {
       await Promise.all([this.userService.refresh(), this.profileService.refresh()]);
     } catch {
-      this.error.set('Nao foi possivel carregar os usuarios.');
+      this.showError('Nao foi possivel carregar os usuarios.');
     } finally {
       this.loading.set(false);
     }
@@ -68,7 +78,7 @@ export class Users implements OnInit {
 
   protected edit(user: AppUserSummary): void {
     this.editingId.set(user.id);
-    this.invalidFields.set(new Set());
+    this.fieldErrors.set(new Map());
     this.form = {
       name: user.name,
       email: user.email,
@@ -85,8 +95,8 @@ export class Users implements OnInit {
 
   protected async save(): Promise<void> {
     this.saving.set(true);
-    this.error.set('');
-    this.invalidFields.set(new Set());
+    this.dismissError();
+    this.fieldErrors.set(new Map());
 
     try {
       const id = this.editingId();
@@ -120,13 +130,13 @@ export class Users implements OnInit {
 
   protected async deactivate(user: AppUserSummary): Promise<void> {
     this.saving.set(true);
-    this.error.set('');
+    this.dismissError();
 
     try {
       await this.userService.deactivate(user.id);
       await this.userService.refresh();
     } catch {
-      this.error.set('Nao foi possivel desativar o usuario.');
+      this.showError('Nao foi possivel desativar o usuario.');
     } finally {
       this.saving.set(false);
     }
@@ -137,39 +147,66 @@ export class Users implements OnInit {
   }
 
   protected isFieldInvalid(field: string): boolean {
-    return this.invalidFields().has(field);
+    return this.fieldErrors().has(field);
+  }
+
+  protected fieldError(field: string): string {
+    return this.fieldErrors().get(field) ?? '';
   }
 
   protected clearFieldError(field: string): void {
-    if (!this.invalidFields().has(field)) {
+    if (!this.fieldErrors().has(field)) {
       return;
     }
 
-    const remaining = new Set(this.invalidFields());
+    const remaining = new Map(this.fieldErrors());
     remaining.delete(field);
-    this.invalidFields.set(remaining);
+    this.fieldErrors.set(remaining);
 
     if (remaining.size === 0) {
-      this.error.set('');
+      this.dismissError();
     }
+  }
+
+  protected dismissError(): void {
+    if (this.errorTimeout) {
+      clearTimeout(this.errorTimeout);
+      this.errorTimeout = undefined;
+    }
+
+    this.error.set('');
+  }
+
+  private showError(message: string): void {
+    if (this.errorTimeout) {
+      clearTimeout(this.errorTimeout);
+    }
+
+    this.error.set(message);
+    this.errorTimeout = setTimeout(() => this.dismissError(), ERROR_DISMISS_MS);
   }
 
   private applySaveError(err: unknown): void {
     const violations = this.extractViolations(err);
-    const fields = new Set(
-      violations.map((violation) => violation.field.split('.').pop() ?? '').filter((field) => field in FIELD_LABELS),
-    );
+    const errors = new Map<string, string>();
 
-    if (fields.size === 0) {
-      this.error.set('Nao foi possivel salvar o usuario. Revise os campos e tente novamente.');
+    for (const violation of violations) {
+      const field = violation.field.split('.').pop() ?? '';
+      if (field in FIELD_LABELS && !errors.has(field)) {
+        errors.set(field, violation.message);
+      }
+    }
+
+    if (errors.size === 0) {
+      this.showError('Nao foi possivel salvar o usuario. Revise os campos e tente novamente.');
       return;
     }
 
-    this.invalidFields.set(fields);
+    this.fieldErrors.set(errors);
 
-    const labels = FIELD_ORDER.filter((field) => fields.has(field)).map((field) => FIELD_LABELS[field]);
-    this.error.set(`Revise o(s) campo(s) invalido(s): ${labels.join(', ')}.`);
-    this.focusFirstInvalidField(fields);
+    const labels = FIELD_ORDER.filter((field) => errors.has(field)).map((field) => FIELD_LABELS[field]);
+    this.showError(`Revise o(s) campo(s) invalido(s): ${labels.join(', ')}.`);
+    this.focusFirstInvalidField(errors);
   }
 
   private extractViolations(err: unknown): { field: string; message: string }[] {
@@ -185,8 +222,8 @@ export class Users implements OnInit {
     return body.violations;
   }
 
-  private focusFirstInvalidField(fields: Set<string>): void {
-    const firstField = FIELD_ORDER.find((field) => fields.has(field));
+  private focusFirstInvalidField(errors: Map<string, string>): void {
+    const firstField = FIELD_ORDER.find((field) => errors.has(field));
 
     switch (firstField) {
       case 'name':
@@ -206,6 +243,6 @@ export class Users implements OnInit {
 
   private resetForm(): void {
     this.form = { name: '', email: '', password: '', profileId: '', active: true };
-    this.invalidFields.set(new Set());
+    this.fieldErrors.set(new Map());
   }
 }
