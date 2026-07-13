@@ -1,7 +1,9 @@
 package br.com.financeos.profiles;
 
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import br.com.financeos.shared.AccessControl;
@@ -54,6 +56,7 @@ public class ProfileResource {
     @Transactional
     public Response create(@Valid ProfileRequest request) {
         accessControl.require(Screen.PROFILES, Action.CREATE);
+        validatePermissions(request.permissions());
 
         Profile profile = new Profile();
         profile.name = request.name().trim();
@@ -71,6 +74,7 @@ public class ProfileResource {
     @Transactional
     public ProfileResponse update(@PathParam("id") UUID id, @Valid ProfileRequest request) {
         accessControl.require(Screen.PROFILES, Action.EDIT);
+        validatePermissions(request.permissions());
         Profile profile = repository.findByIdOptional(id).orElseThrow(NotFoundException::new);
 
         profile.name = request.name().trim();
@@ -95,6 +99,17 @@ public class ProfileResource {
         repository.deleteById(id);
 
         return Response.noContent().build();
+    }
+
+    private static void validatePermissions(List<PermissionEntry> entries) {
+        Set<Screen> seen = EnumSet.noneOf(Screen.class);
+
+        for (PermissionEntry entry : entries) {
+            if (!seen.add(entry.screen())) {
+                throw new WebApplicationException(
+                        "Tela duplicada nas permissoes do perfil.", Response.Status.BAD_REQUEST);
+            }
+        }
     }
 
     private void savePermissions(UUID profileId, List<PermissionEntry> entries) {

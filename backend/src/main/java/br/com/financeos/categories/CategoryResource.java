@@ -20,6 +20,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
@@ -58,6 +59,9 @@ public class CategoryResource {
     @Transactional
     public Response create(@Valid CategoryRequest request) {
         accessControl.require(Screen.CATEGORIES, Action.CREATE);
+        validateParent(request, null);
+        validateDuplicate(request, null);
+
         Category category = new Category();
         apply(category, request);
         repository.persistAndFlush(category);
@@ -75,6 +79,8 @@ public class CategoryResource {
         Category category = repository.findByIdOptional(id)
                 .orElseThrow(NotFoundException::new);
 
+        validateParent(request, id);
+        validateDuplicate(request, id);
         apply(category, request);
         return CategoryResponse.from(category);
     }
@@ -89,6 +95,33 @@ public class CategoryResource {
 
         category.active = false;
         return Response.noContent().build();
+    }
+
+    private void validateParent(CategoryRequest request, UUID id) {
+        if (request.parentId() == null) {
+            return;
+        }
+
+        if (request.parentId().equals(id)) {
+            throw new WebApplicationException(
+                    "Uma categoria nao pode ser pai dela mesma.", Response.Status.BAD_REQUEST);
+        }
+
+        if (repository.findByIdOptional(request.parentId()).isEmpty()) {
+            throw new WebApplicationException(
+                    "Categoria pai informada nao existe.", Response.Status.BAD_REQUEST);
+        }
+    }
+
+    private void validateDuplicate(CategoryRequest request, UUID id) {
+        boolean duplicated = repository.findDuplicate(request.name().trim(), request.type(), request.parentId())
+                .filter(existing -> !existing.id.equals(id))
+                .isPresent();
+
+        if (duplicated) {
+            throw new WebApplicationException(
+                    "Ja existe uma categoria com esse nome e tipo.", Response.Status.CONFLICT);
+        }
     }
 
     private static void apply(Category category, CategoryRequest request) {

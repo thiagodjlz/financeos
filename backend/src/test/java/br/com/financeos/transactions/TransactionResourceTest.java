@@ -10,6 +10,10 @@ import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
+import br.com.financeos.categories.Category;
+import br.com.financeos.categories.CategoryRepository;
+import br.com.financeos.categories.CategoryType;
+import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.quarkus.test.security.jwt.Claim;
@@ -30,10 +34,30 @@ class TransactionResourceTest {
     @Inject
     TransactionRepository repository;
 
+    @Inject
+    CategoryRepository categoryRepository;
+
     @AfterEach
     @Transactional
     void cleanup() {
         repository.delete("userId = ?1 and description like ?2", TEST_USER_ID, "Teste mercado%");
+        categoryRepository.delete("name like ?1", "Teste TX Categoria%");
+    }
+
+    Category createCategory(CategoryType type, boolean active) {
+        return QuarkusTransaction.requiringNew().call(() -> {
+            Category category = new Category();
+            category.name = "Teste TX Categoria " + UUID.randomUUID();
+            category.type = type;
+            category.active = active;
+            categoryRepository.persist(category);
+            return category;
+        });
+    }
+
+    void deactivateCategory(UUID id) {
+        QuarkusTransaction.requiringNew().run(
+                () -> categoryRepository.findByIdOptional(id).ifPresent(category -> category.active = false));
     }
 
     @Test
@@ -102,6 +126,123 @@ class TransactionResourceTest {
                 .then()
                 .statusCode(200)
                 .body("status", equalTo("CANCELED"));
+    }
+
+    @Test
+    void shouldRejectNonexistentCategory() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "transactionDate": "2026-06-30",
+                          "description": "Teste mercado categoria inexistente",
+                          "amount": 10.00,
+                          "type": "EXPENSE",
+                          "categoryId": "%s"
+                        }
+                        """.formatted(UUID.randomUUID()))
+                .when().post("/transactions")
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
+    void shouldRejectCategoryOfDifferentType() {
+        Category incomeCategory = createCategory(CategoryType.INCOME, true);
+
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "transactionDate": "2026-06-30",
+                          "description": "Teste mercado tipo incompativel",
+                          "amount": 10.00,
+                          "type": "EXPENSE",
+                          "categoryId": "%s"
+                        }
+                        """.formatted(incomeCategory.id))
+                .when().post("/transactions")
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
+    void shouldRejectInactiveCategoryOnCreate() {
+        Category inactiveCategory = createCategory(CategoryType.EXPENSE, false);
+
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "transactionDate": "2026-06-30",
+                          "description": "Teste mercado categoria inativa",
+                          "amount": 10.00,
+                          "type": "EXPENSE",
+                          "categoryId": "%s"
+                        }
+                        """.formatted(inactiveCategory.id))
+                .when().post("/transactions")
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
+    void shouldKeepInactiveCategoryAlreadyLinkedOnUpdate() {
+        Category category = createCategory(CategoryType.EXPENSE, true);
+
+        String id = given()
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "transactionDate": "2026-06-30",
+                          "description": "Teste mercado categoria mantida",
+                          "amount": 10.00,
+                          "type": "EXPENSE",
+                          "categoryId": "%s"
+                        }
+                        """.formatted(category.id))
+                .when().post("/transactions")
+                .then()
+                .statusCode(201)
+                .extract()
+                .path("id");
+
+        deactivateCategory(category.id);
+
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "transactionDate": "2026-06-30",
+                          "description": "Teste mercado categoria mantida editada",
+                          "amount": 20.00,
+                          "type": "EXPENSE",
+                          "status": "PAID",
+                          "categoryId": "%s"
+                        }
+                        """.formatted(category.id))
+                .when().put("/transactions/{id}", id)
+                .then()
+                .statusCode(200)
+                .body("categoryId", equalTo(category.id.toString()));
+    }
+
+    @Test
+    void shouldRejectCanceledStatusOnCreate() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "transactionDate": "2026-06-30",
+                          "description": "Teste mercado cancelado direto",
+                          "amount": 10.00,
+                          "type": "EXPENSE",
+                          "status": "CANCELED"
+                        }
+                        """)
+                .when().post("/transactions")
+                .then()
+                .statusCode(400);
     }
 
     @Test

@@ -5,6 +5,8 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
+import br.com.financeos.categories.Category;
+import br.com.financeos.categories.CategoryRepository;
 import br.com.financeos.profiles.Screen;
 import br.com.financeos.shared.AccessControl;
 import br.com.financeos.shared.Action;
@@ -22,6 +24,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
@@ -32,11 +35,14 @@ import jakarta.ws.rs.core.Response;
 public class TransactionResource {
 
     private final TransactionRepository repository;
+    private final CategoryRepository categoryRepository;
     private final CurrentUser currentUser;
     private final AccessControl accessControl;
 
-    public TransactionResource(TransactionRepository repository, CurrentUser currentUser, AccessControl accessControl) {
+    public TransactionResource(TransactionRepository repository, CategoryRepository categoryRepository,
+            CurrentUser currentUser, AccessControl accessControl) {
         this.repository = repository;
+        this.categoryRepository = categoryRepository;
         this.currentUser = currentUser;
         this.accessControl = accessControl;
     }
@@ -69,6 +75,9 @@ public class TransactionResource {
     @Transactional
     public Response create(@Valid TransactionRequest request) {
         accessControl.require(Screen.TRANSACTIONS, Action.CREATE);
+        validateStatus(request, null);
+        validateCategory(request, null);
+
         FinancialTransaction transaction = new FinancialTransaction();
         transaction.userId = currentUser.id();
         apply(transaction, request);
@@ -87,6 +96,8 @@ public class TransactionResource {
         FinancialTransaction transaction = repository.findByUserAndId(currentUser.id(), id)
                 .orElseThrow(NotFoundException::new);
 
+        validateStatus(request, transaction);
+        validateCategory(request, transaction);
         apply(transaction, request);
         return TransactionResponse.from(transaction);
     }
@@ -101,6 +112,42 @@ public class TransactionResource {
 
         transaction.status = TransactionStatus.CANCELED;
         return Response.noContent().build();
+    }
+
+    private void validateCategory(TransactionRequest request, FinancialTransaction existing) {
+        if (request.categoryId() == null) {
+            return;
+        }
+
+        Category category = categoryRepository.findByIdOptional(request.categoryId())
+                .orElseThrow(() -> new WebApplicationException(
+                        "Categoria informada nao existe.", Response.Status.BAD_REQUEST));
+
+        if (!category.type.name().equals(request.type().name())) {
+            throw new WebApplicationException(
+                    "A categoria deve ser do mesmo tipo do lancamento.", Response.Status.BAD_REQUEST);
+        }
+
+        // Categoria inativa so e aceita se ja era a categoria do lancamento (issue #20)
+        boolean keepingCurrentCategory = existing != null && request.categoryId().equals(existing.categoryId);
+        if (!category.active && !keepingCurrentCategory) {
+            throw new WebApplicationException(
+                    "Categoria inativa nao pode ser selecionada.", Response.Status.BAD_REQUEST);
+        }
+    }
+
+    private static void validateStatus(TransactionRequest request, FinancialTransaction existing) {
+        if (request.status() != TransactionStatus.CANCELED || request.type() == TransactionType.INCOME) {
+            return;
+        }
+
+        // CANCELED so via DELETE /transactions/{id}; em edicao, permitido apenas manter o cancelamento
+        boolean alreadyCanceled = existing != null && existing.status == TransactionStatus.CANCELED;
+        if (!alreadyCanceled) {
+            throw new WebApplicationException(
+                    "O status Cancelado so pode ser aplicado pelo cancelamento do lancamento.",
+                    Response.Status.BAD_REQUEST);
+        }
     }
 
     private static void apply(FinancialTransaction transaction, TransactionRequest request) {

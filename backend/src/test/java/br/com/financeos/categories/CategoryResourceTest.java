@@ -99,6 +99,108 @@ class CategoryResourceTest {
     }
 
     @Test
+    void shouldRejectDuplicateNameAndType() {
+        String categoryName = "Teste Lazer " + UUID.randomUUID();
+        String body = """
+                {
+                  "name": "%s",
+                  "type": "EXPENSE"
+                }
+                """.formatted(categoryName);
+
+        given()
+                .contentType(ContentType.JSON)
+                .body(body)
+                .when().post("/categories")
+                .then()
+                .statusCode(201);
+
+        given()
+                .contentType(ContentType.JSON)
+                .body(body)
+                .when().post("/categories")
+                .then()
+                .statusCode(409);
+    }
+
+    @Test
+    void shouldAllowSameNameWithDifferentType() {
+        String categoryName = "Teste Lazer " + UUID.randomUUID();
+
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "name": "%s",
+                          "type": "EXPENSE"
+                        }
+                        """.formatted(categoryName))
+                .when().post("/categories")
+                .then()
+                .statusCode(201);
+
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "name": "%s",
+                          "type": "INCOME"
+                        }
+                        """.formatted(categoryName))
+                .when().post("/categories")
+                .then()
+                .statusCode(201);
+    }
+
+    @Test
+    void shouldRejectNonexistentParent() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "name": "Teste Lazer %s",
+                          "type": "EXPENSE",
+                          "parentId": "%s"
+                        }
+                        """.formatted(UUID.randomUUID(), UUID.randomUUID()))
+                .when().post("/categories")
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
+    void shouldRejectCategoryAsItsOwnParent() {
+        String categoryName = "Teste Lazer " + UUID.randomUUID();
+
+        String id = given()
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "name": "%s",
+                          "type": "EXPENSE"
+                        }
+                        """.formatted(categoryName))
+                .when().post("/categories")
+                .then()
+                .statusCode(201)
+                .extract()
+                .path("id");
+
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "name": "%s",
+                          "type": "EXPENSE",
+                          "parentId": "%s"
+                        }
+                        """.formatted(categoryName, id))
+                .when().put("/categories/{id}", id)
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
     void shouldCreateInactiveCategoryWhenActiveIsFalse() {
         String categoryName = "Teste Lazer " + UUID.randomUUID();
 

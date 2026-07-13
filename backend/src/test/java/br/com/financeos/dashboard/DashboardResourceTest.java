@@ -40,7 +40,7 @@ class DashboardResourceTest {
         createTransaction("2026-06-05", "Teste dashboard salario", 5000, "INCOME", "PAID");
         createTransaction("2026-06-10", "Teste dashboard aluguel", 1200, "EXPENSE", "PAID");
         createTransaction("2026-06-15", "Teste dashboard mercado", 300, "EXPENSE", "PENDING");
-        createTransaction("2026-06-20", "Teste dashboard cancelado", 90, "EXPENSE", "CANCELED");
+        cancelTransaction(createTransaction("2026-06-20", "Teste dashboard cancelado", 90, "EXPENSE", "PENDING"));
         createTransaction("2026-07-01", "Teste dashboard julho", 40, "EXPENSE", "PAID");
 
         given()
@@ -75,8 +75,8 @@ class DashboardResourceTest {
                 .statusCode(400);
     }
 
-    private static void createTransaction(String date, String description, int amount, String type, String status) {
-        given()
+    private static String createTransaction(String date, String description, int amount, String type, String status) {
+        return given()
                 .contentType(ContentType.JSON)
                 .body("""
                         {
@@ -89,6 +89,15 @@ class DashboardResourceTest {
                         """.formatted(date, description, amount, type, status))
                 .when().post("/transactions")
                 .then()
-                .statusCode(201);
+                .statusCode(201)
+                .extract()
+                .path("id");
+    }
+
+    private static void cancelTransaction(String id) {
+        given()
+                .when().delete("/transactions/{id}", id)
+                .then()
+                .statusCode(204);
     }
 }

@@ -4,6 +4,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 
+import br.com.financeos.profiles.ProfileRepository;
 import br.com.financeos.profiles.Screen;
 import br.com.financeos.shared.AccessControl;
 import br.com.financeos.shared.Action;
@@ -32,11 +33,14 @@ import jakarta.ws.rs.core.Response;
 public class UserResource {
 
     private final AppUserRepository repository;
+    private final ProfileRepository profileRepository;
     private final CurrentUser currentUser;
     private final AccessControl accessControl;
 
-    public UserResource(AppUserRepository repository, CurrentUser currentUser, AccessControl accessControl) {
+    public UserResource(AppUserRepository repository, ProfileRepository profileRepository,
+            CurrentUser currentUser, AccessControl accessControl) {
         this.repository = repository;
+        this.profileRepository = profileRepository;
         this.currentUser = currentUser;
         this.accessControl = accessControl;
     }
@@ -59,6 +63,8 @@ public class UserResource {
             throw new WebApplicationException("E-mail ja cadastrado.", Response.Status.CONFLICT);
         }
 
+        requireProfileExists(request.profileId());
+
         AppUser user = new AppUser();
         user.name = request.name().trim();
         user.email = email;
@@ -77,9 +83,19 @@ public class UserResource {
     public UserResponse update(@PathParam("id") UUID id, @Valid UserUpdateRequest request) {
         accessControl.require(Screen.USERS, Action.EDIT);
         AppUser user = repository.findVisibleById(id).orElseThrow(NotFoundException::new);
+        String email = request.email().trim().toLowerCase();
+
+        boolean emailTakenByOther = repository.findByEmail(email)
+                .filter(other -> !other.id.equals(id))
+                .isPresent();
+        if (emailTakenByOther) {
+            throw new WebApplicationException("E-mail ja cadastrado.", Response.Status.CONFLICT);
+        }
+
+        requireProfileExists(request.profileId());
 
         user.name = request.name().trim();
-        user.email = request.email().trim().toLowerCase();
+        user.email = email;
         user.profileId = request.profileId();
         user.active = request.active();
 
@@ -104,5 +120,11 @@ public class UserResource {
         user.active = false;
 
         return Response.noContent().build();
+    }
+
+    private void requireProfileExists(UUID profileId) {
+        if (profileRepository.findByIdOptional(profileId).isEmpty()) {
+            throw new WebApplicationException("Perfil informado nao existe.", Response.Status.BAD_REQUEST);
+        }
     }
 }

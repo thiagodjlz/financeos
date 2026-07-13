@@ -116,6 +116,109 @@ class UserResourceTest {
     }
 
     @Test
+    void shouldRejectDuplicateEmailOnUpdate() {
+        String firstEmail = "teste-usuarios-" + UUID.randomUUID() + "@financeos.local";
+        String secondEmail = "teste-usuarios-" + UUID.randomUUID() + "@financeos.local";
+
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "name": "Usuario Teste Um",
+                          "email": "%s",
+                          "password": "senha-valida",
+                          "profileId": "%s"
+                        }
+                        """.formatted(firstEmail, ADMIN_PROFILE_ID))
+                .when().post("/users")
+                .then()
+                .statusCode(201);
+
+        String secondId = given()
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "name": "Usuario Teste Dois",
+                          "email": "%s",
+                          "password": "senha-valida",
+                          "profileId": "%s"
+                        }
+                        """.formatted(secondEmail, ADMIN_PROFILE_ID))
+                .when().post("/users")
+                .then()
+                .statusCode(201)
+                .extract()
+                .path("id");
+
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "name": "Usuario Teste Dois",
+                          "email": "%s",
+                          "profileId": "%s",
+                          "active": true
+                        }
+                        """.formatted(firstEmail, ADMIN_PROFILE_ID))
+                .when().put("/users/{id}", secondId)
+                .then()
+                .statusCode(409);
+    }
+
+    @Test
+    void shouldAllowKeepingOwnEmailOnUpdate() {
+        String email = "teste-usuarios-" + UUID.randomUUID() + "@financeos.local";
+
+        String id = given()
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "name": "Usuario Teste Mesmo Email",
+                          "email": "%s",
+                          "password": "senha-valida",
+                          "profileId": "%s"
+                        }
+                        """.formatted(email, ADMIN_PROFILE_ID))
+                .when().post("/users")
+                .then()
+                .statusCode(201)
+                .extract()
+                .path("id");
+
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "name": "Usuario Teste Mesmo Email Editado",
+                          "email": "%s",
+                          "profileId": "%s",
+                          "active": true
+                        }
+                        """.formatted(email, ADMIN_PROFILE_ID))
+                .when().put("/users/{id}", id)
+                .then()
+                .statusCode(200)
+                .body("name", equalTo("Usuario Teste Mesmo Email Editado"));
+    }
+
+    @Test
+    void shouldRejectNonexistentProfileOnCreate() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "name": "Usuario Teste Perfil Invalido",
+                          "email": "teste-usuarios-%s@financeos.local",
+                          "password": "senha-valida",
+                          "profileId": "%s"
+                        }
+                        """.formatted(UUID.randomUUID(), UUID.randomUUID()))
+                .when().post("/users")
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
     void shouldReturnPortugueseMessageForShortPasswordOnUpdate() {
         String email = "teste-usuarios-" + UUID.randomUUID() + "@financeos.local";
 

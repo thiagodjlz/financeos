@@ -1,7 +1,9 @@
 package br.com.financeos.profiles;
 
+import jakarta.validation.constraints.NotNull;
+
 public record PermissionEntry(
-        Screen screen,
+        @NotNull Screen screen,
         boolean canView,
         boolean canCreate,
         boolean canEdit,

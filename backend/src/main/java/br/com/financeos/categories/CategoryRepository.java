@@ -21,4 +21,12 @@ public class CategoryRepository implements PanacheRepositoryBase<Category, UUID>
     public Optional<Category> findActiveById(UUID id) {
         return find("id = ?1 and active = true", id).firstResultOptional();
     }
+
+    public Optional<Category> findDuplicate(String name, CategoryType type, UUID parentId) {
+        if (parentId == null) {
+            return find("name = ?1 and type = ?2 and parentId is null", name, type).firstResultOptional();
+        }
+
+        return find("name = ?1 and type = ?2 and parentId = ?3", name, type, parentId).firstResultOptional();
+    }
 }
