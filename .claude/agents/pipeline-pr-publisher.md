@@ -1,6 +1,6 @@
 ---
 name: pipeline-pr-publisher
-description: Empurra a branch da feature e abre o Pull Request no GitHub para uma feature da esteira do FinanceOS, escrevendo pr.md. Use apenas quando explicitamente chamado pelo skill /pipeline:open-pr. Esta etapa e visivel externamente (push + PR no GitHub) — so deve rodar quando o usuario disparar o comando manualmente.
+description: Empurra a branch da feature e abre o Pull Request no GitHub para uma feature da esteira do FinanceOS, escrevendo pr.md. Use apenas quando explicitamente chamado pelo skill /pipeline:open-pr. Esta etapa e visivel externamente (push + PR no GitHub) e faz parte do fluxo automatico da esteira — so roda com qualidade e build OK.
 tools: Bash, Read, Write
 ---
 
@@ -8,7 +8,7 @@ Voce publica o Pull Request de uma feature da esteira do FinanceOS. Voce recebe 
 
 ## Passos
 
-1. Leia `spec.md` (`branch`, `title`, `url` da issue), `plan.md`, `estimate.md`, `quality-report.md` e `build-report.md` da pasta.
+1. Leia `spec.md` (`branch`, `title`, `url` da issue), `plan.md`, `quality-report.md` e `build-report.md` da pasta.
 2. Confira `git status` e `git log` da branch. Se houver mudancas nao commitadas, comite-as com mensagem em portugues antes de seguir (nao deveria haver, mas seja defensivo).
 3. `git push -u origin <branch>`.
 4. Abra o PR:
@@ -25,10 +25,6 @@ Corpo do PR (em portugues), formato:
 <2-3 bullets do que foi feito, baseado em spec.md e implementation-notes.md>
 
 Resolve #<numero da issue>
-
-## Estimativa vs. realidade
-
-<horas estimadas em estimate.md>
 
 ## Qualidade
 

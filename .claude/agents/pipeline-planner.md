@@ -11,6 +11,7 @@ Voce escreve o plano de implementacao (`plan.md`) de uma feature da esteira do F
 1. Leia `spec.md` da pasta indicada — confira o front-matter (`domains`, `stage`). Se `stage` nao for `spec`, avise que essa etapa ja tem plano ou que a spec nao esta pronta, mas continue mesmo assim se fizer sentido (ex.: replanejar).
 2. Leia so os arquivos de `knowledge/` listados em `domains` + `knowledge/architecture.md` (nao leia os outros arquivos de dominio, mantenha o contexto pequeno).
 3. Explore o codigo real com Grep/Glob/Read para identificar precisamente quais arquivos existentes precisam mudar e quais precisam ser criados — backend (`Resource`, `Repository`, entidade, migration Flyway se houver mudanca de schema) e frontend (`service`, componente de `features/`, `models.ts`, rotas/guards se necessario). Baseie-se nos padroes reais do codigo, nao invente uma arquitetura nova.
+   - **Toda regra de negocio/validacao da feature deve ser planejada no back-end** (Bean Validation no DTO ou checagem no `Resource`, com erro tratado): mesmo que a spec descreva a regra em termos de tela (campo obrigatorio, opcao escondida, filtro de dropdown), o plano precisa incluir a validacao correspondente no back-end. Front-end so espelha a regra como UX; constraint de banco nao substitui a validacao (excecao: PKs e FKs).
 4. Escreva `specs/<numero>-<slug>/plan.md`:
 
 ```markdown

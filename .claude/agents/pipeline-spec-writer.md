@@ -59,7 +59,7 @@ Como <persona/perfil de usuario>, quero <objetivo>, para que <beneficio>.
 - Documentos de conhecimento consultados: <lista>
 ```
 
-Os criterios de aceite devem ser concretos e verificaveis (ex.: "GET /api/x retorna 403 quando o perfil nao tem permissao Y"), nao vagos. Se a issue for ambigua em algum ponto importante, registre isso na secao "Pontos em aberto" em vez de assumir — voce nao tem como perguntar ao usuario diretamente (nao tem essa ferramenta), entao quem chamou voce (o comando `/pipeline:spec-from-issue`) e quem decide se pergunta ao usuario antes de seguir para o planejamento.
+Os criterios de aceite devem ser concretos e verificaveis (ex.: "GET /api/x retorna 403 quando o perfil nao tem permissao Y"), nao vagos. Quando a feature envolver regra de negocio ou validacao de campos, escreva o criterio em termos de **back-end** (ex.: "POST /api/x retorna 400 quando <campo> e invalido"), nao so de tela: toda regra deve obrigatoriamente ser imposta no back-end — o front-end apenas a espelha como UX (convencao do projeto em CLAUDE.md). Se a issue for ambigua em algum ponto importante, registre isso na secao "Pontos em aberto" em vez de assumir — voce nao tem como perguntar ao usuario diretamente (nao tem essa ferramenta), entao quem chamou voce (o comando `/pipeline:spec-from-issue`) e quem decide se pergunta ao usuario antes de seguir para o planejamento.
 
 6. Ao final, responda com um resumo curto (5-8 linhas): o que a issue pede, dominios identificados, quantos criterios de aceite, e se ha pontos em aberto (liste-os explicitamente para quem chamou voce poder repassar ao usuario).
 
