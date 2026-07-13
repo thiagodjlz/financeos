@@ -8,4 +8,4 @@ O argumento (`$1`/`$ARGUMENTS`) e o numero da issue. Resolva a pasta via glob `s
 
 1. Chame a tool `Agent` com `subagent_type: pipeline-docker-restarter`, `run_in_background: false`, passando o caminho da pasta `specs/<numero>-<slug>/`.
 2. Depois do retorno, leia `docker-report.md` e mostre ao usuario o resultado.
-3. Termine informando: "Rode `/pipeline:open-pr <numero>` para abrir o Pull Request." Nao rode o proximo comando sozinho.
+3. Se a stack subiu corretamente (ou estava parada e nada precisava ser feito), avance sozinho: invoque a skill `pipeline:open-pr` com o numero da issue, sem pedir confirmacao. Se o restart falhou, pare e reporte o problema ao usuario.

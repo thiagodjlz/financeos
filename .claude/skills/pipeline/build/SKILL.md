@@ -8,4 +8,4 @@ O argumento (`$1`/`$ARGUMENTS`) e o numero da issue. Resolva a pasta via glob `s
 
 1. Chame a tool `Agent` com `subagent_type: pipeline-builder`, `run_in_background: false`, passando o caminho da pasta `specs/<numero>-<slug>/`.
 2. Depois do retorno, leia `build-report.md` e mostre ao usuario o resultado (backend/frontend) e os caminhos dos artefatos gerados.
-3. Se tudo passou, termine informando: "Build OK. Rode `/pipeline:docker-restart <numero>` para reiniciar a stack Docker local com a imagem atualizada." Se algo falhou, informe o que falhou e que o proximo passo e `/pipeline:implement <numero>` de novo. Nao rode o proximo comando sozinho.
+3. Se tudo passou, avance sozinho: invoque a skill `pipeline:docker-restart` com o numero da issue, sem pedir confirmacao. Se algo falhou, informe o que falhou e invoque automaticamente a skill `pipeline:implement` com o numero da issue para uma rodada de correcao — respeitando o mesmo limite global de 2 rodadas automaticas de correcao por issue nesta conversa; se a falha persistir, pare e reporte ao usuario.
