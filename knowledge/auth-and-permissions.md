@@ -37,6 +37,7 @@ Chamado como `accessControl.require(Screen.X, Action.Y)` na primeira linha de pr
 - Update de permissoes e sempre **substituicao total**: deleta todas as `ProfilePermission` do perfil e reinsere as enviadas (sem patch parcial).
 - **Nao pode excluir perfil em uso**: `DELETE /profiles/{id}` retorna 409 se existir algum `AppUser` com esse `profileId`.
 - `resolvePermissions()` sempre devolve as 5 telas (completa gaps com deny-all) — qualquer consumidor da API pode assumir uma matriz completa.
+- Frontend (`features/profiles/`): o botao "Cancelar" da tela (issue #28) segue o padrao comum dos formularios de cadastro (dois estagios em edicao, sem HTTP — ver `knowledge/architecture.md`), com duas particularidades: a comparacao de alteracao pendente cobre **nome + matriz de permissoes inteira** (um unico checkbox marcado/desmarcado ja conta), e o snapshot do registro em edicao usa **copia profunda** (`clonePermissions()`) na captura e na restauracao — os checkboxes usam `[(ngModel)]` mutando os objetos de `permissions`, entao com referencia compartilhada o snapshot mudaria junto e a deteccao de alteracao nunca dispararia.
 
 ## Frontend (`frontend/src/app/core`)
 

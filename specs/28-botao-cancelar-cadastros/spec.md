@@ -3,7 +3,7 @@ issue: 28
 url: https://github.com/thiagodjlz/financeos/issues/28
 title: "Adicionar botão de cancelar"
 domains: [categories, users, auth, transactions]
-stage: validated
+stage: pr-open
 branch: feature/issue-28-botao-cancelar-cadastros
 created: 2026-07-25
 ---

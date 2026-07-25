@@ -23,3 +23,10 @@ Fonte: `backend/src/main/java/br/com/financeos/users/`. Ver tambem [auth-and-per
   - `profileId`: "O perfil e obrigatorio."
 - **Decisao (issue #26)**: a traducao e por DTO, via `message` nas annotations — descartado o locale global pt-BR do Hibernate Validator (`quarkus.locales`/`quarkus.default-locale`), que afetaria todos os endpoints. DTOs de outros dominios (categorias, transacoes, login) continuam com as mensagens default em ingles.
 - Ponto de atencao (visto nos testes da issue #26): o `@Email` do Hibernate Validator rejeita local-part acima de 64 chars, entao um e-mail muito longo pode gerar duas violacoes para o mesmo campo (`@Email` + `@Size`); para testar so o limite de 180 chars, use um e-mail bem formado com dominio longo.
+
+## Frontend (`frontend/src/app/features/users/`)
+
+- `edit()` **nunca carrega a senha** do registro: o campo Senha entra em edicao sempre vazio (senha em branco no update = mantem a atual). O campo Situacao so e renderizado em modo de edicao; o reset do formulario repoe `active: true`.
+- Botao "Cancelar" (issue #28): segue o padrao comum dos formularios de cadastro (dois estagios em edicao, sem HTTP — ver `knowledge/architecture.md`), com duas particularidades:
+  - `cancel()` limpa `fieldErrors` **e** chama `dismissError()` (faixa de erro do topo + `errorTimeout`) nos dois estagios, antes de decidir o estagio — `resetForm()` sozinho nao apaga as mensagens de validacao do backend;
+  - o snapshot do registro em edicao nasce com `password: ''`; logo, senha vazia = sem alteracao pendente, e qualquer caractere digitado na senha ja conta como alteracao pendente (a restauracao devolve o campo ao vazio).
