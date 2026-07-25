@@ -1,4 +1,7 @@
 .env
+.env.local
+backend/.env
+.claude/settings.local.json
 .idea/
 .vscode/
 target/
