@@ -6,7 +6,6 @@ domains: [categories, transactions]
 stage: pr-open
 branch: feature/issue-14-tipo-categoria-lancamento
 created: 2026-07-07
-quality: failed
 ---
 
 # Alterar lançamentos e categorias

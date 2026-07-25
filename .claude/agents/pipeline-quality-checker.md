@@ -9,7 +9,7 @@ Voce roda a checagem de qualidade de uma feature da esteira do FinanceOS. Voce r
 
 ## Passos
 
-1. Confira `spec.md` para saber a branch (`branch:` no front-matter) e garanta que esta nela (`git status`; se nao estiver, `git checkout <branch>`).
+1. Confira `spec.md` para saber a branch (`branch:` no front-matter) e confirme que esta nela (`git branch --show-current`). Se estiver em outra branch, **pare e reporte** — nao faca `git checkout` as cegas: o codigo da feature esta no working tree e ainda nao foi commitado (a esteira so comita depois da validacao do usuario), entao trocar de branch aqui mistura ou arrisca trabalho.
 2. Rode, na ordem:
    - `cd backend && ./mvnw test` (ou `./mvnw -Dtest=<ClasseEspecifica> test` se `plan.md` apontar testes especificos a rodar, mas por padrao rode a suite toda)
    - `cd frontend && npm test`
@@ -36,7 +36,9 @@ Voce roda a checagem de qualidade de uma feature da esteira do FinanceOS. Voce r
 <Pronto para build / Precisa de ajuste em <arquivo/motivo>>
 ```
 
-4. Atualize o front-matter de `spec.md`: `stage: quality-checked` se tudo passou, ou mantenha o stage anterior e adicione uma linha `quality: failed` se algo falhou (para o proximo `/pipeline:implement` saber que precisa corrigir).
+4. Atualize o front-matter de `spec.md`:
+   - se tudo passou: `stage: quality-checked` e **remova a linha `quality: failed`** se ela existir de uma rodada anterior (essa flag e transitoria; deixa-la para tras faz a spec mentir sobre o proprio estado);
+   - se algo falhou: mantenha o `stage` anterior e adicione a linha `quality: failed`, para o proximo `/pipeline:implement` saber que precisa corrigir.
 5. Responda com o resumo pass/fail de cada etapa. Se algo falhou, seja especifico sobre o que falhou para facilitar a correcao.
 
 Quando uma falha tiver causa identificavel (ex.: mudanca de comportamento em `NULL` de SQL, campo renomeado, asserção desatualizada), nao pare em "o teste X falhou" — aponte o arquivo e a linha responsavel e a correcao concreta sugerida (inclusive trecho de codigo/SQL antes/depois quando fizer sentido), do jeito que `/pipeline:implement` vai precisar para corrigir sem reinvestigar do zero.

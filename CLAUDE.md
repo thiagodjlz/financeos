@@ -18,18 +18,26 @@ Regras de negocio e modelo de dados nao ficam aqui — ficam em [knowledge/](kno
 
 ## Esteira automatizada de features (issue -> PR)
 
-Para transformar uma issue do GitHub em Pull Request, ver [specs/README.md](specs/README.md). Basta rodar a primeira etapa — cada etapa invoca a proxima automaticamente ate o PR aberto:
+Para transformar uma issue do GitHub em Pull Request, ver [specs/README.md](specs/README.md). Basta rodar a primeira etapa — cada etapa invoca a proxima automaticamente:
 
 ```
 /pipeline:spec-from-issue <numero-da-issue>
 /pipeline:plan-implementation <numero>
+/pipeline:tasks <numero>             # quebra o plano em tarefas rastreadas aos criterios
 /pipeline:implement <numero>
 /pipeline:quality-check <numero>
 /pipeline:build <numero>
 /pipeline:docker-restart <numero>
-/pipeline:open-pr <numero>
+/pipeline:verify <numero>            # PARA aqui: validacao manual no ambiente local
+/pipeline:open-pr <numero>           # commit + push + PR, so depois do seu aval
 ```
 
-Cada comando roda um subagente dedicado (`.claude/agents/pipeline-*.md`), grava o resultado em `specs/<numero>-<slug>/` e avanca sozinho para a proxima etapa. A esteira so para para perguntar quando ha uma decisao de implementacao que ela nao consegue tomar sozinha (ex.: "Pontos em aberto" na spec, abordagens conflitantes no plano) ou quando testes/build continuam falhando apos 2 rodadas automaticas de correcao. Os comandos individuais continuam disponiveis para (re)executar uma etapa especifica.
+Cada comando roda um subagente dedicado (`.claude/agents/pipeline-*.md`), grava o resultado em `specs/<numero>-<slug>/` e avanca sozinho para a proxima etapa. Os comandos individuais continuam disponiveis para (re)executar uma etapa especifica.
+
+**Cada tarefa e amarrada a um criterio de aceite.** A etapa 3 gera `tasks.md` com a matriz de cobertura criterio -> tarefas e recusa seguir para a implementacao se algum criterio de aceite ficou sem tarefa (volta uma vez para replanejar; persistindo, pergunta ao usuario). A etapa 4 marca as tarefas conforme conclui, e a etapa 8 usa a matriz para achar a evidencia de cada criterio.
+
+**Nada e commitado antes da validacao do usuario.** Das etapas 4 a 8 o codigo fica no working tree da branch da feature; a etapa 7 atualiza o ambiente de teste local (`docker compose up -d --build`) e a etapa 8 verifica os criterios de aceite um por um e **para**, pedindo que o usuario valide a feature rodando em `http://localhost`. Commit, push e PR acontecem juntos na etapa 9, e `/pipeline:open-pr` recusa rodar se a spec nao estiver em `stage: validated`. Nenhum agente entre as etapas 4 e 9 deve rodar `git stash`, `git reset --hard` ou `git checkout -- <arquivo>`: nao existe commit para onde voltar.
+
+Fora essa parada obrigatoria, a esteira para para perguntar quando ha uma decisao de implementacao que ela nao consegue tomar sozinha (ex.: "Pontos em aberto" na spec, abordagens conflitantes no plano) ou quando testes/build continuam falhando apos 2 rodadas automaticas de correcao.
 
 Ao final do `/pipeline:open-pr`, roda automaticamente `/pipeline:sync-knowledge <numero>` — etapa que atualiza `knowledge/*.md` e os proprios agents/skills da esteira com regras de negocio e padroes de processo que a feature revelou. Ela nao comita sozinha: as mudancas ficam no working tree para voce revisar o diff antes de commitar.

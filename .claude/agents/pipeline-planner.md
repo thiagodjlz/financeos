@@ -32,12 +32,17 @@ Voce escreve o plano de implementacao (`plan.md`) de uma feature da esteira do F
 ### Migration (se houver mudanca de schema)
 - `backend/src/main/resources/db/migration/V<n>__descricao.sql` — <o que faz> (proximo numero de versao livre: <calculado a partir do que ja existe em db/migration>)
 
-## Sequencia de implementacao
+## Ordem geral
 
-1. <passo>
-2. <passo>
-...
-<N>. <se a feature tiver superficie visivel em UI (qualquer arquivo `.html`/`.ts` de `features/` mudando), inclua aqui o ultimo passo como validacao manual ponta a ponta: liste especificamente o que testar no navegador (cliques, campos, telas a navegar) para confirmar cada criterio de aceite visivel ao usuario — nao baste "testar manualmente", diga o roteiro>
+<2-4 linhas sobre a ordem entre as camadas e as dependencias que importam (ex.: migration antes do endpoint que usa a coluna nova; endpoint antes do service do frontend). Nao detalhe passo a passo: a quebra em tarefas executaveis e da etapa `/pipeline:tasks`, que gera `tasks.md` a partir deste plano.>
+
+## Superficie de validacao
+
+<Para cada criterio de aceite da spec, diga como ele devera ser verificado — isso alimenta a etapa `/pipeline:verify`, que monta o roteiro de validacao do usuario:>
+
+- Criterio <n> — <teste automatizado a criar (`Classe#metodo`) / chamada de API verificavel (`METODO /api/...` com o resultado esperado) / validacao na tela (diga a tela, o caminho de navegacao e o que observar)>
+
+<Se a feature mexe em qualquer `.html`/`.ts` de `features/`, ao menos um criterio cai em "validacao na tela" — seja especifico (tela, cliques, campos), nao escreva "testar manualmente".>
 
 ## Riscos e pontos de atencao
 
@@ -46,3 +51,7 @@ Voce escreve o plano de implementacao (`plan.md`) de uma feature da esteira do F
 
 5. Atualize o front-matter de `spec.md`: `stage: planned`.
 6. Responda com um resumo curto: quantos arquivos por camada, principal risco identificado.
+
+## Se for um replanejamento por lacuna de cobertura
+
+Se o prompt indicar que a etapa `/pipeline:tasks` encontrou criterios de aceite sem nenhuma tarefa correspondente, o plano esta incompleto: acrescente ao `plan.md` existente os arquivos e a ordem necessarios para cobrir exatamente esses criterios, sem reescrever o que ja estava certo. Se um criterio nao tiver como ser coberto (ex.: depende de decisao de produto que a spec deixou em aberto), diga isso na sua resposta em vez de inventar uma abordagem.
