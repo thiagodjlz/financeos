@@ -44,6 +44,8 @@ export class Profiles implements OnInit {
   protected name = '';
   protected permissions: PermissionEntry[] = blankPermissions();
 
+  private editSnapshot: { name: string; permissions: PermissionEntry[] } | null = null;
+
   ngOnInit(): void {
     void this.loadData();
   }
@@ -70,11 +72,35 @@ export class Profiles implements OnInit {
         ? { ...existing }
         : { screen: screen.code, canView: false, canCreate: false, canEdit: false, canDelete: false };
     });
+    this.editSnapshot = { name: this.name, permissions: this.clonePermissions(this.permissions) };
   }
 
-  protected cancelEdit(): void {
+  protected cancel(): void {
+    const snapshot = this.editSnapshot;
+
+    if (snapshot && this.isDirty()) {
+      this.name = snapshot.name;
+      this.permissions = this.clonePermissions(snapshot.permissions);
+      return;
+    }
+
     this.editingId.set(null);
+    this.editSnapshot = null;
     this.resetForm();
+  }
+
+  private isDirty(): boolean {
+    if (!this.editSnapshot) {
+      return false;
+    }
+
+    return (
+      JSON.stringify({ name: this.name, permissions: this.permissions }) !== JSON.stringify(this.editSnapshot)
+    );
+  }
+
+  private clonePermissions(permissions: PermissionEntry[]): PermissionEntry[] {
+    return permissions.map((permission) => ({ ...permission }));
   }
 
   protected async save(): Promise<void> {
@@ -93,6 +119,7 @@ export class Profiles implements OnInit {
 
       await this.profileService.refresh();
       this.editingId.set(null);
+      this.editSnapshot = null;
       this.resetForm();
     } catch {
       this.error.set('Nao foi possivel salvar o perfil.');

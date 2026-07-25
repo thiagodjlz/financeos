@@ -53,6 +53,8 @@ export class Users implements OnInit, OnDestroy {
     active: true,
   };
 
+  private editSnapshot: typeof this.form | null = null;
+
   ngOnInit(): void {
     void this.loadData();
   }
@@ -86,11 +88,30 @@ export class Users implements OnInit, OnDestroy {
       profileId: user.profileId ?? '',
       active: user.active,
     };
+    this.editSnapshot = { ...this.form };
   }
 
-  protected cancelEdit(): void {
+  protected cancel(): void {
+    const snapshot = this.editSnapshot;
+    this.fieldErrors.set(new Map());
+    this.dismissError();
+
+    if (snapshot && this.isDirty()) {
+      this.form = { ...snapshot };
+      return;
+    }
+
     this.editingId.set(null);
+    this.editSnapshot = null;
     this.resetForm();
+  }
+
+  private isDirty(): boolean {
+    if (!this.editSnapshot) {
+      return false;
+    }
+
+    return JSON.stringify(this.form) !== JSON.stringify(this.editSnapshot);
   }
 
   protected async save(): Promise<void> {
@@ -120,6 +141,7 @@ export class Users implements OnInit, OnDestroy {
 
       await this.userService.refresh();
       this.editingId.set(null);
+      this.editSnapshot = null;
       this.resetForm();
     } catch (err) {
       this.applySaveError(err);

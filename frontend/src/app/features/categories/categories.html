@@ -37,7 +37,7 @@
     </label>
     <div class="two-cols">
       <button class="primary-button" type="submit" [disabled]="saving()">Salvar</button>
-      <button *ngIf="editingId()" class="ghost-button" type="button" (click)="cancelEdit()">Cancelar</button>
+      <button class="ghost-button" type="button" (click)="cancel()">Cancelar</button>
     </div>
   </form>
 

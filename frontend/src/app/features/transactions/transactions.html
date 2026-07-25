@@ -40,7 +40,10 @@
         <option *ngFor="let category of filteredCategories()" [value]="category.id">{{ category.name }}</option>
       </select>
     </label>
-    <button class="primary-button" type="submit" [disabled]="saving()">Salvar</button>
+    <div class="two-cols">
+      <button class="primary-button" type="submit" [disabled]="saving()">Salvar</button>
+      <button class="ghost-button" type="button" (click)="clearTransactionForm()">Cancelar</button>
+    </div>
   </form>
 
   <section class="panel table-panel">
