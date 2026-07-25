@@ -24,7 +24,7 @@ describe('AuthService', () => {
   afterEach(() => httpMock.verify());
 
   it('logs in, stores the token and loads effective permissions via /auth/me', async () => {
-    const loginPromise = service.login('dev@financeos.local', 'financeos_dev_2026');
+    const loginPromise = service.login('dev@financeos.local', 'senha-de-teste');
 
     const loginReq = httpMock.expectOne(`${API_BASE}/auth/login`);
     expect(loginReq.request.method).toBe('POST');
@@ -70,7 +70,7 @@ describe('AuthService', () => {
   });
 
   it('clears token and permissions on logout', async () => {
-    const loginPromise = service.login('dev@financeos.local', 'financeos_dev_2026');
+    const loginPromise = service.login('dev@financeos.local', 'senha-de-teste');
     httpMock.expectOne(`${API_BASE}/auth/login`).flush({ token: 'fake-token', expiresIn: 43200 });
     await flushMicrotasks();
     httpMock

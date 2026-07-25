@@ -59,20 +59,22 @@ Conexao local:
 
 ```text
 Host: localhost
-Porta: 5432
-Database: financeos
-Usuario: financeos
-Senha: financeos_dev_password
+Porta: 5432 (POSTGRES_PORT)
+Database: financeos (POSTGRES_DB)
+Usuario: financeos (POSTGRES_USER)
+Senha: POSTGRES_PASSWORD do seu .env
 JDBC: jdbc:postgresql://localhost:5432/financeos
 ```
 
-Configuracao futura do Quarkus:
+Nenhuma senha fica no repositorio: copie `.env.example` para `.env` e defina um `POSTGRES_PASSWORD` proprio antes de subir a stack. O `docker-compose.yml` e o `application.properties` nao tem valor padrao para essa variavel — se ela faltar, a stack falha na hora em vez de subir com uma senha conhecida.
+
+Configuracao do Quarkus (as credenciais vem do ambiente):
 
 ```properties
 quarkus.datasource.db-kind=postgresql
-quarkus.datasource.username=financeos
-quarkus.datasource.password=financeos_dev_password
-quarkus.datasource.jdbc.url=jdbc:postgresql://localhost:5432/financeos
+quarkus.datasource.username=${POSTGRES_USER:financeos}
+quarkus.datasource.password=${POSTGRES_PASSWORD}
+quarkus.datasource.jdbc.url=${JDBC_URL:jdbc:postgresql://localhost:5432/financeos}
 quarkus.flyway.migrate-at-start=true
 ```
 
@@ -95,6 +97,8 @@ Subir API em modo desenvolvimento:
 ```bash
 ./mvnw quarkus:dev
 ```
+
+O modo dev le o `.env` do diretorio de onde o comando roda, entao crie um `backend/.env` (gitignored) com o mesmo `POSTGRES_PASSWORD` do `.env` da raiz — ou exporte a variavel no shell. Sem ela a aplicacao nao sobe, de proposito. `./mvnw test` nao precisa de nada disso: o perfil de teste usa um Postgres efemero do Dev Services.
 
 URLs locais:
 
@@ -162,14 +166,14 @@ GET    /api/dashboard/summary?year=2026&month=6
 
 A API exige login (JWT) em todos os endpoints, exceto `/api/health` e `/api/auth/login`. Nao existe cadastro publico: novos usuarios sao criados por quem ja tem acesso a tela de Usuarios (`POST /api/users`), cada um vinculado a um Perfil que define, por tela do sistema (Dashboard, Lancamentos, Categorias, Contas, Cartoes, Usuarios, Perfis), as permissoes de visualizar/incluir/alterar/excluir.
 
-Usuario de desenvolvimento ja semeado (perfil "Administrador", acesso total):
+Existe um usuario de desenvolvimento ja semeado (`dev@financeos.local`, perfil "Administrador", acesso total) e um usuario administrador oculto (`super_admin`), que nao aparece na tela de Usuarios e tem acesso total independente de perfil — usado para nunca ficar sem acesso ao sistema.
 
-```text
-E-mail: dev@financeos.local
-Senha:  financeos_dev_2026
+**As senhas desses dois usuarios nao ficam em nenhum arquivo do repositorio** — so o hash bcrypt vai nas migrations. Quem sobe o projeto do zero define a propria senha: suba a stack, e com o banco no ar troque o hash do usuario que for usar.
+
+```bash
+docker exec -it financeos-postgres psql -U financeos -d financeos \
+  -c "update app_users set password_hash = crypt('SUA_SENHA_AQUI', gen_salt('bf', 10)) where email = 'dev@financeos.local';"
 ```
-
-Existe tambem um usuario administrador oculto (`super_admin`), que nao aparece na tela de Usuarios e tem acesso total independente de perfil — usado para nunca ficar sem acesso ao sistema. As credenciais desse usuario nao ficam em nenhum arquivo do repositorio.
 
 ### Chaves RSA (assinatura dos JWTs)
 

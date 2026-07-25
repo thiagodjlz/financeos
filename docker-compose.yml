@@ -9,7 +9,7 @@ services:
       TZ: America/Sao_Paulo
       POSTGRES_DB: ${POSTGRES_DB:-financeos}
       POSTGRES_USER: ${POSTGRES_USER:-financeos}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-financeos_dev_password}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env (copie de .env.example)}
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
@@ -31,7 +31,7 @@ services:
         condition: service_healthy
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-financeos}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-financeos_dev_password}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env (copie de .env.example)}
       JDBC_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-financeos}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:4200,http://127.0.0.1:4200}
     ports:
