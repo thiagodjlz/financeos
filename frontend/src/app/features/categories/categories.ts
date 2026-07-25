@@ -30,6 +30,8 @@ export class Categories implements OnInit {
     active: true,
   };
 
+  private editSnapshot: typeof this.form | null = null;
+
   ngOnInit(): void {
     void this.loadData();
   }
@@ -56,11 +58,28 @@ export class Categories implements OnInit {
       icon: category.icon ?? '',
       active: category.active,
     };
+    this.editSnapshot = { ...this.form };
   }
 
-  protected cancelEdit(): void {
+  protected cancel(): void {
+    const snapshot = this.editSnapshot;
+
+    if (snapshot && this.isDirty()) {
+      this.form = { ...snapshot };
+      return;
+    }
+
     this.editingId.set(null);
+    this.editSnapshot = null;
     this.resetForm();
+  }
+
+  private isDirty(): boolean {
+    if (!this.editSnapshot) {
+      return false;
+    }
+
+    return JSON.stringify(this.form) !== JSON.stringify(this.editSnapshot);
   }
 
   protected async save(): Promise<void> {
@@ -85,6 +104,7 @@ export class Categories implements OnInit {
 
       await this.categoryService.refresh();
       this.editingId.set(null);
+      this.editSnapshot = null;
       this.resetForm();
     } catch {
       this.error.set('Nao foi possivel salvar. Revise os campos e tente novamente.');

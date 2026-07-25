@@ -7,6 +7,17 @@ import { AuthService } from '../../core/services/auth.service';
 import { CategoryService } from '../../core/services/category.service';
 import { TransactionService } from '../../core/services/transaction.service';
 
+function newTransactionForm() {
+  return {
+    transactionDate: new Date().toISOString().slice(0, 10),
+    description: '',
+    amount: 0,
+    type: 'EXPENSE' as TransactionType,
+    status: 'PENDING' as TransactionStatus | null,
+    categoryId: '',
+  };
+}
+
 @Component({
   selector: 'app-transactions',
   imports: [CommonModule, FormsModule],
@@ -26,14 +37,9 @@ export class Transactions implements OnInit {
   protected readonly categories = this.categoryService.categories;
   protected readonly filteredCategories = signal<Category[]>([]);
 
-  protected transactionForm = {
-    transactionDate: new Date().toISOString().slice(0, 10),
-    description: '',
-    amount: 0,
-    type: 'EXPENSE' as TransactionType,
-    status: 'PENDING' as TransactionStatus | null,
-    categoryId: '',
-  };
+  protected transactionForm = newTransactionForm();
+
+  private readonly categoriesByType = new Map<TransactionType, Category[]>();
 
   protected readonly editingId = signal<string | null>(null);
   protected readonly editCategories = signal<Category[]>([]);
@@ -81,7 +87,18 @@ export class Transactions implements OnInit {
   }
 
   private async loadCategoriesForType(type: TransactionType): Promise<void> {
-    this.filteredCategories.set(await this.categoryService.listByType(type));
+    this.filteredCategories.set(await this.cacheCategoriesForType(type));
+  }
+
+  protected clearTransactionForm(): void {
+    this.transactionForm = newTransactionForm();
+    this.filteredCategories.set(this.categoriesByType.get(this.transactionForm.type) ?? this.filteredCategories());
+  }
+
+  private async cacheCategoriesForType(type: TransactionType): Promise<Category[]> {
+    const categories = await this.categoryService.listByType(type);
+    this.categoriesByType.set(type, categories);
+    return categories;
   }
 
   protected async saveTransaction(): Promise<void> {
@@ -174,7 +191,7 @@ export class Transactions implements OnInit {
   }
 
   private async loadCategoriesForEdit(type: TransactionType): Promise<void> {
-    this.editCategories.set(await this.categoryService.listByType(type));
+    this.editCategories.set(await this.cacheCategoriesForType(type));
   }
 
   protected isEditDirty(): boolean {
