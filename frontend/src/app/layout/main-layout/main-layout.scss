@@ -91,6 +91,19 @@
   }
 }
 
+.sidebar.collapsed .nav-list button {
+  padding: 12px 6px;
+  text-align: center;
+  min-height: 45px;
+  overflow: hidden;
+}
+
+.nav-abbr {
+  display: inline-block;
+  font-size: 16px;
+  line-height: 21px;
+}
+
 .nav-group {
   display: grid;
   gap: 4px;

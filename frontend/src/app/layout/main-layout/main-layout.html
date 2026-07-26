@@ -12,15 +12,18 @@
     </div>
 
     <nav class="nav-list" aria-label="Principal">
-      <button *ngIf="authService.can('DASHBOARD', 'VIEW')" type="button" routerLink="/dashboard" routerLinkActive="active">
+      <button *ngIf="authService.can('DASHBOARD', 'VIEW')" type="button" routerLink="/dashboard" routerLinkActive="active" [attr.title]="collapsed() ? 'Resumo' : null" [attr.aria-label]="collapsed() ? 'Resumo' : null">
         <span *ngIf="!collapsed()">Resumo</span>
+        <span class="nav-abbr" *ngIf="collapsed()">R</span>
       </button>
-      <button *ngIf="authService.can('TRANSACTIONS', 'VIEW')" type="button" routerLink="/transactions" routerLinkActive="active">
+      <button *ngIf="authService.can('TRANSACTIONS', 'VIEW')" type="button" routerLink="/transactions" routerLinkActive="active" [attr.title]="collapsed() ? 'Lancamentos' : null" [attr.aria-label]="collapsed() ? 'Lancamentos' : null">
         <span *ngIf="!collapsed()">Lancamentos</span>
+        <span class="nav-abbr" *ngIf="collapsed()">L</span>
       </button>
       <div class="nav-group" *ngIf="authService.can('CATEGORIES', 'VIEW')">
-        <button type="button" class="nav-parent" [class.active]="isRegistersActive()" (click)="toggleRegisters()">
+        <button type="button" class="nav-parent" [class.active]="isRegistersActive()" (click)="toggleRegisters()" [attr.title]="collapsed() ? 'Cadastros' : null" [attr.aria-label]="collapsed() ? 'Cadastros' : null">
           <span *ngIf="!collapsed()">Cadastros</span>
+          <span class="nav-abbr" *ngIf="collapsed()">&#9776;</span>
         </button>
         <div class="nav-children" *ngIf="registersExpanded() && !collapsed()">
           <button type="button" routerLink="/categories" routerLinkActive="active">
@@ -28,12 +31,20 @@
           </button>
         </div>
       </div>
-      <button *ngIf="authService.can('USERS', 'VIEW')" type="button" routerLink="/users" routerLinkActive="active">
-        <span *ngIf="!collapsed()">Usuarios</span>
-      </button>
-      <button *ngIf="authService.can('PROFILES', 'VIEW')" type="button" routerLink="/profiles" routerLinkActive="active">
-        <span *ngIf="!collapsed()">Perfis</span>
-      </button>
+      <div class="nav-group" *ngIf="canSeeSettings()">
+        <button type="button" class="nav-parent" [class.active]="isSettingsActive()" (click)="toggleSettings()" [attr.title]="collapsed() ? 'Configuracoes' : null" [attr.aria-label]="collapsed() ? 'Configuracoes' : null">
+          <span *ngIf="!collapsed()">Configuracoes</span>
+          <span class="nav-abbr" *ngIf="collapsed()">&#9881;</span>
+        </button>
+        <div class="nav-children" *ngIf="settingsExpanded() && !collapsed()">
+          <button *ngIf="authService.can('USERS', 'VIEW')" type="button" routerLink="/users" routerLinkActive="active">
+            <span>Usuarios</span>
+          </button>
+          <button *ngIf="authService.can('PROFILES', 'VIEW')" type="button" routerLink="/profiles" routerLinkActive="active">
+            <span>Perfis</span>
+          </button>
+        </div>
+      </div>
     </nav>
 
     <button type="button" class="logout-button" (click)="logout()">

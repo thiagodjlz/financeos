@@ -19,17 +19,42 @@ export class MainLayout {
 
   protected readonly collapsed = signal(false);
   protected readonly registersExpanded = signal(false);
+  protected readonly settingsExpanded = signal(false);
 
   protected toggleCollapsed(): void {
     this.collapsed.set(!this.collapsed());
   }
 
   protected toggleRegisters(): void {
+    if (this.collapsed()) {
+      this.collapsed.set(false);
+      this.registersExpanded.set(true);
+      return;
+    }
+
     this.registersExpanded.set(!this.registersExpanded());
+  }
+
+  protected toggleSettings(): void {
+    if (this.collapsed()) {
+      this.collapsed.set(false);
+      this.settingsExpanded.set(true);
+      return;
+    }
+
+    this.settingsExpanded.set(!this.settingsExpanded());
   }
 
   protected isRegistersActive(): boolean {
     return this.router.url.startsWith('/categories');
+  }
+
+  protected isSettingsActive(): boolean {
+    return this.router.url.startsWith('/users') || this.router.url.startsWith('/profiles');
+  }
+
+  protected canSeeSettings(): boolean {
+    return this.authService.can('USERS', 'VIEW') || this.authService.can('PROFILES', 'VIEW');
   }
 
   protected logout(): void {
