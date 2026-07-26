@@ -3,7 +3,7 @@ issue: 31
 url: https://github.com/thiagodjlz/financeos/issues/31
 title: "Alterar função do editar e ajuste de layout"
 domains: [transactions, categories, users]
-stage: validated
+stage: pr-opened
 branch: feature/issue-31-edicao-inline-cadastros
 created: 2026-07-25
 ---
