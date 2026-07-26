@@ -4,7 +4,7 @@ url: https://github.com/thiagodjlz/financeos/issues/33
 title: "Ajustar menu lateral esquerdo"
 slug: menu-lateral
 domains: [auth]
-stage: validated
+stage: pr-opened
 branch: feature/issue-33-menu-lateral
 created: 2026-07-26
 ---
