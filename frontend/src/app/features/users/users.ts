@@ -37,7 +37,6 @@ export class Users implements OnInit, OnDestroy {
   protected readonly loading = signal(false);
   protected readonly saving = signal(false);
   protected readonly error = signal('');
-  protected readonly editingId = signal<string | null>(null);
   protected readonly fieldErrors = signal<Map<string, string>>(new Map());
 
   private errorTimeout?: ReturnType<typeof setTimeout>;
@@ -50,10 +49,21 @@ export class Users implements OnInit, OnDestroy {
     email: '',
     password: '',
     profileId: '',
+  };
+
+  protected readonly editingId = signal<string | null>(null);
+  protected readonly confirmingExit = signal(false);
+  protected readonly editFieldErrors = signal<Map<string, string>>(new Map());
+
+  protected editForm = {
+    name: '',
+    email: '',
+    password: '',
+    profileId: '',
     active: true,
   };
 
-  private editSnapshot: typeof this.form | null = null;
+  private editSnapshot: typeof this.editForm | null = null;
 
   ngOnInit(): void {
     void this.loadData();
@@ -78,40 +88,9 @@ export class Users implements OnInit, OnDestroy {
     }
   }
 
-  protected edit(user: AppUserSummary): void {
-    this.editingId.set(user.id);
-    this.fieldErrors.set(new Map());
-    this.form = {
-      name: user.name,
-      email: user.email,
-      password: '',
-      profileId: user.profileId ?? '',
-      active: user.active,
-    };
-    this.editSnapshot = { ...this.form };
-  }
-
   protected cancel(): void {
-    const snapshot = this.editSnapshot;
-    this.fieldErrors.set(new Map());
     this.dismissError();
-
-    if (snapshot && this.isDirty()) {
-      this.form = { ...snapshot };
-      return;
-    }
-
-    this.editingId.set(null);
-    this.editSnapshot = null;
     this.resetForm();
-  }
-
-  private isDirty(): boolean {
-    if (!this.editSnapshot) {
-      return false;
-    }
-
-    return JSON.stringify(this.form) !== JSON.stringify(this.editSnapshot);
   }
 
   protected async save(): Promise<void> {
@@ -120,34 +99,87 @@ export class Users implements OnInit, OnDestroy {
     this.fieldErrors.set(new Map());
 
     try {
-      const id = this.editingId();
-
-      if (id) {
-        await this.userService.update(id, {
-          name: this.form.name,
-          email: this.form.email,
-          profileId: this.form.profileId,
-          active: this.form.active,
-          password: this.form.password || undefined,
-        });
-      } else {
-        await this.userService.create({
-          name: this.form.name,
-          email: this.form.email,
-          password: this.form.password,
-          profileId: this.form.profileId,
-        });
-      }
+      await this.userService.create({
+        name: this.form.name,
+        email: this.form.email,
+        password: this.form.password,
+        profileId: this.form.profileId,
+      });
 
       await this.userService.refresh();
-      this.editingId.set(null);
-      this.editSnapshot = null;
       this.resetForm();
     } catch (err) {
       this.applySaveError(err);
     } finally {
       this.saving.set(false);
     }
+  }
+
+  protected startEdit(user: AppUserSummary): void {
+    if (this.editingId() !== null) {
+      return;
+    }
+
+    this.editForm = {
+      name: user.name,
+      email: user.email,
+      password: '',
+      profileId: user.profileId ?? '',
+      active: user.active,
+    };
+    this.editSnapshot = { ...this.editForm };
+    this.editFieldErrors.set(new Map());
+    this.confirmingExit.set(false);
+    this.editingId.set(user.id);
+  }
+
+  protected isEditDirty(): boolean {
+    if (!this.editSnapshot) {
+      return false;
+    }
+
+    return JSON.stringify(this.editForm) !== JSON.stringify(this.editSnapshot);
+  }
+
+  protected async saveEdit(user: AppUserSummary): Promise<void> {
+    this.saving.set(true);
+    this.dismissError();
+    this.editFieldErrors.set(new Map());
+
+    try {
+      await this.userService.update(user.id, {
+        name: this.editForm.name,
+        email: this.editForm.email,
+        profileId: this.editForm.profileId,
+        active: this.editForm.active,
+        password: this.editForm.password || undefined,
+      });
+
+      await this.userService.refresh();
+      this.exitEditDiscarding();
+    } catch (err) {
+      this.applyEditSaveError(err);
+    } finally {
+      this.saving.set(false);
+    }
+  }
+
+  protected requestExit(): void {
+    if (!this.isEditDirty()) {
+      this.exitEditDiscarding();
+      return;
+    }
+
+    this.confirmingExit.set(true);
+  }
+
+  protected async confirmExitYes(): Promise<void> {
+    await this.userService.refresh();
+    this.exitEditDiscarding();
+  }
+
+  protected confirmExitNo(): void {
+    this.confirmingExit.set(false);
   }
 
   protected async deactivate(user: AppUserSummary): Promise<void> {
@@ -190,6 +222,28 @@ export class Users implements OnInit, OnDestroy {
     }
   }
 
+  protected isEditFieldInvalid(field: string): boolean {
+    return this.editFieldErrors().has(field);
+  }
+
+  protected editFieldError(field: string): string {
+    return this.editFieldErrors().get(field) ?? '';
+  }
+
+  protected clearEditFieldError(field: string): void {
+    if (!this.editFieldErrors().has(field)) {
+      return;
+    }
+
+    const remaining = new Map(this.editFieldErrors());
+    remaining.delete(field);
+    this.editFieldErrors.set(remaining);
+
+    if (remaining.size === 0) {
+      this.dismissError();
+    }
+  }
+
   protected dismissError(): void {
     if (this.errorTimeout) {
       clearTimeout(this.errorTimeout);
@@ -209,26 +263,68 @@ export class Users implements OnInit, OnDestroy {
   }
 
   private applySaveError(err: unknown): void {
-    const violations = this.extractViolations(err);
+    const errors = this.collectFieldErrors(err);
+
+    if (errors.size === 0) {
+      this.showError(this.fallbackSaveMessage(err));
+      return;
+    }
+
+    this.fieldErrors.set(errors);
+    this.showError(this.invalidFieldsMessage(errors));
+    this.focusFirstInvalidField(errors);
+  }
+
+  private applyEditSaveError(err: unknown): void {
+    const errors = this.collectFieldErrors(err);
+
+    if (errors.size === 0) {
+      this.showError(this.fallbackSaveMessage(err));
+      return;
+    }
+
+    this.editFieldErrors.set(errors);
+    this.showError(this.invalidFieldsMessage(errors));
+  }
+
+  private collectFieldErrors(err: unknown): Map<string, string> {
     const errors = new Map<string, string>();
 
-    for (const violation of violations) {
+    for (const violation of this.extractViolations(err)) {
       const field = violation.field.split('.').pop() ?? '';
       if (field in FIELD_LABELS && !errors.has(field)) {
         errors.set(field, violation.message);
       }
     }
 
-    if (errors.size === 0) {
-      this.showError('Nao foi possivel salvar o usuario. Revise os campos e tente novamente.');
-      return;
+    return errors;
+  }
+
+  private invalidFieldsMessage(errors: Map<string, string>): string {
+    const labels = FIELD_ORDER.filter((field) => errors.has(field)).map((field) => FIELD_LABELS[field]);
+    return `Revise o(s) campo(s) invalido(s): ${labels.join(', ')}.`;
+  }
+
+  private fallbackSaveMessage(err: unknown): string {
+    if (err instanceof HttpErrorResponse && err.status === 409) {
+      return this.conflictMessage(err);
     }
 
-    this.fieldErrors.set(errors);
+    return 'Nao foi possivel salvar o usuario. Revise os campos e tente novamente.';
+  }
 
-    const labels = FIELD_ORDER.filter((field) => errors.has(field)).map((field) => FIELD_LABELS[field]);
-    this.showError(`Revise o(s) campo(s) invalido(s): ${labels.join(', ')}.`);
-    this.focusFirstInvalidField(errors);
+  private conflictMessage(err: HttpErrorResponse): string {
+    const body = err.error;
+
+    if (typeof body === 'string' && body.trim()) {
+      return body;
+    }
+
+    if (body && typeof body === 'object' && typeof body.message === 'string' && body.message.trim()) {
+      return body.message;
+    }
+
+    return 'E-mail ja cadastrado.';
   }
 
   private extractViolations(err: unknown): { field: string; message: string }[] {
@@ -263,8 +359,15 @@ export class Users implements OnInit, OnDestroy {
     }
   }
 
+  private exitEditDiscarding(): void {
+    this.editingId.set(null);
+    this.confirmingExit.set(false);
+    this.editSnapshot = null;
+    this.editFieldErrors.set(new Map());
+  }
+
   private resetForm(): void {
-    this.form = { name: '', email: '', password: '', profileId: '', active: true };
+    this.form = { name: '', email: '', password: '', profileId: '' };
     this.fieldErrors.set(new Map());
   }
 }

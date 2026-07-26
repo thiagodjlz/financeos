@@ -15,6 +15,16 @@ const CATEGORY: Category = {
   active: true,
 };
 
+const OTHER_CATEGORY: Category = {
+  id: 'cat-2',
+  parentId: null,
+  name: 'Salario',
+  type: 'INCOME',
+  color: null,
+  icon: null,
+  active: true,
+};
+
 describe('Categories', () => {
   let fixture: ComponentFixture<Categories>;
   let httpMock: HttpTestingController;
@@ -30,11 +40,11 @@ describe('Categories', () => {
 
   afterEach(() => httpMock.verify());
 
-  async function render(superAdmin = true): Promise<void> {
+  async function render(superAdmin = true, categories: Category[] = [CATEGORY]): Promise<void> {
     fixture = TestBed.createComponent(Categories);
     TestBed.inject(AuthService).superAdmin.set(superAdmin);
     fixture.detectChanges();
-    httpMock.expectOne(`${API_BASE}/categories`).flush([CATEGORY]);
+    httpMock.expectOne(`${API_BASE}/categories`).flush(categories);
     await settle();
   }
 
@@ -42,10 +52,15 @@ describe('Categories', () => {
     await fixture.whenStable();
     fixture.detectChanges();
     await fixture.whenStable();
+    fixture.detectChanges();
   }
 
   function query<T extends HTMLElement>(selector: string): T {
     return fixture.nativeElement.querySelector(selector) as T;
+  }
+
+  function queryAll<T extends HTMLElement>(selector: string): T[] {
+    return Array.from(fixture.nativeElement.querySelectorAll(selector)) as T[];
   }
 
   function formTitle(): string {
@@ -53,7 +68,15 @@ describe('Categories', () => {
   }
 
   function cancelButton(): HTMLButtonElement {
-    return query<HTMLButtonElement>('form button.ghost-button');
+    return query<HTMLButtonElement>('form button.danger-button');
+  }
+
+  function rowSaveButton(): HTMLButtonElement {
+    return query<HTMLButtonElement>('tbody .row-actions button.primary-button');
+  }
+
+  function rowExitButton(): HTMLButtonElement {
+    return query<HTMLButtonElement>('tbody .row-actions button.danger-button');
   }
 
   async function fillText(selector: string, value: string): Promise<void> {
@@ -86,14 +109,6 @@ describe('Categories', () => {
     await click(query<HTMLButtonElement>('tbody button.ghost-button'));
   }
 
-  async function changeEveryField(): Promise<void> {
-    await fillText('form input[name="name"]', 'Alterado');
-    await selectValue('form select[name="type"]', 'INCOME');
-    await fillText('form input[name="color"]', '#aabbcc');
-    await fillText('form input[name="icon"]', 'outro');
-    await selectIndex('form select[name="active"]', 1);
-  }
-
   function expectBlankForm(): void {
     expect(query<HTMLInputElement>('form input[name="name"]').value).toBe('');
     expect(query<HTMLSelectElement>('form select[name="type"]').value).toBe('EXPENSE');
@@ -102,15 +117,7 @@ describe('Categories', () => {
     expect(query<HTMLSelectElement>('form select[name="active"]').selectedIndex).toBe(0);
   }
 
-  function expectLoadedCategoryInForm(): void {
-    expect(query<HTMLInputElement>('form input[name="name"]').value).toBe('Mercado');
-    expect(query<HTMLSelectElement>('form select[name="type"]').value).toBe('EXPENSE');
-    expect(query<HTMLInputElement>('form input[name="color"]').value).toBe('#123456');
-    expect(query<HTMLInputElement>('form input[name="icon"]').value).toBe('carrinho');
-    expect(query<HTMLSelectElement>('form select[name="active"]').selectedIndex).toBe(0);
-  }
-
-  it('exibe o botao Cancelar ao lado de Salvar em modo de criacao', async () => {
+  it('exibe o formulario somente de criacao com titulo fixo e Cancelar vermelho', async () => {
     await render();
 
     const button = cancelButton();
@@ -120,16 +127,20 @@ describe('Categories', () => {
     expect(button.getAttribute('type')).toBe('button');
   });
 
-  it('nao renderiza o formulario nem o botao Cancelar sem permissao', async () => {
+  it('nao renderiza o formulario nem o botao Editar sem permissao', async () => {
     await render(false);
 
     expect(query('form')).toBeNull();
-    expect(query('form button.ghost-button')).toBeNull();
+    expect(query('tbody button.ghost-button')).toBeNull();
   });
 
-  it('limpa o formulario em modo de criacao', async () => {
+  it('limpa o formulario de criacao em estagio unico, sem HTTP', async () => {
     await render();
-    await changeEveryField();
+    await fillText('form input[name="name"]', 'Alterado');
+    await selectValue('form select[name="type"]', 'INCOME');
+    await fillText('form input[name="color"]', '#aabbcc');
+    await fillText('form input[name="icon"]', 'outro');
+    await selectIndex('form select[name="active"]', 1);
 
     await click(cancelButton());
 
@@ -138,74 +149,114 @@ describe('Categories', () => {
     httpMock.expectNone(() => true);
   });
 
-  it('restaura os valores originais no primeiro clique e mantem a edicao', async () => {
+  it('entra em edicao inline com controles de nome, tipo, situacao, cor e icone sem tocar o formulario lateral', async () => {
     await render();
+
     await startEditing();
-    await changeEveryField();
 
-    await click(cancelButton());
-
-    expectLoadedCategoryInForm();
-    expect(formTitle()).toBe('Editar categoria');
-    expect(cancelButton().textContent?.trim()).toBe('Cancelar');
-    httpMock.expectNone(() => true);
-  });
-
-  it('sai da edicao no segundo clique, com o formulario em branco', async () => {
-    await render();
-    await startEditing();
-    await changeEveryField();
-
-    await click(cancelButton());
-    await click(cancelButton());
-
+    expect(query<HTMLInputElement>('tbody input[name="editName"]').value).toBe('Mercado');
+    expect(query<HTMLInputElement>('tbody input[name="editColor"]').value).toBe('#123456');
+    expect(query<HTMLInputElement>('tbody input[name="editIcon"]').value).toBe('carrinho');
+    expect(query<HTMLSelectElement>('tbody select[name="editType"]').value).toBe('EXPENSE');
+    expect(query<HTMLSelectElement>('tbody select[name="editActive"]').selectedIndex).toBe(0);
     expect(formTitle()).toBe('Nova categoria');
     expectBlankForm();
     httpMock.expectNone(() => true);
   });
 
-  it('sai da edicao ja no primeiro clique quando nao ha alteracao pendente', async () => {
-    await render();
+  it('desabilita o Editar das demais linhas com uma linha em edicao', async () => {
+    await render(true, [CATEGORY, OTHER_CATEGORY]);
+
     await startEditing();
 
-    await click(cancelButton());
-
-    expect(formTitle()).toBe('Nova categoria');
-    expectBlankForm();
-    httpMock.expectNone(() => true);
+    const editButtons = queryAll<HTMLButtonElement>('tbody button.ghost-button');
+    expect(editButtons).toHaveLength(1);
+    expect(editButtons[0].disabled).toBe(true);
   });
 
-  it('salva com PUT do mesmo id apos restaurar os valores', async () => {
+  it('salva a edicao com PUT incluindo cor e icone, recarrega e volta ao modo leitura', async () => {
     await render();
     await startEditing();
-    await changeEveryField();
-    await click(cancelButton());
+    await fillText('tbody input[name="editName"]', 'Feira');
+    await fillText('tbody input[name="editColor"]', '#aabbcc');
+    await fillText('tbody input[name="editIcon"]', 'cesta');
 
-    await click(query<HTMLButtonElement>('form button[type="submit"]'));
+    await click(rowSaveButton());
 
     const request = httpMock.expectOne(`${API_BASE}/categories/cat-1`);
     expect(request.request.method).toBe('PUT');
-    expect(request.request.body).toMatchObject({ name: 'Mercado', type: 'EXPENSE' });
-    request.flush(CATEGORY);
+    expect(request.request.body).toMatchObject({
+      name: 'Feira',
+      type: 'EXPENSE',
+      color: '#aabbcc',
+      icon: 'cesta',
+      active: true,
+    });
+    request.flush({ ...CATEGORY, name: 'Feira', color: '#aabbcc', icon: 'cesta' });
     await settle();
-    httpMock.expectOne(`${API_BASE}/categories`).flush([CATEGORY]);
+    httpMock.expectOne(`${API_BASE}/categories`).flush([{ ...CATEGORY, name: 'Feira' }]);
     await settle();
+
+    expect(query('tbody input[name="editName"]')).toBeNull();
+    expect(query('tbody tr td').textContent?.trim()).toBe('Feira');
   });
 
-  it('salva com POST apos sair da edicao', async () => {
+  it('sai direto sem modal e sem HTTP quando nao ha alteracao pendente', async () => {
     await render();
     await startEditing();
-    await click(cancelButton());
-    await fillText('form input[name="name"]', 'Nova');
 
-    await click(query<HTMLButtonElement>('form button[type="submit"]'));
+    await click(rowExitButton());
 
-    const request = httpMock.expectOne(`${API_BASE}/categories`);
-    expect(request.request.method).toBe('POST');
-    expect(request.request.body).toMatchObject({ name: 'Nova' });
-    request.flush({ ...CATEGORY, id: 'cat-2', name: 'Nova' });
-    await settle();
+    expect(query('.modal-backdrop')).toBeNull();
+    expect(query('tbody input[name="editName"]')).toBeNull();
+    httpMock.expectNone(() => true);
+  });
+
+  it('abre o modal ao sair com alteracao pendente e mantem a edicao no Nao', async () => {
+    await render();
+    await startEditing();
+    await fillText('tbody input[name="editName"]', 'Alterado');
+
+    await click(rowExitButton());
+
+    expect(query('.modal-card p').textContent?.trim()).toBe('Deseja sair sem salvar?');
+
+    await click(query<HTMLButtonElement>('.modal-actions button.ghost-button'));
+
+    expect(query('.modal-backdrop')).toBeNull();
+    expect(query<HTMLInputElement>('tbody input[name="editName"]').value).toBe('Alterado');
+    httpMock.expectNone(() => true);
+  });
+
+  it('descarta e recarrega da API ao confirmar a saida com Sim', async () => {
+    await render();
+    await startEditing();
+    await fillText('tbody input[name="editName"]', 'Alterado');
+    await click(rowExitButton());
+
+    await click(query<HTMLButtonElement>('.modal-actions button.primary-button'));
+
     httpMock.expectOne(`${API_BASE}/categories`).flush([CATEGORY]);
     await settle();
+
+    expect(query('.modal-backdrop')).toBeNull();
+    expect(query('tbody input[name="editName"]')).toBeNull();
+    expect(query('tbody tr td').textContent?.trim()).toBe('Mercado');
+  });
+
+  it('exibe a mensagem de duplicidade no 409 e mantem a linha em edicao', async () => {
+    await render();
+    await startEditing();
+    await fillText('tbody input[name="editName"]', 'Duplicada');
+
+    await click(rowSaveButton());
+
+    httpMock
+      .expectOne(`${API_BASE}/categories/cat-1`)
+      .flush(null, { status: 409, statusText: 'Conflict' });
+    await settle();
+
+    expect(query('.status-bar').textContent?.trim()).toBe('Ja existe uma categoria com esse nome e tipo.');
+    expect(query<HTMLInputElement>('tbody input[name="editName"]').value).toBe('Duplicada');
   });
 });

@@ -81,7 +81,8 @@ select {
 }
 
 .primary-button,
-.ghost-button {
+.ghost-button,
+.danger-button {
   border: 0;
   border-radius: 8px;
   min-height: 40px;
@@ -104,6 +105,16 @@ select {
   border: 1px solid #d7d0c1;
   background: #ffffff;
   color: #59645f;
+}
+
+.danger-button {
+  background: #b84a3f;
+  color: #ffffff;
+}
+
+.danger-button:disabled {
+  opacity: 0.55;
+  cursor: wait;
 }
 
 .status-pill {
@@ -184,6 +195,71 @@ th {
   color: #65716b;
   font-size: 12px;
   text-transform: uppercase;
+}
+
+table.fixed-layout {
+  table-layout: fixed;
+
+  th,
+  td {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  td input,
+  td select {
+    padding: 6px 8px;
+  }
+
+  td .field-error {
+    display: block;
+    margin-top: 4px;
+  }
+}
+
+.row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+
+  .ghost-button,
+  .primary-button,
+  .danger-button {
+    width: 90px;
+    min-height: 32px;
+    padding: 0;
+    font-size: 13px;
+  }
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  background: rgb(30 27 20 / 45%);
+}
+
+.modal-card {
+  width: min(340px, calc(100vw - 32px));
+  border-radius: 10px;
+  padding: 20px;
+  background: #fffdf8;
+  box-shadow: 0 20px 48px rgb(43 37 25 / 24%);
+
+  p {
+    margin: 0 0 18px;
+    font-weight: 700;
+  }
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
 }
 
 @media (max-width: 680px) {

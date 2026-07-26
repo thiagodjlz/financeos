@@ -4,9 +4,9 @@
 </div>
 
 <section class="content-grid">
-  <form class="panel form-panel" *ngIf="authService.can('USERS', 'CREATE') || editingId()" (ngSubmit)="save()">
+  <form class="panel form-panel" *ngIf="authService.can('USERS', 'CREATE')" (ngSubmit)="save()">
     <div class="panel-heading">
-      <h3>{{ editingId() ? 'Editar usuario' : 'Novo usuario' }}</h3>
+      <h3>Novo usuario</h3>
     </div>
     <label>
       Nome
@@ -34,7 +34,7 @@
       <small class="field-error" *ngIf="isFieldInvalid('email')">{{ fieldError('email') }}</small>
     </label>
     <label>
-      Senha <span *ngIf="editingId()">(deixe em branco para manter)</span>
+      Senha
       <input
         type="password"
         name="password"
@@ -42,7 +42,7 @@
         [(ngModel)]="form.password"
         [class.invalid]="isFieldInvalid('password')"
         (input)="clearFieldError('password')"
-        [required]="!editingId()"
+        required
       />
       <small class="field-error" *ngIf="isFieldInvalid('password')">{{ fieldError('password') }}</small>
     </label>
@@ -61,12 +61,9 @@
       </select>
       <small class="field-error" *ngIf="isFieldInvalid('profileId')">{{ fieldError('profileId') }}</small>
     </label>
-    <label *ngIf="editingId()">
-      <input type="checkbox" name="active" [(ngModel)]="form.active" /> Ativo
-    </label>
     <div class="two-cols">
       <button class="primary-button" type="submit" [disabled]="saving()">Salvar</button>
-      <button class="ghost-button" type="button" (click)="cancel()">Cancelar</button>
+      <button class="danger-button" type="button" (click)="cancel()">Cancelar</button>
     </div>
   </form>
 
@@ -76,7 +73,14 @@
       <span>{{ users().length }}</span>
     </div>
     <div class="table-wrap">
-      <table>
+      <table class="fixed-layout">
+        <colgroup>
+          <col />
+          <col />
+          <col class="col-profile" />
+          <col class="col-status" />
+          <col class="col-actions" />
+        </colgroup>
         <thead>
           <tr>
             <th>Nome</th>
@@ -87,28 +91,102 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let user of users()">
-            <td>{{ user.name }}</td>
-            <td>{{ user.email }}</td>
-            <td>{{ profileName(user.profileId) }}</td>
-            <td><span class="status-pill">{{ user.active ? 'Ativo' : 'Inativo' }}</span></td>
-            <td>
-              <button *ngIf="authService.can('USERS', 'EDIT')" type="button" class="ghost-button" (click)="edit(user)">
-                Editar
-              </button>
-              <button
-                *ngIf="authService.can('USERS', 'DELETE') && user.active"
-                type="button"
-                class="ghost-button"
-                (click)="deactivate(user)"
-              >
-                Desativar
-              </button>
-            </td>
-          </tr>
+          <ng-container *ngFor="let user of users()">
+            <tr *ngIf="editingId() !== user.id">
+              <td>{{ user.name }}</td>
+              <td>{{ user.email }}</td>
+              <td>{{ profileName(user.profileId) }}</td>
+              <td><span class="status-pill">{{ user.active ? 'Ativo' : 'Inativo' }}</span></td>
+              <td class="row-actions">
+                <button
+                  *ngIf="authService.can('USERS', 'EDIT')"
+                  type="button"
+                  class="ghost-button"
+                  [disabled]="editingId() !== null"
+                  (click)="startEdit(user)"
+                >
+                  Editar
+                </button>
+                <button
+                  *ngIf="authService.can('USERS', 'DELETE') && user.active"
+                  type="button"
+                  class="ghost-button"
+                  (click)="deactivate(user)"
+                >
+                  Desativar
+                </button>
+              </td>
+            </tr>
+            <tr *ngIf="editingId() === user.id">
+              <td>
+                <input
+                  name="editName"
+                  [(ngModel)]="editForm.name"
+                  [class.invalid]="isEditFieldInvalid('name')"
+                  (input)="clearEditFieldError('name')"
+                />
+                <small class="field-error" *ngIf="isEditFieldInvalid('name')">{{ editFieldError('name') }}</small>
+              </td>
+              <td>
+                <div class="inline-email-fields">
+                  <input
+                    type="email"
+                    name="editEmail"
+                    [(ngModel)]="editForm.email"
+                    [class.invalid]="isEditFieldInvalid('email')"
+                    (input)="clearEditFieldError('email')"
+                  />
+                  <small class="field-error" *ngIf="isEditFieldInvalid('email')">{{ editFieldError('email') }}</small>
+                  <input
+                    type="password"
+                    name="editPassword"
+                    placeholder="Nova senha (opcional)"
+                    [(ngModel)]="editForm.password"
+                    [class.invalid]="isEditFieldInvalid('password')"
+                    (input)="clearEditFieldError('password')"
+                  />
+                  <small class="field-error" *ngIf="isEditFieldInvalid('password')">{{ editFieldError('password') }}</small>
+                </div>
+              </td>
+              <td>
+                <select
+                  name="editProfileId"
+                  [(ngModel)]="editForm.profileId"
+                  [class.invalid]="isEditFieldInvalid('profileId')"
+                  (change)="clearEditFieldError('profileId')"
+                >
+                  <option value="">Selecione</option>
+                  <option *ngFor="let profile of profiles()" [value]="profile.id">{{ profile.name }}</option>
+                </select>
+                <small class="field-error" *ngIf="isEditFieldInvalid('profileId')">{{ editFieldError('profileId') }}</small>
+              </td>
+              <td>
+                <select name="editActive" [(ngModel)]="editForm.active">
+                  <option [ngValue]="true">Ativo</option>
+                  <option [ngValue]="false">Inativo</option>
+                </select>
+              </td>
+              <td class="row-actions">
+                <button type="button" class="primary-button" [disabled]="saving()" (click)="saveEdit(user)">
+                  Salvar
+                </button>
+                <button type="button" class="danger-button" (click)="requestExit()">Sair</button>
+              </td>
+            </tr>
+          </ng-container>
         </tbody>
       </table>
       <p class="empty-state" *ngIf="!users().length">Nenhum usuario cadastrado</p>
     </div>
   </section>
 </section>
+
+<div class="modal-backdrop" *ngIf="confirmingExit()" (click)="confirmExitNo()">
+  <div class="modal-card" (click)="$event.stopPropagation()">
+    <p>Deseja sair sem salvar?</p>
+    <div class="modal-actions">
+      <button type="button" class="ghost-button" (click)="confirmExitNo()">Nao</button>
+      <button type="button" class="primary-button" (click)="confirmExitYes()">Sim</button>
+    </div>
+  </div>
+</div>
