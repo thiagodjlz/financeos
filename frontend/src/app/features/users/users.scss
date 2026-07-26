@@ -23,6 +23,27 @@ select.invalid:focus {
   text-transform: none;
 }
 
+table {
+  min-width: 960px;
+}
+
+col.col-profile {
+  width: 160px;
+}
+
+col.col-status {
+  width: 140px;
+}
+
+col.col-actions {
+  width: 210px;
+}
+
+.inline-email-fields {
+  display: grid;
+  gap: 6px;
+}
+
 .status-bar.dismissible {
   position: relative;
   padding-right: 40px;

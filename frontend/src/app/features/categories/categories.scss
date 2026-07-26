@@ -2,3 +2,27 @@ input[type='color'] {
   padding: 4px;
   height: 40px;
 }
+
+col.col-type {
+  width: 140px;
+}
+
+col.col-situation {
+  width: 140px;
+}
+
+col.col-actions {
+  width: 210px;
+}
+
+.inline-name-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px minmax(0, 90px);
+  gap: 6px;
+  align-items: center;
+
+  input[type='color'] {
+    height: 34px;
+    padding: 2px;
+  }
+}

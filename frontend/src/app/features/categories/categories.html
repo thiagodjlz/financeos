@@ -1,13 +1,9 @@
 <div class="status-bar" *ngIf="error()">{{ error() }}</div>
 
 <section class="content-grid">
-  <form
-    class="panel form-panel"
-    *ngIf="authService.can('CATEGORIES', 'CREATE') || (editingId() && authService.can('CATEGORIES', 'EDIT'))"
-    (ngSubmit)="save()"
-  >
+  <form class="panel form-panel" *ngIf="authService.can('CATEGORIES', 'CREATE')" (ngSubmit)="save()">
     <div class="panel-heading">
-      <h3>{{ editingId() ? 'Editar categoria' : 'Nova categoria' }}</h3>
+      <h3>Nova categoria</h3>
     </div>
     <label>
       Nome
@@ -37,7 +33,7 @@
     </label>
     <div class="two-cols">
       <button class="primary-button" type="submit" [disabled]="saving()">Salvar</button>
-      <button class="ghost-button" type="button" (click)="cancel()">Cancelar</button>
+      <button class="danger-button" type="button" (click)="cancel()">Cancelar</button>
     </div>
   </form>
 
@@ -47,7 +43,13 @@
       <span>{{ categories().length }}</span>
     </div>
     <div class="table-wrap">
-      <table>
+      <table class="fixed-layout">
+        <colgroup>
+          <col />
+          <col class="col-type" />
+          <col class="col-situation" />
+          <col class="col-actions" />
+        </colgroup>
         <thead>
           <tr>
             <th>Nome</th>
@@ -57,19 +59,64 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let category of categories()">
-            <td>{{ category.name }}</td>
-            <td>{{ category.type === 'EXPENSE' ? 'Despesa' : 'Receita' }}</td>
-            <td><span class="status-pill">{{ category.active ? 'Ativo' : 'Inativo' }}</span></td>
-            <td>
-              <button *ngIf="authService.can('CATEGORIES', 'EDIT')" type="button" class="ghost-button" (click)="edit(category)">
-                Editar
-              </button>
-            </td>
-          </tr>
+          <ng-container *ngFor="let category of categories()">
+            <tr *ngIf="editingId() !== category.id">
+              <td>{{ category.name }}</td>
+              <td>{{ category.type === 'EXPENSE' ? 'Despesa' : 'Receita' }}</td>
+              <td><span class="status-pill">{{ category.active ? 'Ativo' : 'Inativo' }}</span></td>
+              <td class="row-actions">
+                <button
+                  *ngIf="authService.can('CATEGORIES', 'EDIT')"
+                  type="button"
+                  class="ghost-button"
+                  [disabled]="editingId() !== null"
+                  (click)="startEdit(category)"
+                >
+                  Editar
+                </button>
+              </td>
+            </tr>
+            <tr *ngIf="editingId() === category.id">
+              <td>
+                <div class="inline-name-fields">
+                  <input name="editName" [(ngModel)]="editForm.name" required />
+                  <input type="color" name="editColor" title="Cor" [(ngModel)]="editForm.color" />
+                  <input name="editIcon" placeholder="Icone" [(ngModel)]="editForm.icon" />
+                </div>
+              </td>
+              <td>
+                <select name="editType" [(ngModel)]="editForm.type">
+                  <option value="EXPENSE">Despesa</option>
+                  <option value="INCOME">Receita</option>
+                </select>
+              </td>
+              <td>
+                <select name="editActive" [(ngModel)]="editForm.active">
+                  <option [ngValue]="true">Ativo</option>
+                  <option [ngValue]="false">Inativo</option>
+                </select>
+              </td>
+              <td class="row-actions">
+                <button type="button" class="primary-button" [disabled]="saving()" (click)="saveEdit(category)">
+                  Salvar
+                </button>
+                <button type="button" class="danger-button" (click)="requestExit()">Sair</button>
+              </td>
+            </tr>
+          </ng-container>
         </tbody>
       </table>
       <p class="empty-state" *ngIf="!categories().length">Nenhuma categoria cadastrada</p>
     </div>
   </section>
 </section>
+
+<div class="modal-backdrop" *ngIf="confirmingExit()" (click)="confirmExitNo()">
+  <div class="modal-card" (click)="$event.stopPropagation()">
+    <p>Deseja sair sem salvar?</p>
+    <div class="modal-actions">
+      <button type="button" class="ghost-button" (click)="confirmExitNo()">Nao</button>
+      <button type="button" class="primary-button" (click)="confirmExitYes()">Sim</button>
+    </div>
+  </div>
+</div>
