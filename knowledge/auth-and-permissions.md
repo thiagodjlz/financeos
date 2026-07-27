@@ -43,6 +43,7 @@ Chamado como `accessControl.require(Screen.X, Action.Y)` na primeira linha de pr
 
 - `models.ts`: tipos TS (`Screen`, `Action`, `PermissionEntry`, `MeResponse`) espelham os enums/records do backend 1:1.
 - `auth.service.ts`: guarda o JWT em `localStorage` (`financeos_token`); `can(screen, action)` replica a mesma logica de `AccessControl` — **e so gate de UX, a autorizacao real e sempre no backend**.
+- Menu lateral (`layout/main-layout/`): itens de nivel superior "Resumo" e "Lancamentos" e dois grupos expansiveis — "Cadastros" (subitem "Categoria") e "Configuracoes" (subitens "Usuarios" e "Perfis", agrupados na issue #33). Os grupos sao **agrupadores visuais, sem `Screen` propria**: cada subitem tem `*ngIf` com o `can(screen, 'VIEW')` da sua tela e o grupo so renderiza se ao menos um subitem for visivel (ex.: `canSeeSettings()` = `USERS/VIEW || PROFILES/VIEW`); sem nenhuma permissao dos filhos, o grupo inteiro some. Isso continua sendo so espelho de UX — as rotas seguem protegidas pelo `permissionGuard` e a API pelo `AccessControl`. Tela nova que entrar num grupo do menu segue esse padrao (nao criar `Screen` para o agrupador).
 - `auth.guard.ts`: bloqueia rota se nao autenticado.
 - `permission.guard.ts`: `permissionGuard(screen, action)` por rota; redireciona para `/dashboard` (nao `/login`) se autenticado mas sem a permissao especifica.
 - `auth.interceptor.ts`: injeta `Authorization: Bearer` em tudo exceto `/auth/login`; em qualquer `401`, forca logout + redirect.

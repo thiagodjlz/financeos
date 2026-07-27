@@ -16,6 +16,7 @@ O commit acontece aqui, e nao na etapa de implementacao, porque a esteira para a
    - `git add` **apenas** nos arquivos listados em `implementation-notes.md` mais a pasta `specs/<numero>-<slug>/` (os artefatos da esteira entram no mesmo commit). Nunca `git add -A` nem `git add .` — pode arrastar arquivo local que nao e da feature.
    - `git commit` com mensagem em portugues, curta e direta (ex.: "Adiciona exportacao de lancamentos em CSV").
    - Se, depois do `git add`, `git status` ainda mostrar arquivo modificado relevante que nao esta nas notas (ex.: arquivo que a rodada de ajuste tocou e ninguem registrou), inclua-o no commit e registre isso na sua resposta — mas nao inclua arquivo obviamente alheio a feature (`.env`, chaves `.pem`, logs); nesse caso deixe fora e avise.
+   - Atencao especial a `knowledge/*.md`, `.claude/agents/*` e `.claude/skills/*` modificados: como o `/pipeline:sync-knowledge` da feature **anterior** nao comita sozinho, e comum o working tree conter essas mudancas pendentes de revisao do usuario (aconteceu na esteira da issue #33, que rodou com o sync da #31 pendente). So entram no commit se estiverem listados em `implementation-notes.md` desta feature; caso contrario, deixe-os fora e mencione na resposta que ha saida de sync-knowledge anterior aguardando commit do usuario.
 4. `git push -u origin <branch>`.
 5. Abra o PR:
 
