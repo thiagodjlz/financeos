@@ -4,7 +4,7 @@ url: https://github.com/thiagodjlz/financeos/issues/35
 title: "Mudança de desing"
 slug: redesign-interface
 domains: [auth, users, categories, transactions, dashboard]
-stage: validated
+stage: pr-open
 branch: feature/issue-35-redesign-interface
 created: 2026-07-27
 ---
