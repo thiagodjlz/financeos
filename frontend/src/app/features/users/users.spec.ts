@@ -70,7 +70,7 @@ describe('Users', () => {
   }
 
   function cancelButton(): HTMLButtonElement {
-    return query<HTMLButtonElement>('form button.danger-button');
+    return query<HTMLButtonElement>('form button.ghost-button');
   }
 
   function rowSaveButton(): HTMLButtonElement {
@@ -138,7 +138,7 @@ describe('Users', () => {
     expect(value('form select[name="profileId"]')).toBe('');
   }
 
-  it('exibe o formulario somente de criacao com titulo fixo, senha obrigatoria e Cancelar vermelho', async () => {
+  it('exibe o formulario somente de criacao com titulo fixo, senha obrigatoria e Cancelar secundario', async () => {
     await render();
 
     const button = cancelButton();

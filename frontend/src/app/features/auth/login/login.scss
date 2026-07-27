@@ -3,34 +3,52 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 16px;
+  gap: 22px;
   min-height: 100vh;
   padding: 24px;
 }
 
 .auth-card {
-  width: 100%;
-  max-width: 360px;
+  width: min(380px, 100%);
+  gap: 18px;
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-xl);
+  padding: 32px;
+  background: var(--surface-login);
+  box-shadow: var(--shadow-login);
+
+  input {
+    padding: 12px 14px;
+    background: var(--surface-login-input);
+  }
+
+  .primary-button {
+    width: 100%;
+    margin-top: 4px;
+    padding: 13px;
+    font-size: 14.5px;
+  }
 }
 
 .app-footer {
-  color: #8a9189;
+  color: var(--text-faint);
 }
 
 .brand-block {
   display: flex;
-  gap: 12px;
+  gap: 14px;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 
   h1 {
     margin: 0;
-    font-size: 22px;
+    font-size: 20px;
+    font-weight: 800;
   }
 
   p {
     margin: 2px 0 0;
-    color: #65716b;
+    color: var(--text-muted);
     font-size: 13px;
   }
 }
@@ -38,10 +56,12 @@
 .mark {
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  background: #d7b46a;
-  color: #17231f;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: var(--radius-mark);
+  background: var(--accent);
+  color: var(--surface);
+  font-size: 19px;
   font-weight: 800;
 }

@@ -149,6 +149,22 @@ export class Transactions implements OnInit {
     return transactionStatusLabel(status);
   }
 
+  protected statusPillClass(status: TransactionStatus | null): string {
+    switch (status) {
+      case 'PAID':
+        return 'status-pill pill-income';
+      case 'PENDING':
+        return 'status-pill pill-pending';
+      default:
+        return 'status-pill pill-neutral';
+    }
+  }
+
+  protected signedMoney(transaction: Transaction): string {
+    const sign = transaction.type === 'EXPENSE' ? '- ' : '+ ';
+    return `${sign}${money(transaction.amount)}`;
+  }
+
   protected startEdit(transaction: Transaction): void {
     if (this.editingId() !== null) {
       return;

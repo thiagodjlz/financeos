@@ -90,7 +90,7 @@ describe('Transactions', () => {
   }
 
   function cancelButton(): HTMLButtonElement {
-    return query<HTMLButtonElement>('form button.danger-button');
+    return query<HTMLButtonElement>('form button.ghost-button');
   }
 
   async function fillText(selector: string, text: string): Promise<void> {

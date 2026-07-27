@@ -16,42 +16,105 @@
 
 <div class="status-bar" *ngIf="error()">{{ error() }}</div>
 
-<section class="dashboard-grid">
-  <div class="metric-card income">
-    <span>Receitas</span>
+<section class="metric-grid">
+  <div class="metric-card">
+    <div class="metric-head">
+      <span class="metric-icon income">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M12 19V5M5 12l7-7 7 7"></path>
+        </svg>
+      </span>
+      <span class="metric-label">Receitas</span>
+    </div>
     <strong>{{ formatMoney(summary()?.totalIncome) }}</strong>
   </div>
-  <div class="metric-card expense">
-    <span>Despesas</span>
+  <div class="metric-card">
+    <div class="metric-head">
+      <span class="metric-icon expense">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M12 5v14M5 12l7 7 7-7"></path>
+        </svg>
+      </span>
+      <span class="metric-label">Despesas</span>
+    </div>
     <strong>{{ formatMoney(summary()?.totalExpense) }}</strong>
   </div>
-  <div class="metric-card pending">
-    <span>Pendentes</span>
+  <div class="metric-card">
+    <div class="metric-head">
+      <span class="metric-icon pending">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <circle cx="12" cy="12" r="9"></circle>
+          <path d="M12 7v5l3 3"></path>
+        </svg>
+      </span>
+      <span class="metric-label">Pendentes</span>
+    </div>
     <strong>{{ formatMoney(summary()?.pendingExpense) }}</strong>
   </div>
-  <div class="metric-card balance">
-    <span>Saldo</span>
+  <div class="metric-card">
+    <div class="metric-head">
+      <span class="metric-icon balance">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M3 12h18M12 3v18"></path>
+        </svg>
+      </span>
+      <span class="metric-label">Saldo</span>
+    </div>
     <strong>{{ formatMoney(summary()?.balance) }}</strong>
   </div>
+</section>
 
-  <section class="panel wide">
+<section class="panels-grid">
+  <section class="panel chart-panel">
     <div class="panel-heading">
       <h3>Evolucao anual</h3>
-      <span>{{ summary()?.transactionCount ?? 0 }} lancamentos no periodo</span>
-    </div>
-    <div class="month-strip">
-      <div class="month-row" *ngFor="let item of summary()?.monthlyEvolution">
-        <span>{{ formatMonthName(item.month) | titlecase }}</span>
-        <div class="bar-track">
-          <div class="bar income-bar" [style.width.%]="item.income ? 100 : 0"></div>
-          <div class="bar expense-bar" [style.width.%]="item.expense ? 100 : 0"></div>
-        </div>
-        <strong>{{ formatMoney(item.balance) }}</strong>
+      <div class="chart-legend">
+        <span><i class="legend-marker income"></i>Receita</span>
+        <span><i class="legend-marker expense"></i>Despesa</span>
+        <span><i class="legend-marker balance"></i>Saldo</span>
       </div>
     </div>
+
+    <svg class="evolution-chart" viewBox="0 0 840 210" role="img" aria-label="Evolucao anual de receitas, despesas e saldo">
+      <ng-container *ngFor="let bar of chart().bars">
+        <rect
+          class="bar-income"
+          [attr.x]="bar.incomeX"
+          [attr.y]="bar.incomeY"
+          [attr.width]="barWidth"
+          [attr.height]="bar.incomeH"
+          rx="2.5"
+        ></rect>
+        <rect
+          class="bar-expense"
+          [attr.x]="bar.expenseX"
+          [attr.y]="bar.expenseY"
+          [attr.width]="barWidth"
+          [attr.height]="bar.expenseH"
+          rx="2.5"
+        ></rect>
+        <text class="chart-month" [attr.x]="bar.labelX" y="205" font-size="11" text-anchor="middle">{{ bar.label }}</text>
+      </ng-container>
+      <polyline
+        class="balance-line"
+        [attr.points]="chart().linePoints"
+        fill="none"
+        stroke-width="2.5"
+        stroke-linejoin="round"
+        stroke-linecap="round"
+      ></polyline>
+      <circle
+        class="balance-point"
+        *ngFor="let bar of chart().bars"
+        [attr.cx]="bar.lineX"
+        [attr.cy]="bar.lineY"
+        r="3.5"
+        stroke-width="2"
+      ></circle>
+    </svg>
   </section>
 
-  <section class="panel">
+  <section class="panel breakdown-panel">
     <div class="panel-heading">
       <h3>Detalhamento</h3>
     </div>
@@ -60,10 +123,15 @@
         <span>Receitas</span>
         <strong>{{ categoriesByType('INCOME').length }}</strong>
       </div>
-      <div class="compact-list">
-        <div class="list-row" *ngFor="let item of categoriesByType('INCOME')">
-          <strong>{{ item.categoryName }}</strong>
-          <b>{{ formatMoney(item.totalAmount) }}</b>
+      <div class="category-list">
+        <div class="category-row" *ngFor="let item of categoriesByType('INCOME')">
+          <div class="category-row-head">
+            <strong>{{ item.categoryName }}</strong>
+            <span>{{ formatMoney(item.totalAmount) }}</span>
+          </div>
+          <div class="category-track">
+            <div class="category-bar income" [style.width.%]="(item.totalAmount / maxAmount('INCOME')) * 100"></div>
+          </div>
         </div>
         <p class="empty-state" *ngIf="!categoriesByType('INCOME').length">Sem dados no periodo</p>
       </div>
@@ -73,10 +141,15 @@
         <span>Despesas</span>
         <strong>{{ categoriesByType('EXPENSE').length }}</strong>
       </div>
-      <div class="compact-list">
-        <div class="list-row" *ngFor="let item of categoriesByType('EXPENSE')">
-          <strong>{{ item.categoryName }}</strong>
-          <b>{{ formatMoney(item.totalAmount) }}</b>
+      <div class="category-list">
+        <div class="category-row" *ngFor="let item of categoriesByType('EXPENSE')">
+          <div class="category-row-head">
+            <strong>{{ item.categoryName }}</strong>
+            <span>{{ formatMoney(item.totalAmount) }}</span>
+          </div>
+          <div class="category-track">
+            <div class="category-bar expense" [style.width.%]="(item.totalAmount / maxAmount('EXPENSE')) * 100"></div>
+          </div>
         </div>
         <p class="empty-state" *ngIf="!categoriesByType('EXPENSE').length">Sem dados no periodo</p>
       </div>
