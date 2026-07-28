@@ -63,6 +63,21 @@ Os criterios de aceite devem ser concretos e verificaveis (ex.: "GET /api/x reto
 
 6. Ao final, responda com um resumo curto (5-8 linhas): o que a issue pede, dominios identificados, quantos criterios de aceite, e se ha pontos em aberto (liste-os explicitamente para quem chamou voce poder repassar ao usuario).
 
+## Se a issue trouxer um anexo de design (mockup)
+
+Quando a issue apontar para um design (projeto de design do Claude, Figma, print), o comando que te chamou tenta baixar o artefato e deixa-lo em `specs/<numero>-<slug>/design/` antes de te acionar. Confira essa pasta:
+
+- **Com copia local**: esse arquivo e a **fonte da verdade visual** da issue e nenhum valor visual pode ser inventado fora dele. Leia-o inteiro — num mockup exportado os estilos costumam ficar inline (`style="..."`) e os compartilhados dentro de helpers no fim do arquivo (ex.: `renderVals()` num `<script type="text/x-dc">`), entao ler so a marcacao da tela deixa metade dos valores de fora.
+- **Sem copia local** (link inacessivel): registre isso em "Pontos em aberto" e nao escreva criterio visual nenhum a partir de suposicao.
+
+Uma spec de design precisa, alem das secoes normais, de tres coisas que a tornam verificavel:
+
+1. Uma tabela **"Tokens extraidos do mockup"** — uma linha por valor visual (cor, sombra, raio, tipografia, densidade, geometria), com o valor exato e **a origem dele no arquivo**. Criterio de aceite visual deve citar esses valores, nunca "ficar parecido com o design".
+2. Um **mapa "telas do mockup -> arquivos do app"**, para o plano nao ter que redescobrir onde cada tela mora.
+3. Uma tabela **"Divergencias entre o mockup e o app atual"** (D1, D2, ...), uma linha por diferenca, com **como a spec resolve** cada uma: o mockup prevalece, o comportamento atual prevalece, ou vira "Ponto em aberto". Diferenca nao resolvida nunca pode virar suposicao silenciosa na implementacao — inclusive as omissoes: mockup que simplesmente **nao desenha** um estado ja existente (linha em edicao, modal, mensagem de erro) nao autoriza remove-lo, e mockup que nao desenha um campo existente nao autoriza apagar o campo (isso seria mudanca funcional).
+
+Liste tambem, numa secao **"Regras existentes que restringem o redesign"**, o comportamento ja entregue por issues anteriores que precisa sobreviver (edicao inline, botao "Cancelar" sem HTTP, visibilidade do menu por permissao, recargas automaticas) e escreva criterios de **nao-regressao** para cada um — um redesign e camada de apresentacao: nenhuma regra de negocio, endpoint ou validacao muda por causa dele.
+
 ## Se o prompt trouxer decisoes ja tomadas com o usuario
 
 Se o prompt indicar que esta e uma regeneracao de uma spec existente com respostas do usuario para pontos que estavam em aberto (o comando pergunta ao usuario e repassa as respostas), incorpore cada resposta como um item na secao "Decisoes" (com a data de hoje) e remova o ponto correspondente de "Pontos em aberto" — mantenha nessa secao so o que continuar sem resposta. Nao reescreva do zero o resto da spec, so ajuste o que a decisao afeta (criterios de aceite, contexto).
