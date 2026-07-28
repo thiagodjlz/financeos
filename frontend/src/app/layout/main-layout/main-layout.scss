@@ -19,9 +19,7 @@
   transition: width 0.18s ease;
 }
 
-.sidebar.expanded,
-.sidebar:hover,
-.sidebar:focus-within {
+.sidebar.expanded {
   width: 236px;
   box-shadow: var(--shadow-sidebar);
 }
@@ -170,9 +168,7 @@
   white-space: nowrap;
 }
 
-.sidebar.expanded,
-.sidebar:hover,
-.sidebar:focus-within {
+.sidebar.expanded {
   .brand-text,
   .nav-label {
     opacity: 1;
@@ -188,6 +184,10 @@
   min-width: 0;
   margin-left: 76px;
   padding: 34px 40px;
+
+  &:focus {
+    outline: none;
+  }
 }
 
 @media (max-width: 680px) {
