@@ -3,7 +3,7 @@ issue: 37
 url: https://github.com/thiagodjlz/financeos/issues/37
 title: "Menu Cadastros"
 domains: [categories, auth]
-stage: validated
+stage: pr-open
 branch: feature/issue-37-menu-cadastros
 created: 2026-07-27
 ---
