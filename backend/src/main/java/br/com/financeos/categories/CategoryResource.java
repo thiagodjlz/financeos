@@ -104,12 +104,12 @@ public class CategoryResource {
 
         if (request.parentId().equals(id)) {
             throw new WebApplicationException(
-                    "Uma categoria nao pode ser pai dela mesma.", Response.Status.BAD_REQUEST);
+                    "Uma categoria não pode ser pai dela mesma.", Response.Status.BAD_REQUEST);
         }
 
         if (repository.findByIdOptional(request.parentId()).isEmpty()) {
             throw new WebApplicationException(
-                    "Categoria pai informada nao existe.", Response.Status.BAD_REQUEST);
+                    "Categoria pai informada não existe.", Response.Status.BAD_REQUEST);
         }
     }
 
@@ -120,7 +120,7 @@ public class CategoryResource {
 
         if (duplicated) {
             throw new WebApplicationException(
-                    "Ja existe uma categoria com esse nome e tipo.", Response.Status.CONFLICT);
+                    "Já existe uma categoria com esse nome e tipo.", Response.Status.CONFLICT);
         }
     }
 

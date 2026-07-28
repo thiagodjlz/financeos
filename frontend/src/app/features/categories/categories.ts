@@ -1,10 +1,13 @@
 import { CommonModule } from '@angular/common';
-import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Category, TransactionType } from '../../core/models';
 import { AuthService } from '../../core/services/auth.service';
 import { CategoryService } from '../../core/services/category.service';
+import { ToastService } from '../../core/services/toast.service';
+
+const LOAD_FALLBACK = 'Não foi possível carregar as categorias.';
+const SAVE_FALLBACK = 'Não foi possível salvar a categoria. Revise os campos e tente novamente.';
 
 function newCategoryForm() {
   return {
@@ -24,11 +27,11 @@ function newCategoryForm() {
 })
 export class Categories implements OnInit {
   private readonly categoryService = inject(CategoryService);
+  private readonly toast = inject(ToastService);
   protected readonly authService = inject(AuthService);
 
   protected readonly loading = signal(false);
   protected readonly saving = signal(false);
-  protected readonly error = signal('');
 
   protected readonly categories = this.categoryService.categories;
 
@@ -47,12 +50,11 @@ export class Categories implements OnInit {
 
   protected async loadData(): Promise<void> {
     this.loading.set(true);
-    this.error.set('');
 
     try {
       await this.categoryService.refresh();
-    } catch {
-      this.error.set('API indisponivel. Confirme se o backend Quarkus esta rodando em localhost:8080.');
+    } catch (err) {
+      this.toast.fromHttpError(err, LOAD_FALLBACK);
     } finally {
       this.loading.set(false);
     }
@@ -64,7 +66,6 @@ export class Categories implements OnInit {
 
   protected async save(): Promise<void> {
     this.saving.set(true);
-    this.error.set('');
 
     try {
       await this.categoryService.create({
@@ -76,8 +77,9 @@ export class Categories implements OnInit {
       });
       await this.categoryService.refresh();
       this.form = newCategoryForm();
+      this.toast.success('Categoria salva com sucesso.');
     } catch (err) {
-      this.error.set(this.saveErrorMessage(err));
+      this.toast.fromHttpError(err, SAVE_FALLBACK);
     } finally {
       this.saving.set(false);
     }
@@ -110,7 +112,6 @@ export class Categories implements OnInit {
 
   protected async saveEdit(category: Category): Promise<void> {
     this.saving.set(true);
-    this.error.set('');
 
     try {
       await this.categoryService.update(category.id, {
@@ -122,8 +123,9 @@ export class Categories implements OnInit {
       });
       await this.categoryService.refresh();
       this.exitEditDiscarding();
+      this.toast.success('Categoria atualizada com sucesso.');
     } catch (err) {
-      this.error.set(this.saveErrorMessage(err));
+      this.toast.fromHttpError(err, SAVE_FALLBACK);
     } finally {
       this.saving.set(false);
     }
@@ -151,28 +153,6 @@ export class Categories implements OnInit {
     this.editingId.set(null);
     this.confirmingExit.set(false);
     this.editSnapshot = null;
-  }
-
-  private saveErrorMessage(err: unknown): string {
-    if (err instanceof HttpErrorResponse && err.status === 409) {
-      return this.conflictMessage(err);
-    }
-
-    return 'Nao foi possivel salvar. Revise os campos e tente novamente.';
-  }
-
-  private conflictMessage(err: HttpErrorResponse): string {
-    const body = err.error;
-
-    if (typeof body === 'string' && body.trim()) {
-      return body;
-    }
-
-    if (body && typeof body === 'object' && typeof body.message === 'string' && body.message.trim()) {
-      return body.message;
-    }
-
-    return 'Ja existe uma categoria com esse nome e tipo.';
   }
 
   private emptyToNull(value: string): string | null {

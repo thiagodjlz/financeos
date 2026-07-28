@@ -25,6 +25,8 @@ import io.restassured.http.ContentType;
 })
 class ProfileResourceTest {
 
+    private static final String ADMIN_PROFILE_ID = "00000000-0000-0000-0000-000000000010";
+
     @Inject
     ProfileRepository repository;
 
@@ -69,7 +71,10 @@ class ProfileResourceTest {
                         """.formatted(UUID.randomUUID()))
                 .when().post("/profiles")
                 .then()
-                .statusCode(400);
+                .statusCode(400)
+                .body("violations.find { it.field.endsWith('.screen') }.message",
+                        equalTo("A tela é obrigatória."))
+                .body("message", equalTo("Informe os campos obrigatórios: Tela."));
     }
 
     @Test
@@ -87,6 +92,16 @@ class ProfileResourceTest {
                         """.formatted(UUID.randomUUID()))
                 .when().post("/profiles")
                 .then()
-                .statusCode(400);
+                .statusCode(400)
+                .body("message", equalTo("Tela duplicada nas permissões do perfil."));
+    }
+
+    @Test
+    void shouldRejectDeletingProfileInUse() {
+        given()
+                .when().delete("/profiles/{id}", ADMIN_PROFILE_ID)
+                .then()
+                .statusCode(409)
+                .body("message", equalTo("Perfil em uso por usuários."));
     }
 }

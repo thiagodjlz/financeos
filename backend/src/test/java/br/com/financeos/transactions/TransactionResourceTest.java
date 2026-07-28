@@ -143,7 +143,8 @@ class TransactionResourceTest {
                         """.formatted(UUID.randomUUID()))
                 .when().post("/transactions")
                 .then()
-                .statusCode(400);
+                .statusCode(400)
+                .body("message", equalTo("Categoria informada não existe."));
     }
 
     @Test
@@ -163,7 +164,8 @@ class TransactionResourceTest {
                         """.formatted(incomeCategory.id))
                 .when().post("/transactions")
                 .then()
-                .statusCode(400);
+                .statusCode(400)
+                .body("message", equalTo("A categoria deve ser do mesmo tipo do lançamento."));
     }
 
     @Test
@@ -183,7 +185,8 @@ class TransactionResourceTest {
                         """.formatted(inactiveCategory.id))
                 .when().post("/transactions")
                 .then()
-                .statusCode(400);
+                .statusCode(400)
+                .body("message", equalTo("Categoria inativa não pode ser selecionada."));
     }
 
     @Test
@@ -242,7 +245,9 @@ class TransactionResourceTest {
                         """)
                 .when().post("/transactions")
                 .then()
-                .statusCode(400);
+                .statusCode(400)
+                .body("message",
+                        equalTo("O status Cancelado só pode ser aplicado pelo cancelamento do lançamento."));
     }
 
     @Test
@@ -260,5 +265,45 @@ class TransactionResourceTest {
                 .when().post("/transactions")
                 .then()
                 .statusCode(400);
+    }
+
+    @Test
+    void shouldReturnAggregatedMessageNamingMissingFields() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "transactionDate": "2026-06-30",
+                          "type": "EXPENSE"
+                        }
+                        """)
+                .when().post("/transactions")
+                .then()
+                .statusCode(400)
+                .body("violations.find { it.field.endsWith('.description') }.message",
+                        equalTo("A descrição é obrigatória."))
+                .body("violations.find { it.field.endsWith('.amount') }.message",
+                        equalTo("O valor é obrigatório."))
+                .body("message", equalTo("Informe os campos obrigatórios: Descrição, Valor."));
+    }
+
+    @Test
+    void shouldReturnLimitMessageForAmountBelowMinimum() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "transactionDate": "2026-06-30",
+                          "description": "Teste mercado valor zero",
+                          "amount": 0,
+                          "type": "EXPENSE"
+                        }
+                        """)
+                .when().post("/transactions")
+                .then()
+                .statusCode(400)
+                .body("violations.find { it.field.endsWith('.amount') }.message",
+                        equalTo("O valor deve ser maior ou igual a 0,01."))
+                .body("message", equalTo("O valor deve ser maior ou igual a 0,01."));
     }
 }

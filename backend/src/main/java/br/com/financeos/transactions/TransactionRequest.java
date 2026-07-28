@@ -12,13 +12,13 @@ import jakarta.validation.constraints.Size;
 
 public record TransactionRequest(
         UUID categoryId,
-        @NotNull LocalDate transactionDate,
-        @NotBlank @Size(max = 255) String description,
-        @NotNull @DecimalMin(value = "0.01") BigDecimal amount,
-        @NotNull TransactionType type,
+        @NotNull(message = "A data é obrigatória.") LocalDate transactionDate,
+        @NotBlank(message = "A descrição é obrigatória.") @Size(max = 255, message = "A descrição deve ter no máximo 255 caracteres.") String description,
+        @NotNull(message = "O valor é obrigatório.") @DecimalMin(value = "0.01", message = "O valor deve ser maior ou igual a 0,01.") BigDecimal amount,
+        @NotNull(message = "O tipo é obrigatório.") TransactionType type,
         TransactionStatus status,
         TransactionSource source,
-        @Min(1) Integer installmentNumber,
-        @Min(1) Integer installmentTotal,
+        @Min(value = 1, message = "A parcela deve ser maior ou igual a 1.") Integer installmentNumber,
+        @Min(value = 1, message = "O total de parcelas deve ser maior ou igual a 1.") Integer installmentTotal,
         String notes) {
 }

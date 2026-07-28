@@ -1,7 +1,5 @@
 <h2 class="page-title">Perfis</h2>
 
-<div class="status-bar" *ngIf="error()">{{ error() }}</div>
-
 <section class="profiles-grid">
   <form class="panel form-panel" *ngIf="authService.can('PROFILES', 'CREATE') || editingId()" (ngSubmit)="save()">
     <div class="panel-heading">

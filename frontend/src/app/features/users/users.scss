@@ -43,21 +43,3 @@ col.col-actions {
   display: grid;
   gap: 6px;
 }
-
-.status-bar.dismissible {
-  position: relative;
-  padding-right: 40px;
-}
-
-.status-close {
-  position: absolute;
-  top: 8px;
-  right: 10px;
-  border: none;
-  background: none;
-  color: inherit;
-  font-size: 16px;
-  line-height: 1;
-  cursor: pointer;
-  padding: 0;
-}

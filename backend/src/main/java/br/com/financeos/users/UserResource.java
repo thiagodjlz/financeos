@@ -60,7 +60,7 @@ public class UserResource {
         String email = request.email().trim().toLowerCase();
 
         if (repository.findByEmail(email).isPresent()) {
-            throw new WebApplicationException("E-mail ja cadastrado.", Response.Status.CONFLICT);
+            throw new WebApplicationException("E-mail já cadastrado.", Response.Status.CONFLICT);
         }
 
         requireProfileExists(request.profileId());
@@ -89,7 +89,7 @@ public class UserResource {
                 .filter(other -> !other.id.equals(id))
                 .isPresent();
         if (emailTakenByOther) {
-            throw new WebApplicationException("E-mail ja cadastrado.", Response.Status.CONFLICT);
+            throw new WebApplicationException("E-mail já cadastrado.", Response.Status.CONFLICT);
         }
 
         requireProfileExists(request.profileId());
@@ -113,7 +113,7 @@ public class UserResource {
         accessControl.require(Screen.USERS, Action.DELETE);
 
         if (currentUser.id().equals(id)) {
-            throw new WebApplicationException("Voce nao pode desativar a propria conta.", Response.Status.CONFLICT);
+            throw new WebApplicationException("Você não pode desativar a própria conta.", Response.Status.CONFLICT);
         }
 
         AppUser user = repository.findVisibleById(id).orElseThrow(NotFoundException::new);
@@ -124,7 +124,7 @@ public class UserResource {
 
     private void requireProfileExists(UUID profileId) {
         if (profileRepository.findByIdOptional(profileId).isEmpty()) {
-            throw new WebApplicationException("Perfil informado nao existe.", Response.Status.BAD_REQUEST);
+            throw new WebApplicationException("Perfil informado não existe.", Response.Status.BAD_REQUEST);
         }
     }
 }

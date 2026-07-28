@@ -60,11 +60,11 @@ public class DashboardResource {
         }
 
         if (year == null || month == null) {
-            throw new BadRequestException("year and month must be provided together");
+            throw new BadRequestException("Informe o ano e o mês juntos.");
         }
 
         if (month < 1 || month > 12) {
-            throw new BadRequestException("month must be between 1 and 12");
+            throw new BadRequestException("O mês deve estar entre 1 e 12.");
         }
 
         return YearMonth.of(year, month);

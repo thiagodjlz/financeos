@@ -120,7 +120,25 @@ class CategoryResourceTest {
                 .body(body)
                 .when().post("/categories")
                 .then()
-                .statusCode(409);
+                .statusCode(409)
+                .body("message", equalTo("Já existe uma categoria com esse nome e tipo."));
+    }
+
+    @Test
+    void shouldReturnMessageNamingTheFieldWhenNameIsMissing() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "type": "EXPENSE"
+                        }
+                        """)
+                .when().post("/categories")
+                .then()
+                .statusCode(400)
+                .body("violations.find { it.field.endsWith('.name') }.message",
+                        equalTo("O nome é obrigatório."))
+                .body("message", equalTo("Informe os campos obrigatórios: Nome."));
     }
 
     @Test
@@ -165,7 +183,8 @@ class CategoryResourceTest {
                         """.formatted(UUID.randomUUID(), UUID.randomUUID()))
                 .when().post("/categories")
                 .then()
-                .statusCode(400);
+                .statusCode(400)
+                .body("message", equalTo("Categoria pai informada não existe."));
     }
 
     @Test
@@ -197,7 +216,8 @@ class CategoryResourceTest {
                         """.formatted(categoryName, id))
                 .when().put("/categories/{id}", id)
                 .then()
-                .statusCode(400);
+                .statusCode(400)
+                .body("message", equalTo("Uma categoria não pode ser pai dela mesma."));
     }
 
     @Test

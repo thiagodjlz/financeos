@@ -51,7 +51,7 @@ class UserResourceTest {
                 .then()
                 .statusCode(400)
                 .body("violations.find { it.field.endsWith('.email') }.message",
-                        equalTo("Informe um e-mail valido."));
+                        equalTo("Informe um e-mail válido."));
     }
 
     @Test
@@ -82,13 +82,15 @@ class UserResourceTest {
                 .then()
                 .statusCode(400)
                 .body("violations.find { it.field.endsWith('.name') }.message",
-                        equalTo("O nome e obrigatorio."))
+                        equalTo("O nome é obrigatório."))
                 .body("violations.find { it.field.endsWith('.email') }.message",
-                        equalTo("O e-mail e obrigatorio."))
+                        equalTo("O e-mail é obrigatório."))
                 .body("violations.find { it.field.endsWith('.password') }.message",
-                        equalTo("A senha e obrigatoria."))
+                        equalTo("A senha é obrigatória."))
                 .body("violations.find { it.field.endsWith('.profileId') }.message",
-                        equalTo("O perfil e obrigatorio."));
+                        equalTo("O perfil é obrigatório."))
+                .body("message",
+                        equalTo("Informe os campos obrigatórios: Nome, E-mail, Senha, Perfil."));
     }
 
     @Test
@@ -110,9 +112,9 @@ class UserResourceTest {
                 .then()
                 .statusCode(400)
                 .body("violations.find { it.field.endsWith('.name') }.message",
-                        equalTo("O nome deve ter no maximo 120 caracteres."))
+                        equalTo("O nome deve ter no máximo 120 caracteres."))
                 .body("violations.find { it.field.endsWith('.email') }.message",
-                        equalTo("O e-mail deve ter no maximo 180 caracteres."));
+                        equalTo("O e-mail deve ter no máximo 180 caracteres."));
     }
 
     @Test
@@ -162,7 +164,17 @@ class UserResourceTest {
                         """.formatted(firstEmail, ADMIN_PROFILE_ID))
                 .when().put("/users/{id}", secondId)
                 .then()
-                .statusCode(409);
+                .statusCode(409)
+                .body("message", equalTo("E-mail já cadastrado."));
+    }
+
+    @Test
+    void shouldRejectDeactivatingOwnAccount() {
+        given()
+                .when().delete("/users/{id}", "00000000-0000-0000-0000-000000000001")
+                .then()
+                .statusCode(409)
+                .body("message", equalTo("Você não pode desativar a própria conta."));
     }
 
     @Test
@@ -215,7 +227,8 @@ class UserResourceTest {
                         """.formatted(UUID.randomUUID(), UUID.randomUUID()))
                 .when().post("/users")
                 .then()
-                .statusCode(400);
+                .statusCode(400)
+                .body("message", equalTo("Perfil informado não existe."));
     }
 
     @Test

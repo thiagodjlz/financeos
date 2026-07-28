@@ -121,18 +121,18 @@ public class TransactionResource {
 
         Category category = categoryRepository.findByIdOptional(request.categoryId())
                 .orElseThrow(() -> new WebApplicationException(
-                        "Categoria informada nao existe.", Response.Status.BAD_REQUEST));
+                        "Categoria informada não existe.", Response.Status.BAD_REQUEST));
 
         if (!category.type.name().equals(request.type().name())) {
             throw new WebApplicationException(
-                    "A categoria deve ser do mesmo tipo do lancamento.", Response.Status.BAD_REQUEST);
+                    "A categoria deve ser do mesmo tipo do lançamento.", Response.Status.BAD_REQUEST);
         }
 
-        // Categoria inativa so e aceita se ja era a categoria do lancamento (issue #20)
+        // Categoria inativa só é aceita se já era a categoria do lançamento (issue #20)
         boolean keepingCurrentCategory = existing != null && request.categoryId().equals(existing.categoryId);
         if (!category.active && !keepingCurrentCategory) {
             throw new WebApplicationException(
-                    "Categoria inativa nao pode ser selecionada.", Response.Status.BAD_REQUEST);
+                    "Categoria inativa não pode ser selecionada.", Response.Status.BAD_REQUEST);
         }
     }
 
@@ -145,7 +145,7 @@ public class TransactionResource {
         boolean alreadyCanceled = existing != null && existing.status == TransactionStatus.CANCELED;
         if (!alreadyCanceled) {
             throw new WebApplicationException(
-                    "O status Cancelado so pode ser aplicado pelo cancelamento do lancamento.",
+                    "O status Cancelado só pode ser aplicado pelo cancelamento do lançamento.",
                     Response.Status.BAD_REQUEST);
         }
     }
