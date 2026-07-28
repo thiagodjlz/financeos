@@ -1,8 +1,10 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { Component, ElementRef, ViewChild, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { APP_NAME, APP_VERSION } from '../../core/version';
+
+type NavGroup = 'registers' | 'settings';
 
 @Component({
   selector: 'app-main-layout',
@@ -18,7 +20,9 @@ export class MainLayout {
   protected readonly appVersion = APP_VERSION;
 
   protected readonly expanded = signal(false);
-  protected readonly settingsExpanded = signal(false);
+  protected readonly openGroup = signal<NavGroup | null>(null);
+
+  @ViewChild('workspace') private workspace?: ElementRef<HTMLElement>;
 
   protected expand(): void {
     this.expanded.set(true);
@@ -47,14 +51,28 @@ export class MainLayout {
     }
   }
 
-  protected toggleSettings(): void {
+  protected toggleGroup(group: NavGroup): void {
     if (!this.expanded()) {
       this.expanded.set(true);
-      this.settingsExpanded.set(true);
+      this.openGroup.set(group);
       return;
     }
 
-    this.settingsExpanded.set(!this.settingsExpanded());
+    this.openGroup.set(this.openGroup() === group ? null : group);
+  }
+
+  protected onNavigate(): void {
+    this.expanded.set(false);
+    this.openGroup.set(null);
+    this.workspace?.nativeElement.focus();
+  }
+
+  protected isRegistersActive(): boolean {
+    return this.router.url.startsWith('/categories');
+  }
+
+  protected canSeeRegisters(): boolean {
+    return this.authService.can('CATEGORIES', 'VIEW');
   }
 
   protected isSettingsActive(): boolean {
