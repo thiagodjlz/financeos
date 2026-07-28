@@ -1,3 +1,5 @@
+<h2 class="page-title">Categorias</h2>
+
 <div class="status-bar" *ngIf="error()">{{ error() }}</div>
 
 <section class="content-grid">
@@ -16,14 +18,16 @@
         <option value="INCOME">Receita</option>
       </select>
     </label>
-    <label>
-      Cor
-      <input type="color" name="color" [(ngModel)]="form.color" />
-    </label>
-    <label>
-      Icone
-      <input name="icon" [(ngModel)]="form.icon" />
-    </label>
+    <div class="two-cols">
+      <label>
+        Cor
+        <input type="color" name="color" [(ngModel)]="form.color" />
+      </label>
+      <label>
+        Icone
+        <input name="icon" [(ngModel)]="form.icon" />
+      </label>
+    </div>
     <label>
       Situacao
       <select name="active" [(ngModel)]="form.active">
@@ -33,7 +37,7 @@
     </label>
     <div class="two-cols">
       <button class="primary-button" type="submit" [disabled]="saving()">Salvar</button>
-      <button class="danger-button" type="button" (click)="cancel()">Cancelar</button>
+      <button class="ghost-button" type="button" (click)="cancel()">Cancelar</button>
     </div>
   </form>
 
@@ -61,9 +65,18 @@
         <tbody>
           <ng-container *ngFor="let category of categories()">
             <tr *ngIf="editingId() !== category.id">
-              <td>{{ category.name }}</td>
+              <td>
+                <div class="category-name">
+                  <span class="category-dot" *ngIf="category.color" [style.background]="category.color"></span>
+                  {{ category.name }}
+                </div>
+              </td>
               <td>{{ category.type === 'EXPENSE' ? 'Despesa' : 'Receita' }}</td>
-              <td><span class="status-pill">{{ category.active ? 'Ativo' : 'Inativo' }}</span></td>
+              <td>
+                <span class="status-pill" [class.pill-income]="category.active" [class.pill-neutral]="!category.active">
+                  {{ category.active ? 'Ativo' : 'Inativo' }}
+                </span>
+              </td>
               <td class="row-actions">
                 <button
                   *ngIf="authService.can('CATEGORIES', 'EDIT')"

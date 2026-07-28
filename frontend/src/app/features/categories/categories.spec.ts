@@ -68,7 +68,7 @@ describe('Categories', () => {
   }
 
   function cancelButton(): HTMLButtonElement {
-    return query<HTMLButtonElement>('form button.danger-button');
+    return query<HTMLButtonElement>('form button.ghost-button');
   }
 
   function rowSaveButton(): HTMLButtonElement {
@@ -117,7 +117,7 @@ describe('Categories', () => {
     expect(query<HTMLSelectElement>('form select[name="active"]').selectedIndex).toBe(0);
   }
 
-  it('exibe o formulario somente de criacao com titulo fixo e Cancelar vermelho', async () => {
+  it('exibe o formulario somente de criacao com titulo fixo e Cancelar secundario', async () => {
     await render();
 
     const button = cancelButton();

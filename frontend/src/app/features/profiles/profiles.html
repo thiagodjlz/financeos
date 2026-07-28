@@ -1,3 +1,5 @@
+<h2 class="page-title">Perfis</h2>
+
 <div class="status-bar" *ngIf="error()">{{ error() }}</div>
 
 <section class="profiles-grid">
@@ -5,35 +7,55 @@
     <div class="panel-heading">
       <h3>{{ editingId() ? 'Editar perfil' : 'Novo perfil' }}</h3>
     </div>
-    <label>
+    <label class="name-field">
       Nome
       <input name="name" [(ngModel)]="name" required />
     </label>
 
     <div class="table-wrap">
-      <table>
+      <table class="permissions-table">
         <thead>
           <tr>
             <th>Tela</th>
-            <th>Ver</th>
-            <th>Incluir</th>
-            <th>Alterar</th>
-            <th>Excluir</th>
+            <th class="perm-col">Ver</th>
+            <th class="perm-col">Incluir</th>
+            <th class="perm-col">Alterar</th>
+            <th class="perm-col">Excluir</th>
           </tr>
         </thead>
         <tbody>
           <tr *ngFor="let permission of permissions">
-            <td>{{ screenLabel(permission.screen) }}</td>
-            <td class="checkbox-cell"><input type="checkbox" [(ngModel)]="permission.canView" [name]="permission.screen + '-view'" /></td>
-            <td class="checkbox-cell"><input type="checkbox" [(ngModel)]="permission.canCreate" [name]="permission.screen + '-create'" /></td>
-            <td class="checkbox-cell"><input type="checkbox" [(ngModel)]="permission.canEdit" [name]="permission.screen + '-edit'" /></td>
-            <td class="checkbox-cell"><input type="checkbox" [(ngModel)]="permission.canDelete" [name]="permission.screen + '-delete'" /></td>
+            <td class="screen-cell">{{ screenLabel(permission.screen) }}</td>
+            <td class="checkbox-cell">
+              <label class="perm-switch">
+                <input type="checkbox" [(ngModel)]="permission.canView" [name]="permission.screen + '-view'" />
+                <span class="perm-switch-label">Ver {{ screenLabel(permission.screen) }}</span>
+              </label>
+            </td>
+            <td class="checkbox-cell">
+              <label class="perm-switch">
+                <input type="checkbox" [(ngModel)]="permission.canCreate" [name]="permission.screen + '-create'" />
+                <span class="perm-switch-label">Incluir em {{ screenLabel(permission.screen) }}</span>
+              </label>
+            </td>
+            <td class="checkbox-cell">
+              <label class="perm-switch">
+                <input type="checkbox" [(ngModel)]="permission.canEdit" [name]="permission.screen + '-edit'" />
+                <span class="perm-switch-label">Alterar em {{ screenLabel(permission.screen) }}</span>
+              </label>
+            </td>
+            <td class="checkbox-cell">
+              <label class="perm-switch">
+                <input type="checkbox" [(ngModel)]="permission.canDelete" [name]="permission.screen + '-delete'" />
+                <span class="perm-switch-label">Excluir em {{ screenLabel(permission.screen) }}</span>
+              </label>
+            </td>
           </tr>
         </tbody>
       </table>
     </div>
 
-    <div class="two-cols">
+    <div class="two-cols form-actions">
       <button class="primary-button" type="submit" [disabled]="saving()">Salvar</button>
       <button class="ghost-button" type="button" (click)="cancel()">Cancelar</button>
     </div>
@@ -49,7 +71,7 @@
         <div>
           <strong>{{ profile.name }}</strong>
         </div>
-        <div>
+        <div class="row-actions">
           <button *ngIf="authService.can('PROFILES', 'EDIT')" type="button" class="ghost-button" (click)="edit(profile)">
             Editar
           </button>

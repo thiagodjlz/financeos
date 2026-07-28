@@ -104,22 +104,27 @@ describe('MainLayout', () => {
     expect(findButton(fixture, 'Perfis')).toBeDefined();
   });
 
-  it('renders an identifier on every nav button when the sidebar is collapsed', () => {
+  it('renders an svg icon and an accessible label on every nav button when the sidebar is collapsed', () => {
     const authService = TestBed.inject(AuthService);
     authService.superAdmin.set(true);
     const fixture = createFixture();
 
     const compiled = fixture.nativeElement as HTMLElement;
-    compiled.querySelector<HTMLButtonElement>('.collapse-toggle')?.click();
-    fixture.detectChanges();
+    expect(compiled.querySelector('.collapse-toggle')).toBeNull();
 
     const buttons = navButtons(fixture);
     expect(buttons).toHaveLength(4);
     for (const button of buttons) {
-      expect(button.textContent?.trim()).not.toBe('');
+      expect(button.querySelector('svg')).not.toBeNull();
+      expect(button.getAttribute('title')).toBe(button.textContent?.trim());
+      expect(button.getAttribute('aria-label')).toBe(button.textContent?.trim());
     }
-    expect(buttons.map((button) => button.textContent?.trim())).toContain('R');
-    expect(buttons.map((button) => button.textContent?.trim())).toContain('L');
+    expect(buttons.map((button) => button.getAttribute('aria-label'))).toEqual([
+      'Resumo',
+      'Lancamentos',
+      'Categorias',
+      'Configuracoes',
+    ]);
   });
 
   it('expands the sidebar and opens the group when a collapsed group is clicked, without navigating', () => {
@@ -130,16 +135,13 @@ describe('MainLayout', () => {
     const initialUrl = router.url;
 
     const compiled = fixture.nativeElement as HTMLElement;
-    compiled.querySelector<HTMLButtonElement>('.collapse-toggle')?.click();
-    fixture.detectChanges();
-
     const settingsParent = navButtons(fixture).find(
       (button) => button.getAttribute('aria-label') === 'Configuracoes',
     );
     settingsParent?.click();
     fixture.detectChanges();
 
-    expect(compiled.querySelector('.sidebar.collapsed')).toBeNull();
+    expect(compiled.querySelector('.sidebar.expanded')).not.toBeNull();
     expect(findButton(fixture, 'Usuarios')).toBeDefined();
     expect(findButton(fixture, 'Perfis')).toBeDefined();
     expect(router.url).toBe(initialUrl);

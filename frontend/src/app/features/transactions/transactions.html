@@ -1,3 +1,5 @@
+<h2 class="page-title">Lancamentos</h2>
+
 <div class="status-bar" *ngIf="error()">{{ error() }}</div>
 
 <section class="content-grid">
@@ -42,7 +44,7 @@
     </label>
     <div class="two-cols">
       <button class="primary-button" type="submit" [disabled]="saving()">Salvar</button>
-      <button class="danger-button" type="button" (click)="clearTransactionForm()">Cancelar</button>
+      <button class="ghost-button" type="button" (click)="clearTransactionForm()">Cancelar</button>
     </div>
   </form>
 
@@ -67,7 +69,7 @@
             <th>Descricao</th>
             <th>Categoria</th>
             <th>Status</th>
-            <th>Valor</th>
+            <th class="amount-cell">Valor</th>
             <th></th>
           </tr>
         </thead>
@@ -77,8 +79,14 @@
               <td>{{ transaction.transactionDate }}</td>
               <td>{{ transaction.description }}</td>
               <td>{{ categoryName(transaction.categoryId) }}</td>
-              <td><span class="status-pill">{{ statusLabel(transaction.status) }}</span></td>
-              <td [class.negative]="transaction.type === 'EXPENSE'">{{ formatMoney(transaction.amount) }}</td>
+              <td><span [class]="statusPillClass(transaction.status)">{{ statusLabel(transaction.status) }}</span></td>
+              <td
+                class="amount-cell"
+                [class.income]="transaction.type === 'INCOME'"
+                [class.expense]="transaction.type === 'EXPENSE'"
+              >
+                {{ signedMoney(transaction) }}
+              </td>
               <td class="row-actions">
                 <button
                   *ngIf="authService.can('TRANSACTIONS', 'EDIT')"

@@ -17,36 +17,44 @@ export class MainLayout {
   protected readonly appName = APP_NAME;
   protected readonly appVersion = APP_VERSION;
 
-  protected readonly collapsed = signal(false);
-  protected readonly registersExpanded = signal(false);
+  protected readonly expanded = signal(false);
   protected readonly settingsExpanded = signal(false);
 
-  protected toggleCollapsed(): void {
-    this.collapsed.set(!this.collapsed());
+  protected expand(): void {
+    this.expanded.set(true);
   }
 
-  protected toggleRegisters(): void {
-    if (this.collapsed()) {
-      this.collapsed.set(false);
-      this.registersExpanded.set(true);
+  protected collapse(): void {
+    this.expanded.set(false);
+  }
+
+  protected onMouseLeave(event: MouseEvent): void {
+    const sidebar = event.currentTarget as HTMLElement;
+
+    if (sidebar.contains(document.activeElement)) {
       return;
     }
 
-    this.registersExpanded.set(!this.registersExpanded());
+    this.collapse();
+  }
+
+  protected onFocusOut(event: FocusEvent): void {
+    const sidebar = event.currentTarget as HTMLElement;
+    const nextFocused = event.relatedTarget as Node | null;
+
+    if (!nextFocused || !sidebar.contains(nextFocused)) {
+      this.collapse();
+    }
   }
 
   protected toggleSettings(): void {
-    if (this.collapsed()) {
-      this.collapsed.set(false);
+    if (!this.expanded()) {
+      this.expanded.set(true);
       this.settingsExpanded.set(true);
       return;
     }
 
     this.settingsExpanded.set(!this.settingsExpanded());
-  }
-
-  protected isRegistersActive(): boolean {
-    return this.router.url.startsWith('/categories');
   }
 
   protected isSettingsActive(): boolean {

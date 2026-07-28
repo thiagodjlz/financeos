@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    ::selection { background: oklch(85% 0.06 262); }
+    a { color: oklch(56% 0.16 262); }
+    a:hover { color: oklch(46% 0.16 262); }
+    input[type="checkbox"] { accent-color: oklch(56% 0.16 262); }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: oklch(85% 0.01 80); border-radius: 8px; }
+  </style>
+</helmet>
+
+<div style="font-family:'Inter',system-ui,sans-serif;background:oklch(97.3% 0.006 80);min-height:100vh;color:oklch(23% 0.012 80)">
+
+  <sc-if value="{{ isLogin }}" hint-placeholder-val="{{ false }}">
+    <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:24px">
+      <form style="width:min(380px,100%);background:oklch(99% 0.002 90);border:1px solid oklch(91% 0.008 80);border-radius:16px;box-shadow:0 20px 50px oklch(30% 0.02 80 / 10%);padding:32px;display:grid;gap:18px" onSubmit="{{ preventDefault }}">
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:6px">
+          <div style="width:44px;height:44px;border-radius:12px;background:oklch(56% 0.16 262);display:grid;place-items:center;color:white;font-weight:800;font-size:19px;flex-shrink:0">F</div>
+          <div>
+            <h1 style="margin:0;font-size:20px;font-weight:800">FinanceOS</h1>
+            <p style="margin:2px 0 0;font-size:13px;color:oklch(48% 0.014 80)">Controle financeiro</p>
+          </div>
+        </div>
+        <label style="display:grid;gap:6px;font-size:13px;font-weight:600;color:oklch(40% 0.014 80)">
+          E-mail
+          <input type="email" placeholder="voce@financeos.local" style="border:1px solid oklch(88% 0.008 80);border-radius:10px;padding:12px 14px;font-size:14px;background:oklch(98.5% 0.003 90)" />
+        </label>
+        <label style="display:grid;gap:6px;font-size:13px;font-weight:600;color:oklch(40% 0.014 80)">
+          Senha
+          <input type="password" placeholder="••••••••" style="border:1px solid oklch(88% 0.008 80);border-radius:10px;padding:12px 14px;font-size:14px;background:oklch(98.5% 0.003 90)" />
+        </label>
+        <button type="button" onClick="{{ enterApp }}" style="border:0;border-radius:10px;padding:13px;background:oklch(56% 0.16 262);color:white;font-weight:700;font-size:14.5px;cursor:pointer;margin-top:4px">Entrar</button>
+      </form>
+      <p style="font-size:12px;color:oklch(55% 0.014 80)">FinanceOS &middot; v3.4.0</p>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ notLogin }}" hint-placeholder-val="{{ true }}">
+    <div style="display:flex;min-height:100vh">
+
+      <aside
+        onMouseEnter="{{ expandSidebar }}"
+        onMouseLeave="{{ collapseSidebar }}"
+        style="{{ sidebarStyle }}"
+      >
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:32px;overflow:hidden;height:40px">
+          <div style="width:38px;height:38px;border-radius:10px;background:oklch(56% 0.16 262);display:grid;place-items:center;color:white;font-weight:800;font-size:17px;flex-shrink:0">F</div>
+          <div style="{{ labelFadeStyle }}">
+            <div style="font-weight:800;font-size:16px;color:white;white-space:nowrap">FinanceOS</div>
+            <div style="font-size:11.5px;color:oklch(70% 0.02 260);white-space:nowrap">Controle financeiro</div>
+          </div>
+        </div>
+
+        <nav style="display:grid;gap:4px;flex:1">
+          <button type="button" onClick="{{ goDashboard }}" style="{{ navBtnStyle.dashboard }}">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="flex-shrink:0"><rect x="3" y="3" width="7.5" height="7.5" rx="1.6"></rect><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.6"></rect><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.6"></rect><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.6"></rect></svg>
+            <span style="{{ labelFadeStyle }}">Resumo</span>
+          </button>
+          <button type="button" onClick="{{ goTransactions }}" style="{{ navBtnStyle.transactions }}">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="flex-shrink:0"><path d="M4 8h13M17 8l-3.2-3.2M17 8l-3.2 3.2"></path><path d="M20 16H7M7 16l3.2-3.2M7 16l3.2 3.2"></path></svg>
+            <span style="{{ labelFadeStyle }}">Lançamentos</span>
+          </button>
+          <button type="button" onClick="{{ goCategories }}" style="{{ navBtnStyle.categories }}">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="flex-shrink:0"><circle cx="8.5" cy="12" r="5.2"></circle><circle cx="16" cy="12" r="5.2"></circle></svg>
+            <span style="{{ labelFadeStyle }}">Categorias</span>
+          </button>
+          <button type="button" onClick="{{ goUsers }}" style="{{ navBtnStyle.users }}">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="flex-shrink:0"><circle cx="12" cy="8" r="3.6"></circle><path d="M4.5 20c0-4.2 3.4-6.8 7.5-6.8s7.5 2.6 7.5 6.8"></path></svg>
+            <span style="{{ labelFadeStyle }}">Usuários</span>
+          </button>
+          <button type="button" onClick="{{ goProfiles }}" style="{{ navBtnStyle.profiles }}">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="flex-shrink:0"><rect x="4" y="4" width="16" height="16" rx="4"></rect><path d="M8.5 12.5l2.3 2.3 4.7-4.7"></path></svg>
+            <span style="{{ labelFadeStyle }}">Perfis</span>
+          </button>
+          <button type="button" onClick="{{ goNotes }}" style="{{ navBtnStyle.notes }}">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="flex-shrink:0"><rect x="5" y="3" width="14" height="18" rx="2"></rect><path d="M8.5 8h7M8.5 12h7M8.5 16h4"></path></svg>
+            <span style="{{ labelFadeStyle }}">Notas de design</span>
+          </button>
+        </nav>
+
+        <button type="button" onClick="{{ goLogin }}" style="display:flex;align-items:center;gap:12px;border:1px solid oklch(38% 0.02 260);border-radius:10px;padding:11px 13px;background:transparent;color:oklch(80% 0.02 260);cursor:pointer;margin-top:8px">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="flex-shrink:0"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"></path><path d="M11 8l-4 4 4 4"></path><path d="M7 12h11"></path></svg>
+          <span style="{{ labelFadeStyle }}">Sair</span>
+        </button>
+
+        <div style="{{ footerFadeStyle }}">
+          <p style="margin:0 0 3px;font-size:12.5px;font-weight:700;color:oklch(85% 0.02 260);white-space:nowrap">Ana Ribeiro</p>
+          <p style="margin:0;font-size:11.5px;color:oklch(58% 0.02 260);white-space:nowrap">FinanceOS &middot; v3.4.0</p>
+        </div>
+      </aside>
+
+      <main style="flex:1;min-width:0;padding:34px 40px;margin-left:76px">
+
+        <sc-if value="{{ isDashboard }}" hint-placeholder-val="{{ true }}">
+          <header style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;margin-bottom:26px;flex-wrap:wrap">
+            <div>
+              <p style="margin:0 0 6px;font-size:12.5px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:oklch(48% 0.014 80)">Painel financeiro</p>
+              <h2 style="margin:0;font-size:30px;font-weight:800">Junho 2026</h2>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center">
+              <input type="number" value="2026" readOnly="{{ true }}" style="width:88px;border:1px solid oklch(88% 0.008 80);border-radius:10px;padding:10px 12px;font-size:14px;background:white" />
+              <select style="border:1px solid oklch(88% 0.008 80);border-radius:10px;padding:10px 12px;font-size:14px;background:white">
+                <option>Junho</option>
+              </select>
+            </div>
+          </header>
+
+          <section style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;margin-bottom:18px">
+            <div style="background:white;border:1px solid oklch(91% 0.008 80);border-radius:14px;padding:20px;box-shadow:0 8px 24px oklch(30% 0.02 80 / 6%)">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+                <div style="width:34px;height:34px;border-radius:9px;background:oklch(93% 0.05 155);display:grid;place-items:center;color:oklch(40% 0.13 155)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"></path></svg></div>
+                <span style="font-size:13px;font-weight:700;color:oklch(48% 0.014 80)">Receitas</span>
+              </div>
+              <strong style="font-size:25px;font-weight:800">R$ 12.480,00</strong>
+            </div>
+            <div style="background:white;border:1px solid oklch(91% 0.008 80);border-radius:14px;padding:20px;box-shadow:0 8px 24px oklch(30% 0.02 80 / 6%)">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+                <div style="width:34px;height:34px;border-radius:9px;background:oklch(93% 0.06 25);display:grid;place-items:center;color:oklch(42% 0.17 25)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"></path></svg></div>
+                <span style="font-size:13px;font-weight:700;color:oklch(48% 0.014 80)">Despesas</span>
+              </div>
+              <strong style="font-size:25px;font-weight:800">R$ 7.930,00</strong>
+            </div>
+            <div style="background:white;border:1px solid oklch(91% 0.008 80);border-radius:14px;padding:20px;box-shadow:0 8px 24px oklch(30% 0.02 80 / 6%)">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+                <div style="width:34px;height:34px;border-radius:9px;background:oklch(93% 0.06 80);display:grid;place-items:center;color:oklch(48% 0.14 80)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 3"></path></svg></div>
+                <span style="font-size:13px;font-weight:700;color:oklch(48% 0.014 80)">Pendentes</span>
+              </div>
+              <strong style="font-size:25px;font-weight:800">R$ 1.180,00</strong>
+            </div>
+            <div style="background:white;border:1px solid oklch(91% 0.008 80);border-radius:14px;padding:20px;box-shadow:0 8px 24px oklch(30% 0.02 80 / 6%)">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+                <div style="width:34px;height:34px;border-radius:9px;background:oklch(93% 0.05 230);display:grid;place-items:center;color:oklch(42% 0.13 230)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M12 3v18"></path></svg></div>
+                <span style="font-size:13px;font-weight:700;color:oklch(48% 0.014 80)">Saldo</span>
+              </div>
+              <strong style="font-size:25px;font-weight:800">R$ 4.550,00</strong>
+            </div>
+          </section>
+
+          <section style="display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:18px">
+            <div style="background:white;border:1px solid oklch(91% 0.008 80);border-radius:14px;padding:24px;box-shadow:0 8px 24px oklch(30% 0.02 80 / 6%)">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+                <h3 style="margin:0;font-size:16px;font-weight:700">Evolução anual</h3>
+                <div style="display:flex;gap:16px;font-size:12.5px;color:oklch(48% 0.014 80)">
+                  <span style="display:flex;align-items:center;gap:6px"><span style="width:9px;height:9px;border-radius:3px;background:oklch(56% 0.13 155);display:inline-block"></span>Receita</span>
+                  <span style="display:flex;align-items:center;gap:6px"><span style="width:9px;height:9px;border-radius:3px;background:oklch(58% 0.17 25);display:inline-block"></span>Despesa</span>
+                  <span style="display:flex;align-items:center;gap:6px"><span style="width:9px;height:9px;border-radius:999px;background:oklch(58% 0.13 230);display:inline-block"></span>Saldo</span>
+                </div>
+              </div>
+              <svg viewBox="0 0 840 210" style="width:100%;height:220px;overflow:visible">
+                <sc-for list="{{ monthBars }}" as="m" hint-placeholder-count="12">
+                  <rect x="{{ m.incomeX }}" y="{{ m.incomeY }}" width="{{ barWidth }}" height="{{ m.incomeH }}" rx="2.5" fill="oklch(56% 0.13 155)"></rect>
+                  <rect x="{{ m.expenseX }}" y="{{ m.expenseY }}" width="{{ barWidth }}" height="{{ m.expenseH }}" rx="2.5" fill="oklch(58% 0.17 25)"></rect>
+                  <text x="{{ m.labelX }}" y="205" font-size="11" fill="oklch(52% 0.014 80)" text-anchor="middle">{{ m.label }}</text>
+                </sc-for>
+                <polyline points="{{ linePoints }}" fill="none" stroke="oklch(58% 0.13 230)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"></polyline>
+                <sc-for list="{{ monthBars }}" as="m" hint-placeholder-count="12">
+                  <circle cx="{{ m.lineX }}" cy="{{ m.lineY }}" r="3.5" fill="white" stroke="oklch(58% 0.13 230)" stroke-width="2"></circle>
+                </sc-for>
+              </svg>
+            </div>
+
+            <div style="background:white;border:1px solid oklch(91% 0.008 80);border-radius:14px;padding:24px;box-shadow:0 8px 24px oklch(30% 0.02 80 / 6%)">
+              <h3 style="margin:0 0 16px;font-size:16px;font-weight:700">Detalhamento</h3>
+
+              <div style="display:flex;justify-content:space-between;align-items:center;background:oklch(94% 0.04 155);color:oklch(38% 0.12 155);border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:12.5px;font-weight:800;text-transform:uppercase">
+                <span>Receitas</span><strong style="text-transform:none;font-size:13px">3</strong>
+              </div>
+              <div style="display:grid;gap:12px;margin-bottom:20px">
+                <sc-for list="{{ incomeCats }}" as="c" hint-placeholder-count="3">
+                  <div>
+                    <div style="display:flex;justify-content:space-between;font-size:13.5px;margin-bottom:6px"><strong style="font-weight:600">{{ c.name }}</strong><span>{{ c.amount }}</span></div>
+                    <div style="height:6px;border-radius:999px;background:oklch(93% 0.01 80);overflow:hidden"><div style="{{ c.barStyle }}"></div></div>
+                  </div>
+                </sc-for>
+              </div>
+
+              <div style="display:flex;justify-content:space-between;align-items:center;background:oklch(95% 0.05 25);color:oklch(42% 0.15 25);border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:12.5px;font-weight:800;text-transform:uppercase">
+                <span>Despesas</span><strong style="text-transform:none;font-size:13px">4</strong>
+              </div>
+              <div style="display:grid;gap:12px">
+                <sc-for list="{{ expenseCats }}" as="c" hint-placeholder-count="4">
+                  <div>
+                    <div style="display:flex;justify-content:space-between;font-size:13.5px;margin-bottom:6px"><strong style="font-weight:600">{{ c.name }}</strong><span>{{ c.amount }}</span></div>
+                    <div style="height:6px;border-radius:999px;background:oklch(93% 0.01 80);overflow:hidden"><div style="{{ c.barStyle }}"></div></div>
+                  </div>
+                </sc-for>
+              </div>
+
+              <div style="display:flex;justify-content:space-between;margin-top:20px;padding-top:16px;border-top:1px solid oklch(93% 0.008 80);font-size:13px;color:oklch(48% 0.014 80);font-weight:700">
+                <span>Total</span><strong style="color:oklch(23% 0.012 80);font-size:15px">7</strong>
+              </div>
+            </div>
+          </section>
+        </sc-if>
+
+        <sc-if value="{{ isTransactions }}" hint-placeholder-val="{{ false }}">
+          <h2 style="margin:0 0 22px;font-size:26px;font-weight:800">Lançamentos</h2>
+          <section style="display:grid;grid-template-columns:340px minmax(0,1fr);gap:20px;align-items:start">
+            <form style="background:white;border:1px solid oklch(91% 0.008 80);border-radius:14px;padding:22px;box-shadow:0 8px 24px oklch(30% 0.02 80 / 6%);display:grid;gap:14px" onSubmit="{{ preventDefault }}">
+              <h3 style="margin:0 0 4px;font-size:15.5px;font-weight:700">Novo lançamento</h3>
+              <label style="display:grid;gap:6px;font-size:13px;font-weight:600;color:oklch(40% 0.014 80)">Data<input type="date" style="{{ inputStyle }}" /></label>
+              <label style="display:grid;gap:6px;font-size:13px;font-weight:600;color:oklch(40% 0.014 80)">Descrição<input placeholder="Ex.: Supermercado" style="{{ inputStyle }}" /></label>
+              <label style="display:grid;gap:6px;font-size:13px;font-weight:600;color:oklch(40% 0.014 80)">Valor<input type="number" placeholder="0,00" style="{{ inputStyle }}" /></label>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                <label style="display:grid;gap:6px;font-size:13px;font-weight:600;color:oklch(40% 0.014 80)">Tipo<select style="{{ inputStyle }}"><option>Despesa</option><option>Receita</option></select></label>
+                <label style="display:grid;gap:6px;font-size:13px;font-weight:600;color:oklch(40% 0.014 80)">Status<select style="{{ inputStyle }}"><option>Pendente</option><option>Pago</option></select></label>
+              </div>
+              <label style="display:grid;gap:6px;font-size:13px;font-weight:600;color:oklch(40% 0.014 80)">Categoria<select style="{{ inputStyle }}"><option>Sem categoria</option><option>Moradia</option><option>Alimentação</option></select></label>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px">
+                <button type="button" style="{{ primaryBtnStyle }}">Salvar</button>
+                <button type="button" style="{{ ghostBtnStyle }}">Cancelar</button>
+              </div>
+            </form>
+
+            <div style="background:white;border:1px solid oklch(91% 0.008 80);border-radius:14px;padding:22px;box-shadow:0 8px 24px oklch(30% 0.02 80 / 6%)">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+                <h3 style="margin:0;font-size:15.5px;font-weight:700">Últimos lançamentos</h3>
+                <span style="font-size:12.5px;color:oklch(48% 0.014 80);font-weight:700">{{ transactions.length }}</span>
+              </div>
+              <div style="overflow-x:auto">
+                <table style="width:100%;border-collapse:collapse;min-width:680px">
+                  <thead><tr>
+                    <th style="{{ thStyle }}">Data</th><th style="{{ thStyle }}">Descrição</th><th style="{{ thStyle }}">Categoria</th><th style="{{ thStyle }}">Status</th><th style="{{ thStyle }};text-align:right">Valor</th><th style="{{ thStyle }}"></th>
+                  </tr></thead>
+                  <tbody>
+                    <sc-for list="{{ transactions }}" as="t" hint-placeholder-count="5">
+                      <tr>
+                        <td style="{{ tdStyle }}">{{ t.date }}</td>
+                        <td style="{{ tdStyle }}">{{ t.desc }}</td>
+                        <td style="{{ tdStyle }}">{{ t.category }}</td>
+                        <td style="{{ tdStyle }}"><span style="{{ t.statusStyle }}">{{ t.statusLabel }}</span></td>
+                        <td style="{{ tdStyle }};text-align:right;font-weight:700;color:{{ t.amountColor }}">{{ t.amount }}</td>
+                        <td style="{{ tdStyle }}">
+                          <div style="display:flex;gap:8px">
+                            <button type="button" style="{{ ghostSmBtnStyle }}">Editar</button>
+                            <button type="button" style="{{ dangerSmBtnStyle }}">Cancelar</button>
+                          </div>
+                        </td>
+                      </tr>
+                    </sc-for>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+        </sc-if>
+
+        <sc-if value="{{ isCategories }}" hint-placeholder-val="{{ false }}">
+          <h2 style="margin:0 0 22px;font-size:26px;font-weight:800">Categorias</h2>
+          <section style="display:grid;grid-template-columns:340px minmax(0,1fr);gap:20px;align-items:start">
+            <form style="background:white;border:1px solid oklch(91% 0.008 80);border-radius:14px;padding:22px;box-shadow:0 8px 24px oklch(30% 0.02 80 / 6%);display:grid;gap:14px" onSubmit="{{ preventDefault }}">
+              <h3 style="margin:0 0 4px;font-size:15.5px;font-weight:700">Nova categoria</h3>
+              <label style="display:grid;gap:6px;font-size:13px;font-weight:600;color:oklch(40% 0.014 80)">Nome<input placeholder="Ex.: Educação" style="{{ inputStyle }}" /></label>
+              <label style="display:grid;gap:6px;font-size:13px;font-weight:600;color:oklch(40% 0.014 80)">Tipo<select style="{{ inputStyle }}"><option>Despesa</option><option>Receita</option></select></label>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                <label style="display:grid;gap:6px;font-size:13px;font-weight:600;color:oklch(40% 0.014 80)">Cor<input type="color" value="#2f7d62" style="{{ inputStyle }};padding:4px;height:42px" /></label>
+                <label style="display:grid;gap:6px;font-size:13px;font-weight:600;color:oklch(40% 0.014 80)">Situação<select style="{{ inputStyle }}"><option>Ativo</option><option>Inativo</option></select></label>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px">
+                <button type="button" style="{{ primaryBtnStyle }}">Salvar</button>
+                <button type="button" style="{{ ghostBtnStyle }}">Cancelar</button>
+              </div>
+            </form>
+            <div style="background:white;border:1px solid oklch(91% 0.008 80);border-radius:14px;padding:22px;box-shadow:0 8px 24px oklch(30% 0.02 80 / 6%)">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+                <h3 style="margin:0;font-size:15.5px;font-weight:700">Categorias cadastradas</h3>
+                <span style="font-size:12.5px;color:oklch(48% 0.014 80);font-weight:700">{{ categories.length }}</span>
+              </div>
+              <table style="width:100%;border-collapse:collapse">
+                <thead><tr><th style="{{ thStyle }}">Nome</th><th style="{{ thStyle }}">Tipo</th><th style="{{ thStyle }}">Situação</th><th style="{{ thStyle }}"></th></tr></thead>
+                <tbody>
+                  <sc-for list="{{ categories }}" as="c" hint-placeholder-count="6">
+                    <tr>
+                      <td style="{{ tdStyle }}"><div style="display:flex;align-items:center;gap:10px"><span style="{{ c.dotStyle }}"></span>{{ c.name }}</div></td>
+                      <td style="{{ tdStyle }}">{{ c.type }}</td>
+                      <td style="{{ tdStyle }}"><span style="{{ c.statusStyle }}">{{ c.statusLabel }}</span></td>
+                      <td style="{{ tdStyle }}"><button type="button" style="{{ ghostSmBtnStyle }}">Editar</button></td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </sc-if>
+
+        <sc-if value="{{ isUsers }}" hint-placeholder-val="{{ false }}">
+          <h2 style="margin:0 0 22px;font-size:26px;font-weight:800">Usuários</h2>
+          <section style="display:grid;grid-template-columns:340px minmax(0,1fr);gap:20px;align-items:start">
+            <form style="background:white;border:1px solid oklch(91% 0.008 80);border-radius:14px;padding:22px;box-shadow:0 8px 24px oklch(30% 0.02 80 / 6%);display:grid;gap:14px" onSubmit="{{ preventDefault }}">
+              <h3 style="margin:0 0 4px;font-size:15.5px;font-weight:700">Novo usuário</h3>
+              <label style="display:grid;gap:6px;font-size:13px;font-weight:600;color:oklch(40% 0.014 80)">Nome<input placeholder="Nome completo" style="{{ inputStyle }}" /></label>
+              <label style="display:grid;gap:6px;font-size:13px;font-weight:600;color:oklch(40% 0.014 80)">E-mail<input type="email" placeholder="nome@financeos.local" style="{{ inputStyle }}" /></label>
+              <label style="display:grid;gap:6px;font-size:13px;font-weight:600;color:oklch(40% 0.014 80)">Senha<input type="password" style="{{ inputStyle }}" /></label>
+              <label style="display:grid;gap:6px;font-size:13px;font-weight:600;color:oklch(40% 0.014 80)">Perfil<select style="{{ inputStyle }}"><option>Selecione</option><option>Administrador</option><option>Financeiro</option></select></label>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px">
+                <button type="button" style="{{ primaryBtnStyle }}">Salvar</button>
+                <button type="button" style="{{ ghostBtnStyle }}">Cancelar</button>
+              </div>
+            </form>
+            <div style="background:white;border:1px solid oklch(91% 0.008 80);border-radius:14px;padding:22px;box-shadow:0 8px 24px oklch(30% 0.02 80 / 6%)">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+                <h3 style="margin:0;font-size:15.5px;font-weight:700">Usuários</h3>
+                <span style="font-size:12.5px;color:oklch(48% 0.014 80);font-weight:700">{{ users.length }}</span>
+              </div>
+              <table style="width:100%;border-collapse:collapse">
+                <thead><tr><th style="{{ thStyle }}">Nome</th><th style="{{ thStyle }}">E-mail</th><th style="{{ thStyle }}">Perfil</th><th style="{{ thStyle }}">Status</th><th style="{{ thStyle }}"></th></tr></thead>
+                <tbody>
+                  <sc-for list="{{ users }}" as="u" hint-placeholder-count="4">
+                    <tr>
+                      <td style="{{ tdStyle }}">{{ u.name }}</td>
+                      <td style="{{ tdStyle }}">{{ u.email }}</td>
+                      <td style="{{ tdStyle }}">{{ u.profile }}</td>
+                      <td style="{{ tdStyle }}"><span style="{{ u.statusStyle }}">{{ u.statusLabel }}</span></td>
+                      <td style="{{ tdStyle }}">
+                        <div style="display:flex;gap:8px">
+                          <button type="button" style="{{ ghostSmBtnStyle }}">Editar</button>
+                          <button type="button" style="{{ ghostSmBtnStyle }}">Desativar</button>
+                        </div>
+                      </td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </sc-if>
+
+        <sc-if value="{{ isProfiles }}" hint-placeholder-val="{{ false }}">
+          <h2 style="margin:0 0 22px;font-size:26px;font-weight:800">Perfis</h2>
+          <section style="display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:20px;align-items:start">
+            <form style="background:white;border:1px solid oklch(91% 0.008 80);border-radius:14px;padding:24px;box-shadow:0 8px 24px oklch(30% 0.02 80 / 6%);display:grid;gap:16px" onSubmit="{{ preventDefault }}">
+              <h3 style="margin:0;font-size:15.5px;font-weight:700">Novo perfil</h3>
+              <label style="display:grid;gap:6px;font-size:13px;font-weight:600;color:oklch(40% 0.014 80)">Nome<input placeholder="Ex.: Financeiro" style="{{ inputStyle }};max-width:320px" /></label>
+              <div style="overflow-x:auto">
+                <table style="width:100%;border-collapse:collapse;min-width:520px">
+                  <thead><tr>
+                    <th style="{{ thStyle }}">Tela</th><th style="{{ thStyle }};text-align:center">Ver</th><th style="{{ thStyle }};text-align:center">Incluir</th><th style="{{ thStyle }};text-align:center">Alterar</th><th style="{{ thStyle }};text-align:center">Excluir</th>
+                  </tr></thead>
+                  <tbody>
+                    <sc-for list="{{ permissionRows }}" as="p" hint-placeholder-count="5">
+                      <tr>
+                        <td style="{{ tdStyle }};font-weight:600">{{ p.label }}</td>
+                        <td style="{{ tdStyle }};text-align:center"><div onClick="{{ p.toggleView }}" style="{{ p.viewTrackStyle }}"><div style="{{ p.viewKnobStyle }}"></div></div></td>
+                        <td style="{{ tdStyle }};text-align:center"><div onClick="{{ p.toggleCreate }}" style="{{ p.createTrackStyle }}"><div style="{{ p.createKnobStyle }}"></div></div></td>
+                        <td style="{{ tdStyle }};text-align:center"><div onClick="{{ p.toggleEdit }}" style="{{ p.editTrackStyle }}"><div style="{{ p.editKnobStyle }}"></div></div></td>
+                        <td style="{{ tdStyle }};text-align:center"><div onClick="{{ p.toggleDelete }}" style="{{ p.deleteTrackStyle }}"><div style="{{ p.deleteKnobStyle }}"></div></div></td>
+                      </tr>
+                    </sc-for>
+                  </tbody>
+                </table>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:320px">
+                <button type="button" style="{{ primaryBtnStyle }}">Salvar</button>
+                <button type="button" style="{{ ghostBtnStyle }}">Cancelar</button>
+              </div>
+            </form>
+            <div style="background:white;border:1px solid oklch(91% 0.008 80);border-radius:14px;padding:22px;box-shadow:0 8px 24px oklch(30% 0.02 80 / 6%)">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+                <h3 style="margin:0;font-size:15.5px;font-weight:700">Perfis</h3>
+                <span style="font-size:12.5px;color:oklch(48% 0.014 80);font-weight:700">{{ profiles.length }}</span>
+              </div>
+              <div style="display:grid;gap:12px">
+                <sc-for list="{{ profiles }}" as="p" hint-placeholder-count="3">
+                  <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid oklch(93% 0.008 80);padding-bottom:12px">
+                    <strong style="font-size:14px;font-weight:700">{{ p.name }}</strong>
+                    <div style="display:flex;gap:8px">
+                      <button type="button" style="{{ ghostSmBtnStyle }}">Editar</button>
+                      <button type="button" style="{{ ghostSmBtnStyle }}">Excluir</button>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </section>
+        </sc-if>
+
+        <sc-if value="{{ isNotes }}" hint-placeholder-val="{{ false }}">
+          <h2 style="margin:0 0 6px;font-size:26px;font-weight:800">Notas de design</h2>
+          <p style="margin:0 0 26px;color:oklch(48% 0.014 80);font-size:14px;max-width:680px">Referência de tokens para portar este redesign ao Angular (variáveis SCSS em <code>styles.scss</code> e nos componentes de feature).</p>
+
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;margin-bottom:24px">
+            <div style="background:white;border:1px solid oklch(91% 0.008 80);border-radius:14px;padding:20px">
+              <h3 style="margin:0 0 14px;font-size:14.5px;font-weight:700">Cores base</h3>
+              <div style="display:grid;gap:10px;font-size:13px">
+                <div style="display:flex;align-items:center;gap:10px"><span style="width:22px;height:22px;border-radius:6px;background:oklch(97.3% 0.006 80);border:1px solid oklch(88% 0.01 80)"></span>Fundo — oklch(97.3% 0.006 80)</div>
+                <div style="display:flex;align-items:center;gap:10px"><span style="width:22px;height:22px;border-radius:6px;background:white;border:1px solid oklch(88% 0.01 80)"></span>Superfície — #FFFFFF</div>
+                <div style="display:flex;align-items:center;gap:10px"><span style="width:22px;height:22px;border-radius:6px;background:oklch(21% 0.02 260)"></span>Sidebar — oklch(21% 0.02 260)</div>
+                <div style="display:flex;align-items:center;gap:10px"><span style="width:22px;height:22px;border-radius:6px;background:oklch(56% 0.16 262)"></span>Acento (ações) — oklch(56% 0.16 262)</div>
+              </div>
+            </div>
+            <div style="background:white;border:1px solid oklch(91% 0.008 80);border-radius:14px;padding:20px">
+              <h3 style="margin:0 0 14px;font-size:14.5px;font-weight:700">Cores semânticas</h3>
+              <div style="display:grid;gap:10px;font-size:13px">
+                <div style="display:flex;align-items:center;gap:10px"><span style="width:22px;height:22px;border-radius:6px;background:oklch(56% 0.13 155)"></span>Receita — oklch(56% 0.13 155)</div>
+                <div style="display:flex;align-items:center;gap:10px"><span style="width:22px;height:22px;border-radius:6px;background:oklch(58% 0.17 25)"></span>Despesa — oklch(58% 0.17 25)</div>
+                <div style="display:flex;align-items:center;gap:10px"><span style="width:22px;height:22px;border-radius:6px;background:oklch(72% 0.14 80)"></span>Pendente — oklch(72% 0.14 80)</div>
+                <div style="display:flex;align-items:center;gap:10px"><span style="width:22px;height:22px;border-radius:6px;background:oklch(58% 0.13 230)"></span>Saldo — oklch(58% 0.13 230)</div>
+              </div>
+            </div>
+            <div style="background:white;border:1px solid oklch(91% 0.008 80);border-radius:14px;padding:20px">
+              <h3 style="margin:0 0 14px;font-size:14.5px;font-weight:700">Tipografia &amp; espaçamento</h3>
+              <div style="display:grid;gap:8px;font-size:13px;color:oklch(35% 0.012 80)">
+                <div>Fonte: <strong>Inter</strong> (400/500/600/700/800)</div>
+                <div>Título de página: 26–30px / 800</div>
+                <div>Título de painel: 15.5–16px / 700</div>
+                <div>Corpo/tabela: 13.5–14px / 400–600</div>
+                <div>Raio de borda: 10px (inputs/botões), 14px (cards)</div>
+                <div>Sombra padrão: 0 8px 24px oklch(30% 0.02 80 / 6%)</div>
+                <div>Densidade de tabela: confortável — padding 14px 12px por célula</div>
+              </div>
+            </div>
+            <div style="background:white;border:1px solid oklch(91% 0.008 80);border-radius:14px;padding:20px">
+              <h3 style="margin:0 0 14px;font-size:14.5px;font-weight:700">Componentes</h3>
+              <div style="display:grid;gap:8px;font-size:13px;color:oklch(35% 0.012 80)">
+                <div>Sidebar: trilho de ícones (76px), expande para 236px no hover, sobrepõe o conteúdo (não empurra)</div>
+                <div>Status pill: fundo tonal 10% + texto na cor semântica, radius 999px</div>
+                <div>Switch de permissão substitui os checkboxes da tela de Perfis</div>
+                <div>Gráfico de evolução: barras (receita/despesa) + linha de saldo em SVG real, dados por mês</div>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+      </main>
+    </div>
+  </sc-if>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    isLogin: false,
+    screen: 'dashboard',
+    sidebarHover: false,
+    permissions: [
+      { screen: 'dashboard', label: 'Resumo', view: true, create: false, edit: false, delete: false },
+      { screen: 'transactions', label: 'Lançamentos', view: true, create: true, edit: true, delete: false },
+      { screen: 'categories', label: 'Categorias', view: true, create: true, edit: true, delete: false },
+      { screen: 'users', label: 'Usuários', view: true, create: false, edit: false, delete: false },
+      { screen: 'profiles', label: 'Perfis', view: false, create: false, edit: false, delete: false }
+    ]
+  };
+
+  togglePerm(screenKey, field) {
+    this.setState(function(s) {
+      var next = s.permissions.map(function(p) {
+        if (p.screen !== screenKey) return p;
+        var copy = Object.assign({}, p);
+        copy[field] = !copy[field];
+        return copy;
+      });
+      return { permissions: next };
+    });
+  }
+
+  money(n) {
+    return 'R$ ' + n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  switchStyle(on, colorOn) {
+    return {
+      width: '38px', height: '22px', borderRadius: '999px', position: 'relative',
+      background: on ? colorOn : 'oklch(90% 0.008 80)', cursor: 'pointer', transition: 'background 0.15s ease',
+      display: 'inline-block', margin: '0 auto'
+    };
+  }
+  knobStyle(on) {
+    return {
+      width: '16px', height: '16px', borderRadius: '999px', background: 'white', position: 'absolute',
+      top: '3px', left: on ? '19px' : '3px', transition: 'left 0.15s ease', boxShadow: '0 1px 3px rgb(0 0 0 / 20%)'
+    };
+  }
+
+  renderVals() {
+    var s = this.state;
+    var accent = 'oklch(56% 0.16 262)';
+
+    var sidebarStyle = {
+      width: s.sidebarHover ? '236px' : '76px',
+      background: 'oklch(21% 0.02 260)', padding: '24px 18px', display: 'flex', flexDirection: 'column',
+      position: 'fixed', top: 0, left: 0, height: '100vh', zIndex: 50, transition: 'width 0.18s ease',
+      boxShadow: s.sidebarHover ? '10px 0 30px oklch(20% 0.02 260 / 30%)' : 'none', overflow: 'hidden'
+    };
+    var labelFadeStyle = { opacity: s.sidebarHover ? 1 : 0, transition: 'opacity 0.12s ease', whiteSpace: 'nowrap' };
+    var footerFadeStyle = { opacity: s.sidebarHover ? 1 : 0, transition: 'opacity 0.12s ease', marginTop: '18px', paddingTop: '14px', borderTop: '1px solid oklch(30% 0.02 260)', height: s.sidebarHover ? 'auto' : 0, overflow: 'hidden' };
+
+    function navBtn(key) {
+      return {
+        display: 'flex', alignItems: 'center', gap: '14px', width: '100%', border: 0, borderRadius: '10px',
+        padding: '11px 13px', background: s.screen === key ? 'oklch(32% 0.05 262)' : 'transparent',
+        color: s.screen === key ? 'white' : 'oklch(80% 0.02 260)', textAlign: 'left', cursor: 'pointer'
+      };
+    }
+    var navBtnStyle = {
+      dashboard: navBtn('dashboard'), transactions: navBtn('transactions'), categories: navBtn('categories'),
+      users: navBtn('users'), profiles: navBtn('profiles'), notes: navBtn('notes')
+    };
+
+    var inputStyle = { width: '100%', border: '1px solid oklch(88% 0.008 80)', borderRadius: '10px', padding: '10px 12px', fontSize: '14px', background: 'white', color: 'oklch(23% 0.012 80)' };
+    var primaryBtnStyle = { border: 0, borderRadius: '10px', minHeight: '42px', background: accent, color: 'white', fontWeight: 700, fontSize: '14px', cursor: 'pointer' };
+    var ghostBtnStyle = { border: '1px solid oklch(88% 0.008 80)', borderRadius: '10px', minHeight: '42px', background: 'white', color: 'oklch(40% 0.014 80)', fontWeight: 700, fontSize: '14px', cursor: 'pointer' };
+    var ghostSmBtnStyle = { border: '1px solid oklch(88% 0.008 80)', borderRadius: '8px', minHeight: '32px', padding: '0 12px', background: 'white', color: 'oklch(40% 0.014 80)', fontWeight: 600, fontSize: '12.5px', cursor: 'pointer' };
+    var dangerSmBtnStyle = { border: 0, borderRadius: '8px', minHeight: '32px', padding: '0 12px', background: 'oklch(94% 0.06 25)', color: 'oklch(42% 0.17 25)', fontWeight: 600, fontSize: '12.5px', cursor: 'pointer' };
+    var thStyle = { color: 'oklch(48% 0.014 80)', fontSize: '11.5px', fontWeight: 700, textTransform: 'uppercase', textAlign: 'left', padding: '0 12px 12px', borderBottom: '1px solid oklch(93% 0.008 80)' };
+    var tdStyle = { padding: '14px 12px', borderBottom: '1px solid oklch(94% 0.008 80)', fontSize: '13.5px' };
+
+    function pillStyle(bg, fg) {
+      return { display: 'inline-flex', borderRadius: '999px', padding: '4px 10px', background: bg, color: fg, fontSize: '12px', fontWeight: 700 };
+    }
+
+    var transactionsRaw = [
+      { date: '24/06/2026', desc: 'Salário', category: 'Sem categoria', type: 'INCOME', status: 'PAID', amountVal: 8200 },
+      { date: '22/06/2026', desc: 'Supermercado Pão de Açúcar', category: 'Alimentação', type: 'EXPENSE', status: 'PAID', amountVal: 612.4 },
+      { date: '20/06/2026', desc: 'Aluguel', category: 'Moradia', type: 'EXPENSE', status: 'PAID', amountVal: 2200 },
+      { date: '18/06/2026', desc: 'Freelance design', category: 'Sem categoria', type: 'INCOME', status: 'PAID', amountVal: 1900 },
+      { date: '15/06/2026', desc: 'Fatura cartão', category: 'Transporte', type: 'EXPENSE', status: 'PENDING', amountVal: 480 }
+    ];
+    var self = this;
+    var transactions = transactionsRaw.map(function(t) {
+      return {
+        date: t.date, desc: t.desc, category: t.category,
+        statusLabel: t.status === 'PAID' ? 'Pago' : 'Pendente',
+        statusStyle: t.status === 'PAID' ? pillStyle('oklch(93% 0.05 155)', 'oklch(38% 0.12 155)') : pillStyle('oklch(94% 0.06 80)', 'oklch(45% 0.13 80)'),
+        amount: (t.type === 'EXPENSE' ? '- ' : '+ ') + self.money(t.amountVal),
+        amountColor: t.type === 'EXPENSE' ? 'oklch(48% 0.16 25)' : 'oklch(42% 0.12 155)'
+      };
+    });
+
+    var categoriesRaw = [
+      { name: 'Moradia', type: 'EXPENSE', color: 'oklch(58% 0.17 25)', active: true },
+      { name: 'Alimentação', type: 'EXPENSE', color: 'oklch(62% 0.15 45)', active: true },
+      { name: 'Transporte', type: 'EXPENSE', color: 'oklch(60% 0.14 60)', active: true },
+      { name: 'Lazer', type: 'EXPENSE', color: 'oklch(58% 0.12 340)', active: false },
+      { name: 'Salário', type: 'INCOME', color: 'oklch(56% 0.13 155)', active: true },
+      { name: 'Freelance', type: 'INCOME', color: 'oklch(58% 0.12 170)', active: true }
+    ];
+    var categories = categoriesRaw.map(function(c) {
+      return {
+        name: c.name, type: c.type === 'EXPENSE' ? 'Despesa' : 'Receita',
+        dotStyle: { width: '10px', height: '10px', borderRadius: '999px', background: c.color, display: 'inline-block' },
+        statusLabel: c.active ? 'Ativo' : 'Inativo',
+        statusStyle: c.active ? pillStyle('oklch(93% 0.05 155)', 'oklch(38% 0.12 155)') : pillStyle('oklch(93% 0.01 80)', 'oklch(45% 0.014 80)')
+      };
+    });
+
+    var usersRaw = [
+      { name: 'Ana Ribeiro', email: 'ana@financeos.local', profile: 'Administrador', active: true },
+      { name: 'Bruno Alves', email: 'bruno@financeos.local', profile: 'Financeiro', active: true },
+      { name: 'Carla Souza', email: 'carla@financeos.local', profile: 'Consulta', active: true },
+      { name: 'Diego Prado', email: 'diego@financeos.local', profile: 'Financeiro', active: false }
+    ];
+    var users = usersRaw.map(function(u) {
+      return {
+        name: u.name, email: u.email, profile: u.profile,
+        statusLabel: u.active ? 'Ativo' : 'Inativo',
+        statusStyle: u.active ? pillStyle('oklch(93% 0.05 155)', 'oklch(38% 0.12 155)') : pillStyle('oklch(93% 0.01 80)', 'oklch(45% 0.014 80)')
+      };
+    });
+
+    var profiles = [
+      { name: 'Administrador' }, { name: 'Financeiro' }, { name: 'Consulta' }
+    ];
+
+    var permissionRows = s.permissions.map(function(p) {
+      return {
+        label: p.label,
+        toggleView: function() { self.togglePerm(p.screen, 'view'); },
+        toggleCreate: function() { self.togglePerm(p.screen, 'create'); },
+        toggleEdit: function() { self.togglePerm(p.screen, 'edit'); },
+        toggleDelete: function() { self.togglePerm(p.screen, 'delete'); },
+        viewTrackStyle: self.switchStyle(p.view, accent), viewKnobStyle: self.knobStyle(p.view),
+        createTrackStyle: self.switchStyle(p.create, accent), createKnobStyle: self.knobStyle(p.create),
+        editTrackStyle: self.switchStyle(p.edit, accent), editKnobStyle: self.knobStyle(p.edit),
+        deleteTrackStyle: self.switchStyle(p.delete, accent), deleteKnobStyle: self.knobStyle(p.delete)
+      };
+    });
+
+    var monthLabels = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    var monthData = [
+      [9800,7200],[10200,8100],[9500,7600],[11000,8300],[10600,9100],[12480,7930],
+      [9700,8600],[10100,7900],[10800,8200],[11400,9000],[12000,8700],[13200,9400]
+    ];
+    var maxVal = monthData.reduce(function(acc, pair) {
+      return Math.max(acc, pair[0], pair[1]);
+    }, 0);
+    var chartBottom = 185, chartTop = 15, chartH = chartBottom - chartTop;
+    var groupW = 840 / 12, barW = 13, barGap = 3;
+    var balances = monthData.map(function(pair) { return pair[0] - pair[1]; });
+    var minBal = balances.reduce(function(acc, v) { return Math.min(acc, v); }, balances[0]);
+    var maxBal = balances.reduce(function(acc, v) { return Math.max(acc, v); }, balances[0]);
+    var balRange = (maxBal - minBal) || 1;
+    var barWidth = barW;
+
+    var monthBars = monthData.map(function(pair, i) {
+      var inc = pair[0], exp = pair[1];
+      var cx = i * groupW + groupW / 2;
+      var incH = (inc / maxVal) * chartH;
+      var expH = (exp / maxVal) * chartH;
+      var bal = inc - exp;
+      var lineY = chartBottom - ((bal - minBal) / balRange) * chartH;
+      return {
+        incomeX: cx - barW - barGap / 2, incomeY: chartBottom - incH, incomeH: incH,
+        expenseX: cx + barGap / 2, expenseY: chartBottom - expH, expenseH: expH,
+        lineX: cx, lineY: lineY, labelX: cx, label: monthLabels[i]
+      };
+    });
+    var linePoints = monthBars.map(function(m) { return m.lineX + ',' + m.lineY; }).join(' ');
+
+    var incomeCatsRaw = [{ name: 'Salário', amount: 8200 }, { name: 'Freelance', amount: 1900 }, { name: 'Outros', amount: 380 }];
+    var expenseCatsRaw = [{ name: 'Moradia', amount: 2200 }, { name: 'Alimentação', amount: 1240 }, { name: 'Transporte', amount: 610 }, { name: 'Lazer', amount: 380 }];
+    var maxIncomeCat = incomeCatsRaw.reduce(function(acc, c) { return Math.max(acc, c.amount); }, 0);
+    var maxExpenseCat = expenseCatsRaw.reduce(function(acc, c) { return Math.max(acc, c.amount); }, 0);
+    var incomeCats = incomeCatsRaw.map(function(c) {
+      return { name: c.name, amount: self.money(c.amount), barStyle: { width: (c.amount / maxIncomeCat * 100) + '%', height: '100%', background: 'oklch(56% 0.13 155)' } };
+    });
+    var expenseCats = expenseCatsRaw.map(function(c) {
+      return { name: c.name, amount: self.money(c.amount), barStyle: { width: (c.amount / maxExpenseCat * 100) + '%', height: '100%', background: 'oklch(58% 0.17 25)' } };
+    });
+
+    return {
+      isLogin: s.isLogin, notLogin: !s.isLogin, screen: s.screen,
+      isDashboard: s.screen === 'dashboard', isTransactions: s.screen === 'transactions',
+      isCategories: s.screen === 'categories', isUsers: s.screen === 'users',
+      isProfiles: s.screen === 'profiles', isNotes: s.screen === 'notes',
+      enterApp: function() { self.setState({ isLogin: false }); },
+      goLogin: function() { self.setState({ isLogin: true }); },
+      goDashboard: function() { self.setState({ screen: 'dashboard' }); },
+      goTransactions: function() { self.setState({ screen: 'transactions' }); },
+      goCategories: function() { self.setState({ screen: 'categories' }); },
+      goUsers: function() { self.setState({ screen: 'users' }); },
+      goProfiles: function() { self.setState({ screen: 'profiles' }); },
+      goNotes: function() { self.setState({ screen: 'notes' }); },
+      preventDefault: function(e) { e.preventDefault(); },
+      expandSidebar: function() { self.setState({ sidebarHover: true }); },
+      collapseSidebar: function() { self.setState({ sidebarHover: false }); },
+      sidebarStyle: sidebarStyle, labelFadeStyle: labelFadeStyle, footerFadeStyle: footerFadeStyle, navBtnStyle: navBtnStyle,
+      inputStyle: inputStyle, primaryBtnStyle: primaryBtnStyle, ghostBtnStyle: ghostBtnStyle, ghostSmBtnStyle: ghostSmBtnStyle, dangerSmBtnStyle: dangerSmBtnStyle, thStyle: thStyle, tdStyle: tdStyle,
+      transactions: transactions, categories: categories, users: users, profiles: profiles, permissionRows: permissionRows,
+      monthBars: monthBars, linePoints: linePoints, barWidth: barWidth,
+      incomeCats: incomeCats, expenseCats: expenseCats
+    };
+  }
+}
+</script>
+</body>
+</html>

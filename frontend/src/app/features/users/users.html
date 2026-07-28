@@ -1,3 +1,5 @@
+<h2 class="page-title">Usuarios</h2>
+
 <div class="status-bar dismissible" *ngIf="error()">
   {{ error() }}
   <button type="button" class="status-close" (click)="dismissError()" aria-label="Fechar">×</button>
@@ -63,7 +65,7 @@
     </label>
     <div class="two-cols">
       <button class="primary-button" type="submit" [disabled]="saving()">Salvar</button>
-      <button class="danger-button" type="button" (click)="cancel()">Cancelar</button>
+      <button class="ghost-button" type="button" (click)="cancel()">Cancelar</button>
     </div>
   </form>
 
@@ -96,7 +98,11 @@
               <td>{{ user.name }}</td>
               <td>{{ user.email }}</td>
               <td>{{ profileName(user.profileId) }}</td>
-              <td><span class="status-pill">{{ user.active ? 'Ativo' : 'Inativo' }}</span></td>
+              <td>
+                <span class="status-pill" [class.pill-income]="user.active" [class.pill-neutral]="!user.active">
+                  {{ user.active ? 'Ativo' : 'Inativo' }}
+                </span>
+              </td>
               <td class="row-actions">
                 <button
                   *ngIf="authService.can('USERS', 'EDIT')"

@@ -1,6 +1,6 @@
 input[type='color'] {
+  height: 42px;
   padding: 4px;
-  height: 40px;
 }
 
 col.col-type {
@@ -8,11 +8,24 @@ col.col-type {
 }
 
 col.col-situation {
-  width: 140px;
+  width: 150px;
 }
 
 col.col-actions {
-  width: 210px;
+  width: 200px;
+}
+
+.category-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.category-dot {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+  border-radius: var(--radius-pill);
 }
 
 .inline-name-fields {
