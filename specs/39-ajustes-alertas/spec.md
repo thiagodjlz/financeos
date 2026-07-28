@@ -3,7 +3,7 @@ issue: 39
 url: https://github.com/thiagodjlz/financeos/issues/39
 title: "Ajustes de alertas"
 domains: [auth, users, categories, transactions, dashboard]
-stage: validated
+stage: pr-open
 branch: feature/issue-39-ajustes-alertas
 created: 2026-07-27
 ---
