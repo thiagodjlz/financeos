@@ -92,7 +92,7 @@ public class ProfileResource {
         repository.findByIdOptional(id).orElseThrow(NotFoundException::new);
 
         if (userRepository.count("profileId", id) > 0) {
-            throw new WebApplicationException("Perfil em uso por usuarios.", Response.Status.CONFLICT);
+            throw new WebApplicationException("Perfil em uso por usuários.", Response.Status.CONFLICT);
         }
 
         permissionRepository.deleteByProfile(id);
@@ -107,7 +107,7 @@ public class ProfileResource {
         for (PermissionEntry entry : entries) {
             if (!seen.add(entry.screen())) {
                 throw new WebApplicationException(
-                        "Tela duplicada nas permissoes do perfil.", Response.Status.BAD_REQUEST);
+                        "Tela duplicada nas permissões do perfil.", Response.Status.BAD_REQUEST);
             }
         }
     }

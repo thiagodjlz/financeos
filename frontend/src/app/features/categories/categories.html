@@ -1,7 +1,5 @@
 <h2 class="page-title">Categorias</h2>
 
-<div class="status-bar" *ngIf="error()">{{ error() }}</div>
-
 <section class="content-grid">
   <form class="panel form-panel" *ngIf="authService.can('CATEGORIES', 'CREATE')" (ngSubmit)="save()">
     <div class="panel-heading">
@@ -24,12 +22,12 @@
         <input type="color" name="color" [(ngModel)]="form.color" />
       </label>
       <label>
-        Icone
+        Ícone
         <input name="icon" [(ngModel)]="form.icon" />
       </label>
     </div>
     <label>
-      Situacao
+      Situação
       <select name="active" [(ngModel)]="form.active">
         <option [ngValue]="true">Ativo</option>
         <option [ngValue]="false">Inativo</option>
@@ -43,7 +41,7 @@
 
   <section class="panel table-panel">
     <div class="panel-heading">
-      <h3>Ultimos registros</h3>
+      <h3>Últimos registros</h3>
       <span>{{ categories().length }}</span>
     </div>
     <div class="table-wrap">
@@ -58,7 +56,7 @@
           <tr>
             <th>Nome</th>
             <th>Tipo</th>
-            <th>Situacao</th>
+            <th>Situação</th>
             <th></th>
           </tr>
         </thead>
@@ -94,7 +92,7 @@
                 <div class="inline-name-fields">
                   <input name="editName" [(ngModel)]="editForm.name" required />
                   <input type="color" name="editColor" title="Cor" [(ngModel)]="editForm.color" />
-                  <input name="editIcon" placeholder="Icone" [(ngModel)]="editForm.icon" />
+                  <input name="editIcon" placeholder="Ícone" [(ngModel)]="editForm.icon" />
                 </div>
               </td>
               <td>
@@ -128,7 +126,7 @@
   <div class="modal-card" (click)="$event.stopPropagation()">
     <p>Deseja sair sem salvar?</p>
     <div class="modal-actions">
-      <button type="button" class="ghost-button" (click)="confirmExitNo()">Nao</button>
+      <button type="button" class="ghost-button" (click)="confirmExitNo()">Não</button>
       <button type="button" class="primary-button" (click)="confirmExitYes()">Sim</button>
     </div>
   </div>

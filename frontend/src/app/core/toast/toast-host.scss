@@ -1,0 +1,154 @@
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateX(24px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes toastOut {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+    max-height: 200px;
+    margin-bottom: 12px;
+  }
+
+  to {
+    opacity: 0;
+    transform: translateX(24px);
+    max-height: 0;
+    margin-bottom: 0;
+  }
+}
+
+@keyframes toastBar {
+  from {
+    width: 100%;
+  }
+
+  to {
+    width: 0%;
+  }
+}
+
+.toast-stack {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  width: 340px;
+  max-width: calc(100vw - 32px);
+}
+
+.toast-wrap {
+  margin-bottom: 12px;
+  overflow: hidden;
+  animation: toastIn 0.3s ease;
+}
+
+.toast-wrap.leaving {
+  animation: toastOut 0.25s ease forwards;
+}
+
+.toast-card {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-login);
+  padding: 16px 16px 18px;
+  overflow: hidden;
+}
+
+.toast-icon {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-icon);
+}
+
+.toast-body {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-top: 1px;
+}
+
+.toast-title {
+  font-size: var(--fs-body);
+  font-weight: 700;
+}
+
+.toast-message {
+  margin-top: 3px;
+  color: var(--text-muted);
+  font-size: var(--fs-toast-msg);
+  line-height: 1.4;
+}
+
+.toast-close {
+  flex: 0 0 auto;
+  margin-top: 1px;
+  border: 0;
+  padding: 2px;
+  background: transparent;
+  color: var(--text-faint);
+  cursor: pointer;
+}
+
+.toast-progress {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 3px;
+  opacity: 0.35;
+  animation-name: toastBar;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+.toast-success {
+  .toast-icon {
+    background: var(--income-soft);
+    color: var(--income-icon);
+  }
+
+  .toast-progress {
+    background: var(--income-icon);
+  }
+}
+
+.toast-warning {
+  .toast-icon {
+    background: var(--pending-soft);
+    color: var(--pending-icon);
+  }
+
+  .toast-progress {
+    background: var(--pending-icon);
+  }
+}
+
+.toast-error {
+  .toast-icon {
+    background: var(--expense-soft);
+    color: var(--expense-on-soft);
+  }
+
+  .toast-progress {
+    background: var(--expense-on-soft);
+  }
+}

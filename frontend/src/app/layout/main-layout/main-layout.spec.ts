@@ -58,9 +58,9 @@ describe('MainLayout', () => {
     expect(compiled.querySelector('h1')?.textContent).toContain('FinanceOS');
     expect(navButtons(fixture)).toHaveLength(4);
     expect(findButton(fixture, 'Cadastros')).toBeDefined();
-    expect(findButton(fixture, 'Configuracoes')).toBeDefined();
+    expect(findButton(fixture, 'Configurações')).toBeDefined();
     expect(findButton(fixture, 'Categorias')).toBeUndefined();
-    expect(findButton(fixture, 'Usuarios')).toBeUndefined();
+    expect(findButton(fixture, 'Usuários')).toBeUndefined();
     expect(findButton(fixture, 'Perfis')).toBeUndefined();
   });
 
@@ -86,51 +86,51 @@ describe('MainLayout', () => {
     expect(findButton(fixture, 'Cadastros')).toBeUndefined();
   });
 
-  it('shows the Configuracoes group when the user can view only users', () => {
+  it('shows the Configurações group when the user can view only users', () => {
     const authService = TestBed.inject(AuthService);
     authService.permissions.set([viewPermission('USERS')]);
     const fixture = createFixture();
 
-    expect(findButton(fixture, 'Configuracoes')).toBeDefined();
+    expect(findButton(fixture, 'Configurações')).toBeDefined();
   });
 
-  it('shows the Configuracoes group when the user can view only profiles', () => {
+  it('shows the Configurações group when the user can view only profiles', () => {
     const authService = TestBed.inject(AuthService);
     authService.permissions.set([viewPermission('PROFILES')]);
     const fixture = createFixture();
 
-    expect(findButton(fixture, 'Configuracoes')).toBeDefined();
+    expect(findButton(fixture, 'Configurações')).toBeDefined();
   });
 
-  it('hides the Configuracoes group when the user can view neither users nor profiles', () => {
+  it('hides the Configurações group when the user can view neither users nor profiles', () => {
     const authService = TestBed.inject(AuthService);
     authService.permissions.set([viewPermission('DASHBOARD')]);
     const fixture = createFixture();
 
-    expect(findButton(fixture, 'Configuracoes')).toBeUndefined();
+    expect(findButton(fixture, 'Configurações')).toBeUndefined();
   });
 
-  it('renders only the permitted children after expanding the Configuracoes group', () => {
+  it('renders only the permitted children after expanding the Configurações group', () => {
     const authService = TestBed.inject(AuthService);
     authService.permissions.set([viewPermission('USERS')]);
     const fixture = createFixture();
 
-    findButton(fixture, 'Configuracoes')?.click();
+    findButton(fixture, 'Configurações')?.click();
     fixture.detectChanges();
 
-    expect(findButton(fixture, 'Usuarios')).toBeDefined();
+    expect(findButton(fixture, 'Usuários')).toBeDefined();
     expect(findButton(fixture, 'Perfis')).toBeUndefined();
   });
 
-  it('renders both children after expanding the Configuracoes group with both permissions', () => {
+  it('renders both children after expanding the Configurações group with both permissions', () => {
     const authService = TestBed.inject(AuthService);
     authService.permissions.set([viewPermission('USERS'), viewPermission('PROFILES')]);
     const fixture = createFixture();
 
-    findButton(fixture, 'Configuracoes')?.click();
+    findButton(fixture, 'Configurações')?.click();
     fixture.detectChanges();
 
-    expect(findButton(fixture, 'Usuarios')).toBeDefined();
+    expect(findButton(fixture, 'Usuários')).toBeDefined();
     expect(findButton(fixture, 'Perfis')).toBeDefined();
   });
 
@@ -151,13 +151,13 @@ describe('MainLayout', () => {
     }
     expect(buttons.map((button) => button.getAttribute('aria-label'))).toEqual([
       'Resumo',
-      'Lancamentos',
+      'Lançamentos',
       'Cadastros',
-      'Configuracoes',
+      'Configurações',
     ]);
   });
 
-  it('expands the sidebar and opens the group when the collapsed Configuracoes parent is clicked, without navigating', () => {
+  it('expands the sidebar and opens the group when the collapsed Configurações parent is clicked, without navigating', () => {
     const authService = TestBed.inject(AuthService);
     authService.superAdmin.set(true);
     const fixture = createFixture();
@@ -165,11 +165,11 @@ describe('MainLayout', () => {
     const initialUrl = router.url;
 
     const compiled = fixture.nativeElement as HTMLElement;
-    findButton(fixture, 'Configuracoes')?.click();
+    findButton(fixture, 'Configurações')?.click();
     fixture.detectChanges();
 
     expect(compiled.querySelector('.sidebar.expanded')).not.toBeNull();
-    expect(findButton(fixture, 'Usuarios')).toBeDefined();
+    expect(findButton(fixture, 'Usuários')).toBeDefined();
     expect(findButton(fixture, 'Perfis')).toBeDefined();
     expect(router.url).toBe(initialUrl);
   });
@@ -236,19 +236,19 @@ describe('MainLayout', () => {
     authService.superAdmin.set(true);
     const fixture = createFixture();
 
-    findButton(fixture, 'Configuracoes')?.click();
+    findButton(fixture, 'Configurações')?.click();
     fixture.detectChanges();
-    expect(findButton(fixture, 'Usuarios')).toBeDefined();
+    expect(findButton(fixture, 'Usuários')).toBeDefined();
 
     findButton(fixture, 'Cadastros')?.click();
     fixture.detectChanges();
     expect(findButton(fixture, 'Categorias')).toBeDefined();
-    expect(findButton(fixture, 'Usuarios')).toBeUndefined();
+    expect(findButton(fixture, 'Usuários')).toBeUndefined();
     expect(findButton(fixture, 'Perfis')).toBeUndefined();
 
-    findButton(fixture, 'Configuracoes')?.click();
+    findButton(fixture, 'Configurações')?.click();
     fixture.detectChanges();
-    expect(findButton(fixture, 'Usuarios')).toBeDefined();
+    expect(findButton(fixture, 'Usuários')).toBeDefined();
     expect(findButton(fixture, 'Categorias')).toBeUndefined();
   });
 

@@ -3,7 +3,7 @@ package br.com.financeos.profiles;
 import jakarta.validation.constraints.NotNull;
 
 public record PermissionEntry(
-        @NotNull Screen screen,
+        @NotNull(message = "A tela é obrigatória.") Screen screen,
         boolean canView,
         boolean canCreate,
         boolean canEdit,

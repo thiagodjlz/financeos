@@ -13,9 +13,16 @@ import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.NotAuthorizedException;
+import org.jboss.logging.Logger;
 
 @RequestScoped
 public class AccessControl {
+
+    // A mensagem da excecao chega ao usuario pelo BusinessExceptionMapper: não pode carregar
+    // Screen/Action, que são nomes de enum em inglês. O par fica só no log do servidor.
+    private static final String ACCESS_DENIED_MESSAGE = "Você não tem permissão para realizar esta ação.";
+
+    private static final Logger LOG = Logger.getLogger(AccessControl.class);
 
     @Inject
     CurrentUser currentUser;
@@ -48,7 +55,8 @@ public class AccessControl {
                 .orElse(false);
 
         if (!allowed) {
-            throw new ForbiddenException("Sem permissao de " + action + " em " + screen);
+            LOG.debugf("Acesso negado para o usuario %s: %s em %s", user.id, action, screen);
+            throw new ForbiddenException(ACCESS_DENIED_MESSAGE);
         }
     }
 

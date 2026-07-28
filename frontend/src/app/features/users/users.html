@@ -1,14 +1,9 @@
-<h2 class="page-title">Usuarios</h2>
-
-<div class="status-bar dismissible" *ngIf="error()">
-  {{ error() }}
-  <button type="button" class="status-close" (click)="dismissError()" aria-label="Fechar">×</button>
-</div>
+<h2 class="page-title">Usuários</h2>
 
 <section class="content-grid">
   <form class="panel form-panel" *ngIf="authService.can('USERS', 'CREATE')" (ngSubmit)="save()">
     <div class="panel-heading">
-      <h3>Novo usuario</h3>
+      <h3>Novo usuário</h3>
     </div>
     <label>
       Nome
@@ -71,7 +66,7 @@
 
   <section class="panel table-panel">
     <div class="panel-heading">
-      <h3>Usuarios</h3>
+      <h3>Usuários</h3>
       <span>{{ users().length }}</span>
     </div>
     <div class="table-wrap">
@@ -182,7 +177,7 @@
           </ng-container>
         </tbody>
       </table>
-      <p class="empty-state" *ngIf="!users().length">Nenhum usuario cadastrado</p>
+      <p class="empty-state" *ngIf="!users().length">Nenhum usuário cadastrado</p>
     </div>
   </section>
 </section>
@@ -191,7 +186,7 @@
   <div class="modal-card" (click)="$event.stopPropagation()">
     <p>Deseja sair sem salvar?</p>
     <div class="modal-actions">
-      <button type="button" class="ghost-button" (click)="confirmExitNo()">Nao</button>
+      <button type="button" class="ghost-button" (click)="confirmExitNo()">Não</button>
       <button type="button" class="primary-button" (click)="confirmExitYes()">Sim</button>
     </div>
   </div>

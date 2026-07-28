@@ -5,7 +5,11 @@ import { money, transactionStatusLabel } from '../../core/formatters';
 import { Category, Transaction, TransactionStatus, TransactionType } from '../../core/models';
 import { AuthService } from '../../core/services/auth.service';
 import { CategoryService } from '../../core/services/category.service';
+import { ToastService } from '../../core/services/toast.service';
 import { TransactionService } from '../../core/services/transaction.service';
+
+const LOAD_FALLBACK = 'Não foi possível carregar os lançamentos.';
+const SAVE_FALLBACK = 'Não foi possível salvar o lançamento. Revise os campos e tente novamente.';
 
 function newTransactionForm() {
   return {
@@ -27,11 +31,11 @@ function newTransactionForm() {
 export class Transactions implements OnInit {
   private readonly transactionService = inject(TransactionService);
   private readonly categoryService = inject(CategoryService);
+  private readonly toast = inject(ToastService);
   protected readonly authService = inject(AuthService);
 
   protected readonly loading = signal(false);
   protected readonly saving = signal(false);
-  protected readonly error = signal('');
 
   protected readonly transactions = this.transactionService.transactions;
   protected readonly categories = this.categoryService.categories;
@@ -63,7 +67,6 @@ export class Transactions implements OnInit {
 
   protected async loadData(): Promise<void> {
     this.loading.set(true);
-    this.error.set('');
 
     try {
       await Promise.all([
@@ -71,8 +74,8 @@ export class Transactions implements OnInit {
         this.categoryService.refresh(),
         this.loadCategoriesForType(this.transactionForm.type),
       ]);
-    } catch {
-      this.error.set('API indisponivel. Confirme se o backend Quarkus esta rodando em localhost:8080.');
+    } catch (err) {
+      this.toast.fromHttpError(err, LOAD_FALLBACK);
     } finally {
       this.loading.set(false);
     }
@@ -103,7 +106,6 @@ export class Transactions implements OnInit {
 
   protected async saveTransaction(): Promise<void> {
     this.saving.set(true);
-    this.error.set('');
 
     try {
       await this.transactionService.create({
@@ -116,8 +118,9 @@ export class Transactions implements OnInit {
 
       this.transactionForm.description = '';
       this.transactionForm.amount = 0;
-    } catch {
-      this.error.set('Nao foi possivel salvar. Revise os campos e tente novamente.');
+      this.toast.success('Lançamento salvo com sucesso.');
+    } catch (err) {
+      this.toast.fromHttpError(err, SAVE_FALLBACK);
     } finally {
       this.saving.set(false);
     }
@@ -125,13 +128,13 @@ export class Transactions implements OnInit {
 
   protected async cancelTransaction(transaction: Transaction): Promise<void> {
     this.saving.set(true);
-    this.error.set('');
 
     try {
       await this.transactionService.cancel(transaction.id);
       await this.transactionService.refresh();
-    } catch {
-      this.error.set('Nao foi possivel cancelar o lancamento.');
+      this.toast.success('Lançamento cancelado com sucesso.');
+    } catch (err) {
+      this.toast.fromHttpError(err, 'Não foi possível cancelar o lançamento.');
     } finally {
       this.saving.set(false);
     }
@@ -220,7 +223,6 @@ export class Transactions implements OnInit {
 
   protected async saveEdit(transaction: Transaction): Promise<void> {
     this.saving.set(true);
-    this.error.set('');
 
     try {
       await this.transactionService.update(transaction.id, {
@@ -231,8 +233,9 @@ export class Transactions implements OnInit {
       });
       await this.transactionService.refresh();
       this.exitEditDiscarding();
-    } catch {
-      this.error.set('Nao foi possivel salvar. Revise os campos e tente novamente.');
+      this.toast.success('Lançamento atualizado com sucesso.');
+    } catch (err) {
+      this.toast.fromHttpError(err, SAVE_FALLBACK);
     } finally {
       this.saving.set(false);
     }

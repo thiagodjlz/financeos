@@ -3,6 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { API_BASE, Profile } from '../../core/models';
 import { AuthService } from '../../core/services/auth.service';
+import { ToastService } from '../../core/services/toast.service';
 import { Profiles } from './profiles';
 
 const PROFILE: Profile = {
@@ -18,6 +19,7 @@ const PROFILE: Profile = {
 describe('Profiles', () => {
   let fixture: ComponentFixture<Profiles>;
   let httpMock: HttpTestingController;
+  let toastService: ToastService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -26,6 +28,7 @@ describe('Profiles', () => {
     }).compileComponents();
 
     httpMock = TestBed.inject(HttpTestingController);
+    toastService = TestBed.inject(ToastService);
   });
 
   afterEach(() => httpMock.verify());
@@ -52,7 +55,7 @@ describe('Profiles', () => {
     return Array.from(fixture.nativeElement.querySelectorAll('form input[type="checkbox"]'));
   }
 
-  const SCREEN_ROWS = ['Resumo', 'Lancamentos', 'Categorias', 'Usuarios', 'Perfis'];
+  const SCREEN_ROWS = ['Resumo', 'Lançamentos', 'Categorias', 'Usuários', 'Perfis'];
   const ACTION_COLUMNS = ['view', 'create', 'edit', 'delete'];
 
   function checkbox(cell: string): HTMLInputElement {
@@ -64,6 +67,10 @@ describe('Profiles', () => {
     return row.querySelectorAll('input[type="checkbox"]')[
       ACTION_COLUMNS.indexOf(action)
     ] as HTMLInputElement;
+  }
+
+  function toasts() {
+    return toastService.toasts();
   }
 
   function formTitle(): string {
@@ -100,10 +107,10 @@ describe('Profiles', () => {
   function expectLoadedProfileInForm(): void {
     expect(query<HTMLInputElement>('form input[name="name"]').value).toBe('Administrador');
     expect(checkbox('Resumo.view').checked).toBe(true);
-    expect(checkbox('Lancamentos.view').checked).toBe(true);
-    expect(checkbox('Lancamentos.create').checked).toBe(true);
+    expect(checkbox('Lançamentos.view').checked).toBe(true);
+    expect(checkbox('Lançamentos.create').checked).toBe(true);
     expect(checkbox('Categorias.view').checked).toBe(false);
-    expect(checkbox('Usuarios.delete').checked).toBe(false);
+    expect(checkbox('Usuários.delete').checked).toBe(false);
   }
 
   it('exibe o botao Cancelar ao lado de Salvar em modo de criacao', async () => {
@@ -116,7 +123,7 @@ describe('Profiles', () => {
     expect(button.getAttribute('type')).toBe('button');
   });
 
-  it('nao renderiza o formulario nem o botao Cancelar sem permissao', async () => {
+  it('não renderiza o formulário nem o botão Cancelar sem permissão', async () => {
     await render(false);
 
     expect(query('form')).toBeNull();
@@ -127,7 +134,7 @@ describe('Profiles', () => {
     await fillName('Financeiro');
     await toggle('Categorias.view');
     await toggle('Categorias.create');
-    await toggle('Usuarios.delete');
+    await toggle('Usuários.delete');
 
     await click(cancelButton());
 
@@ -142,13 +149,13 @@ describe('Profiles', () => {
     await render();
     await startEditing();
     await fillName('Outro nome');
-    await toggle('Lancamentos.create');
-    await toggle('Usuarios.edit');
+    await toggle('Lançamentos.create');
+    await toggle('Usuários.edit');
 
     await click(cancelButton());
 
     expectLoadedProfileInForm();
-    expect(checkbox('Usuarios.edit').checked).toBe(false);
+    expect(checkbox('Usuários.edit').checked).toBe(false);
     expect(formTitle()).toBe('Editar perfil');
     expect(cancelButton().textContent?.trim()).toBe('Cancelar');
     httpMock.expectNone(() => true);
@@ -166,7 +173,7 @@ describe('Profiles', () => {
     httpMock.expectNone(() => true);
   });
 
-  it('sai da edicao ja no primeiro clique quando nao ha alteracao pendente', async () => {
+  it('sai da edição já no primeiro clique quando não há alteração pendente', async () => {
     await render();
     await startEditing();
 
@@ -211,6 +218,10 @@ describe('Profiles', () => {
     await settle();
     httpMock.expectOne(`${API_BASE}/profiles`).flush([PROFILE]);
     await settle();
+
+    expect(toasts()).toHaveLength(1);
+    expect(toasts()[0].title).toBe('Sucesso');
+    expect(toasts()[0].message).toBe('Perfil atualizado com sucesso.');
   });
 
   it('salva com POST apos sair da edicao', async () => {
@@ -228,5 +239,66 @@ describe('Profiles', () => {
     await settle();
     httpMock.expectOne(`${API_BASE}/profiles`).flush([PROFILE]);
     await settle();
+
+    expect(toasts()).toHaveLength(1);
+    expect(toasts()[0].title).toBe('Sucesso');
+    expect(toasts()[0].message).toBe('Perfil salvo com sucesso.');
+  });
+
+  it('exibe toast de sucesso ao excluir o perfil', async () => {
+    await render();
+
+    await click(query<HTMLButtonElement>('.compact-list .row-actions button:last-of-type'));
+
+    const request = httpMock.expectOne(`${API_BASE}/profiles/profile-1`);
+    expect(request.request.method).toBe('DELETE');
+    request.flush(null);
+    await settle();
+    httpMock.expectOne(`${API_BASE}/profiles`).flush([]);
+    await settle();
+
+    expect(toasts()).toHaveLength(1);
+    expect(toasts()[0].title).toBe('Sucesso');
+    expect(toasts()[0].message).toBe('Perfil excluído com sucesso.');
+  });
+
+  it('exibe alerta com a mensagem do corpo no 409 de perfil em uso', async () => {
+    await render();
+
+    await click(query<HTMLButtonElement>('.compact-list .row-actions button:last-of-type'));
+
+    httpMock
+      .expectOne(`${API_BASE}/profiles/profile-1`)
+      .flush({ message: 'Perfil em uso por usuários.' }, { status: 409, statusText: 'Conflict' });
+    await settle();
+
+    expect(toasts()).toHaveLength(1);
+    expect(toasts()[0].title).toBe('Alerta');
+    expect(toasts()[0].message).toBe('Perfil em uso por usuários.');
+  });
+
+  it('exibe falha no 500 ao salvar', async () => {
+    await render();
+    await fillName('Financeiro');
+
+    await click(query<HTMLButtonElement>('form button[type="submit"]'));
+
+    httpMock.expectOne(`${API_BASE}/profiles`).flush(null, { status: 500, statusText: 'Server Error' });
+    await settle();
+
+    expect(toasts()).toHaveLength(1);
+    expect(toasts()[0].title).toBe('Falha');
+  });
+
+  it('não dispara toast no Cancelar de dois estágios', async () => {
+    await render();
+    await startEditing();
+    await fillName('Outro nome');
+
+    await click(cancelButton());
+    await click(cancelButton());
+
+    expect(toasts()).toEqual([]);
+    httpMock.expectNone(() => true);
   });
 });

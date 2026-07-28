@@ -3,6 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { API_BASE, Category } from '../../core/models';
 import { AuthService } from '../../core/services/auth.service';
+import { ToastService } from '../../core/services/toast.service';
 import { Categories } from './categories';
 
 const CATEGORY: Category = {
@@ -28,6 +29,7 @@ const OTHER_CATEGORY: Category = {
 describe('Categories', () => {
   let fixture: ComponentFixture<Categories>;
   let httpMock: HttpTestingController;
+  let toastService: ToastService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -36,6 +38,7 @@ describe('Categories', () => {
     }).compileComponents();
 
     httpMock = TestBed.inject(HttpTestingController);
+    toastService = TestBed.inject(ToastService);
   });
 
   afterEach(() => httpMock.verify());
@@ -61,6 +64,10 @@ describe('Categories', () => {
 
   function queryAll<T extends HTMLElement>(selector: string): T[] {
     return Array.from(fixture.nativeElement.querySelectorAll(selector)) as T[];
+  }
+
+  function toasts() {
+    return toastService.toasts();
   }
 
   function formTitle(): string {
@@ -117,7 +124,7 @@ describe('Categories', () => {
     expect(query<HTMLSelectElement>('form select[name="active"]').selectedIndex).toBe(0);
   }
 
-  it('exibe o formulario somente de criacao com titulo fixo e Cancelar secundario', async () => {
+  it('exibe o formulário somente de criação com título fixo e Cancelar secundário', async () => {
     await render();
 
     const button = cancelButton();
@@ -127,14 +134,14 @@ describe('Categories', () => {
     expect(button.getAttribute('type')).toBe('button');
   });
 
-  it('nao renderiza o formulario nem o botao Editar sem permissao', async () => {
+  it('não renderiza o formulário nem o botão Editar sem permissão', async () => {
     await render(false);
 
     expect(query('form')).toBeNull();
     expect(query('tbody button.ghost-button')).toBeNull();
   });
 
-  it('limpa o formulario de criacao em estagio unico, sem HTTP', async () => {
+  it('limpa o formulário de criação em estágio único, sem HTTP', async () => {
     await render();
     await fillText('form input[name="name"]', 'Alterado');
     await selectValue('form select[name="type"]', 'INCOME');
@@ -146,10 +153,11 @@ describe('Categories', () => {
 
     expectBlankForm();
     expect(formTitle()).toBe('Nova categoria');
+    expect(toasts()).toEqual([]);
     httpMock.expectNone(() => true);
   });
 
-  it('entra em edicao inline com controles de nome, tipo, situacao, cor e icone sem tocar o formulario lateral', async () => {
+  it('entra em edição inline com controles de nome, tipo, situação, cor e ícone sem tocar o formulário lateral', async () => {
     await render();
 
     await startEditing();
@@ -164,7 +172,7 @@ describe('Categories', () => {
     httpMock.expectNone(() => true);
   });
 
-  it('desabilita o Editar das demais linhas com uma linha em edicao', async () => {
+  it('desabilita o Editar das demais linhas com uma linha em edição', async () => {
     await render(true, [CATEGORY, OTHER_CATEGORY]);
 
     await startEditing();
@@ -174,7 +182,7 @@ describe('Categories', () => {
     expect(editButtons[0].disabled).toBe(true);
   });
 
-  it('salva a edicao com PUT incluindo cor e icone, recarrega e volta ao modo leitura', async () => {
+  it('salva a edição com PUT incluindo cor e ícone, recarrega e volta ao modo leitura', async () => {
     await render();
     await startEditing();
     await fillText('tbody input[name="editName"]', 'Feira');
@@ -199,9 +207,12 @@ describe('Categories', () => {
 
     expect(query('tbody input[name="editName"]')).toBeNull();
     expect(query('tbody tr td').textContent?.trim()).toBe('Feira');
+    expect(toasts()).toHaveLength(1);
+    expect(toasts()[0].title).toBe('Sucesso');
+    expect(toasts()[0].message).toBe('Categoria atualizada com sucesso.');
   });
 
-  it('sai direto sem modal e sem HTTP quando nao ha alteracao pendente', async () => {
+  it('sai direto sem modal e sem HTTP quando não há alteração pendente', async () => {
     await render();
     await startEditing();
 
@@ -209,10 +220,11 @@ describe('Categories', () => {
 
     expect(query('.modal-backdrop')).toBeNull();
     expect(query('tbody input[name="editName"]')).toBeNull();
+    expect(toasts()).toEqual([]);
     httpMock.expectNone(() => true);
   });
 
-  it('abre o modal ao sair com alteracao pendente e mantem a edicao no Nao', async () => {
+  it('abre o modal ao sair com alteração pendente e mantém a edição no Não', async () => {
     await render();
     await startEditing();
     await fillText('tbody input[name="editName"]', 'Alterado');
@@ -228,7 +240,7 @@ describe('Categories', () => {
     httpMock.expectNone(() => true);
   });
 
-  it('descarta e recarrega da API ao confirmar a saida com Sim', async () => {
+  it('descarta e recarrega da API ao confirmar a saída com Sim', async () => {
     await render();
     await startEditing();
     await fillText('tbody input[name="editName"]', 'Alterado');
@@ -244,7 +256,7 @@ describe('Categories', () => {
     expect(query('tbody tr td').textContent?.trim()).toBe('Mercado');
   });
 
-  it('exibe a mensagem de duplicidade no 409 e mantem a linha em edicao', async () => {
+  it('exibe alerta com a mensagem de duplicidade no 409 e mantém a linha em edição', async () => {
     await render();
     await startEditing();
     await fillText('tbody input[name="editName"]', 'Duplicada');
@@ -253,10 +265,89 @@ describe('Categories', () => {
 
     httpMock
       .expectOne(`${API_BASE}/categories/cat-1`)
-      .flush(null, { status: 409, statusText: 'Conflict' });
+      .flush(
+        { message: 'Já existe uma categoria com esse nome e tipo.' },
+        { status: 409, statusText: 'Conflict' },
+      );
     await settle();
 
-    expect(query('.status-bar').textContent?.trim()).toBe('Ja existe uma categoria com esse nome e tipo.');
+    expect(toasts()).toHaveLength(1);
+    expect(toasts()[0].title).toBe('Alerta');
+    expect(toasts()[0].message).toBe('Já existe uma categoria com esse nome e tipo.');
     expect(query<HTMLInputElement>('tbody input[name="editName"]').value).toBe('Duplicada');
+  });
+
+  it('exibe toast de sucesso ao criar a categoria', async () => {
+    await render();
+    await fillText('form input[name="name"]', 'Lazer');
+
+    await click(query<HTMLButtonElement>('form button[type="submit"]'));
+
+    httpMock.expectOne(`${API_BASE}/categories`).flush({ ...CATEGORY, id: 'cat-3', name: 'Lazer' });
+    await settle();
+    httpMock.expectOne(`${API_BASE}/categories`).flush([CATEGORY]);
+    await settle();
+
+    expect(toasts()).toHaveLength(1);
+    expect(toasts()[0].title).toBe('Sucesso');
+    expect(toasts()[0].message).toBe('Categoria salva com sucesso.');
+  });
+
+  it('exibe toast de sucesso ao desativar pela edição inline', async () => {
+    await render();
+    await startEditing();
+    await selectIndex('tbody select[name="editActive"]', 1);
+
+    await click(rowSaveButton());
+
+    const request = httpMock.expectOne(`${API_BASE}/categories/cat-1`);
+    expect(request.request.body).toMatchObject({ active: false });
+    request.flush({ ...CATEGORY, active: false });
+    await settle();
+    httpMock.expectOne(`${API_BASE}/categories`).flush([{ ...CATEGORY, active: false }]);
+    await settle();
+
+    expect(toasts()[0].title).toBe('Sucesso');
+    expect(toasts()[0].message).toBe('Categoria atualizada com sucesso.');
+  });
+
+  it('exibe alerta nomeando o campo Nome quando o backend recusa por validação', async () => {
+    await render();
+
+    await click(query<HTMLButtonElement>('form button[type="submit"]'));
+
+    httpMock.expectOne(`${API_BASE}/categories`).flush(
+      {
+        violations: [{ field: 'create.request.name', message: 'O nome é obrigatório.' }],
+        message: 'Informe os campos obrigatórios: Nome.',
+      },
+      { status: 400, statusText: 'Bad Request' },
+    );
+    await settle();
+
+    expect(toasts()).toHaveLength(1);
+    expect(toasts()[0].title).toBe('Alerta');
+    expect(toasts()[0].message).toBe('Informe os campos obrigatórios: Nome.');
+  });
+
+  it('exibe toast de falha quando a API responde 500', async () => {
+    await render();
+    await fillText('form input[name="name"]', 'Lazer');
+
+    await click(query<HTMLButtonElement>('form button[type="submit"]'));
+
+    httpMock
+      .expectOne(`${API_BASE}/categories`)
+      .flush(null, { status: 500, statusText: 'Server Error' });
+    await settle();
+
+    expect(toasts()).toHaveLength(1);
+    expect(toasts()[0].title).toBe('Falha');
+  });
+
+  it('mantém o empty-state da tabela sem categorias', async () => {
+    await render(true, []);
+
+    expect(query('.empty-state').textContent?.trim()).toBe('Nenhuma categoria cadastrada');
   });
 });

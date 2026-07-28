@@ -8,6 +8,6 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
 
 public record ProfileRequest(
-        @NotBlank @Size(max = 120) String name,
-        @NotEmpty List<@Valid PermissionEntry> permissions) {
+        @NotBlank(message = "O nome é obrigatório.") @Size(max = 120, message = "O nome deve ter no máximo 120 caracteres.") String name,
+        @NotEmpty(message = "As permissões são obrigatórias.") List<@Valid PermissionEntry> permissions) {
 }

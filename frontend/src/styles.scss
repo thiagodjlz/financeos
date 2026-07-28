@@ -105,6 +105,7 @@
   --fs-th: 11.5px;
   --fs-pill: 12px;
   --fs-sm-btn: 12.5px;
+  --fs-toast-msg: 13px;
 }
 
 * {
@@ -139,16 +140,6 @@ select {
   margin: 0 0 22px;
   font-size: var(--fs-page-title);
   font-weight: 800;
-}
-
-.status-bar {
-  margin-bottom: 16px;
-  border-radius: var(--radius-md);
-  padding: 12px 14px;
-  background: var(--expense-soft);
-  color: var(--expense-on-soft);
-  font-size: var(--fs-table);
-  font-weight: 600;
 }
 
 .panel {

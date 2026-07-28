@@ -1,0 +1,46 @@
+<div class="toast-stack" aria-live="polite">
+  <div class="toast-wrap" *ngFor="let toast of toasts(); trackBy: trackById" [class.leaving]="toast.leaving">
+    <div class="toast-card" [ngClass]="'toast-' + toast.type">
+      <span class="toast-icon">
+        <svg *ngIf="toast.type === 'success'" width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8" />
+          <path
+            d="M8 12.5l2.5 2.5L16 9.5"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+        <svg *ngIf="toast.type === 'warning'" width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <path d="M12 3.5l9.5 16.5H2.5L12 3.5z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+          <line x1="12" y1="10" x2="12" y2="14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+          <circle cx="12" cy="17" r="1.1" fill="currentColor" />
+        </svg>
+        <svg *ngIf="toast.type === 'error'" width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8" />
+          <line x1="9" y1="9" x2="15" y2="15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+          <line x1="15" y1="9" x2="9" y2="15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+        </svg>
+      </span>
+
+      <div class="toast-body">
+        <div class="toast-title">{{ toast.title }}</div>
+        <div class="toast-message">{{ toast.message }}</div>
+      </div>
+
+      <button type="button" class="toast-close" aria-label="Fechar" (click)="close(toast.id)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+          <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        </svg>
+      </button>
+
+      <span
+        class="toast-progress"
+        *ngIf="toast.duration !== null"
+        [style.animation-duration.ms]="toast.duration"
+      ></span>
+    </div>
+  </div>
+</div>

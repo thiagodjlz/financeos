@@ -47,7 +47,7 @@ public class AuthResource {
         AppUser user = repository.findByEmail(email)
                 .filter(candidate -> candidate.active)
                 .filter(candidate -> BcryptUtil.matches(request.password(), candidate.passwordHash))
-                .orElseThrow(() -> new WebApplicationException("Credenciais invalidas.", Response.Status.UNAUTHORIZED));
+                .orElseThrow(() -> new WebApplicationException("Credenciais inválidas.", Response.Status.UNAUTHORIZED));
 
         String token = Jwt.issuer(ISSUER)
                 .subject(user.id.toString())

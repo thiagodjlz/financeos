@@ -4,12 +4,13 @@ import { FormsModule } from '@angular/forms';
 import { PermissionEntry, Profile, Screen } from '../../core/models';
 import { AuthService } from '../../core/services/auth.service';
 import { ProfileService } from '../../core/services/profile.service';
+import { ToastService } from '../../core/services/toast.service';
 
 const SCREENS: { code: Screen; label: string }[] = [
   { code: 'DASHBOARD', label: 'Resumo' },
-  { code: 'TRANSACTIONS', label: 'Lancamentos' },
+  { code: 'TRANSACTIONS', label: 'Lançamentos' },
   { code: 'CATEGORIES', label: 'Categorias' },
-  { code: 'USERS', label: 'Usuarios' },
+  { code: 'USERS', label: 'Usuários' },
   { code: 'PROFILES', label: 'Perfis' },
 ];
 
@@ -31,12 +32,12 @@ function blankPermissions(): PermissionEntry[] {
 })
 export class Profiles implements OnInit {
   private readonly profileService = inject(ProfileService);
+  private readonly toast = inject(ToastService);
   protected readonly authService = inject(AuthService);
 
   protected readonly screens = SCREENS;
   protected readonly loading = signal(false);
   protected readonly saving = signal(false);
-  protected readonly error = signal('');
   protected readonly editingId = signal<string | null>(null);
 
   protected readonly profiles = this.profileService.profiles;
@@ -52,12 +53,11 @@ export class Profiles implements OnInit {
 
   protected async loadData(): Promise<void> {
     this.loading.set(true);
-    this.error.set('');
 
     try {
       await this.profileService.refresh();
-    } catch {
-      this.error.set('Nao foi possivel carregar os perfis.');
+    } catch (err) {
+      this.toast.fromHttpError(err, 'Não foi possível carregar os perfis.');
     } finally {
       this.loading.set(false);
     }
@@ -105,7 +105,6 @@ export class Profiles implements OnInit {
 
   protected async save(): Promise<void> {
     this.saving.set(true);
-    this.error.set('');
 
     try {
       const id = this.editingId();
@@ -121,8 +120,9 @@ export class Profiles implements OnInit {
       this.editingId.set(null);
       this.editSnapshot = null;
       this.resetForm();
-    } catch {
-      this.error.set('Nao foi possivel salvar o perfil.');
+      this.toast.success(id ? 'Perfil atualizado com sucesso.' : 'Perfil salvo com sucesso.');
+    } catch (err) {
+      this.toast.fromHttpError(err, 'Não foi possível salvar o perfil. Revise os campos e tente novamente.');
     } finally {
       this.saving.set(false);
     }
@@ -130,13 +130,13 @@ export class Profiles implements OnInit {
 
   protected async remove(profile: Profile): Promise<void> {
     this.saving.set(true);
-    this.error.set('');
 
     try {
       await this.profileService.delete(profile.id);
       await this.profileService.refresh();
-    } catch {
-      this.error.set('Nao foi possivel excluir o perfil (pode estar em uso por usuarios).');
+      this.toast.success('Perfil excluído com sucesso.');
+    } catch (err) {
+      this.toast.fromHttpError(err, 'Não foi possível excluir o perfil.');
     } finally {
       this.saving.set(false);
     }

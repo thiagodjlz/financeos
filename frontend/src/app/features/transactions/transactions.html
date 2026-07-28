@@ -1,18 +1,16 @@
-<h2 class="page-title">Lancamentos</h2>
-
-<div class="status-bar" *ngIf="error()">{{ error() }}</div>
+<h2 class="page-title">Lançamentos</h2>
 
 <section class="content-grid">
   <form class="panel form-panel" *ngIf="authService.can('TRANSACTIONS', 'CREATE')" (ngSubmit)="saveTransaction()">
     <div class="panel-heading">
-      <h3>Novo lancamento</h3>
+      <h3>Novo lançamento</h3>
     </div>
     <label>
       Data
       <input type="date" name="transactionDate" [(ngModel)]="transactionForm.transactionDate" required />
     </label>
     <label>
-      Descricao
+      Descrição
       <input name="description" [(ngModel)]="transactionForm.description" maxlength="255" required />
     </label>
     <label>
@@ -50,7 +48,7 @@
 
   <section class="panel table-panel">
     <div class="panel-heading">
-      <h3>Ultimos lancamentos</h3>
+      <h3>Últimos lançamentos</h3>
       <span>{{ transactions().length }}</span>
     </div>
     <div class="table-wrap">
@@ -66,7 +64,7 @@
         <thead>
           <tr>
             <th>Data</th>
-            <th>Descricao</th>
+            <th>Descrição</th>
             <th>Categoria</th>
             <th>Status</th>
             <th class="amount-cell">Valor</th>
@@ -148,7 +146,7 @@
           </ng-container>
         </tbody>
       </table>
-      <p class="empty-state" *ngIf="!transactions().length">Sem lancamentos cadastrados</p>
+      <p class="empty-state" *ngIf="!transactions().length">Sem lançamentos cadastrados</p>
     </div>
   </section>
 </section>
@@ -157,7 +155,7 @@
   <div class="modal-card" (click)="$event.stopPropagation()">
     <p>Deseja sair sem salvar?</p>
     <div class="modal-actions">
-      <button type="button" class="ghost-button" (click)="confirmExitNo()">Nao</button>
+      <button type="button" class="ghost-button" (click)="confirmExitNo()">Não</button>
       <button type="button" class="primary-button" (click)="confirmExitYes()">Sim</button>
     </div>
   </div>

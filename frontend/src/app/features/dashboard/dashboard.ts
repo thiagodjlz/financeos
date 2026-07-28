@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { money, monthName } from '../../core/formatters';
 import { CategoryBreakdown, TransactionType } from '../../core/models';
 import { DashboardService } from '../../core/services/dashboard.service';
+import { ToastService } from '../../core/services/toast.service';
 
 const CHART_TOP = 15;
 const CHART_BOTTOM = 185;
@@ -33,9 +34,9 @@ interface ChartBar {
 })
 export class Dashboard implements OnInit {
   private readonly dashboardService = inject(DashboardService);
+  private readonly toast = inject(ToastService);
 
   protected readonly loading = signal(false);
-  protected readonly error = signal('');
   protected readonly summary = this.dashboardService.summary;
 
   protected readonly barWidth = BAR_WIDTH;
@@ -88,12 +89,11 @@ export class Dashboard implements OnInit {
 
   protected async load(): Promise<void> {
     this.loading.set(true);
-    this.error.set('');
 
     try {
       await this.dashboardService.refresh(this.period.year, this.period.month);
-    } catch {
-      this.error.set('API indisponivel. Confirme se o backend Quarkus esta rodando em localhost:8080.');
+    } catch (err) {
+      this.toast.fromHttpError(err, 'Não foi possível carregar o resumo.');
     } finally {
       this.loading.set(false);
     }

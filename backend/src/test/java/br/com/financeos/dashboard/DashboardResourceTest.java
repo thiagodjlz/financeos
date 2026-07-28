@@ -72,7 +72,19 @@ class DashboardResourceTest {
                 .queryParam("year", 2026)
                 .when().get("/dashboard/summary")
                 .then()
-                .statusCode(400);
+                .statusCode(400)
+                .body("message", equalTo("Informe o ano e o mês juntos."));
+    }
+
+    @Test
+    void shouldRejectMonthOutOfRange() {
+        given()
+                .queryParam("year", 2026)
+                .queryParam("month", 13)
+                .when().get("/dashboard/summary")
+                .then()
+                .statusCode(400)
+                .body("message", equalTo("O mês deve estar entre 1 e 12."));
     }
 
     private static String createTransaction(String date, String description, int amount, String type, String status) {
