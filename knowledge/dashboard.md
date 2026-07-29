@@ -4,7 +4,7 @@ Fonte: `backend/src/main/java/br/com/financeos/dashboard/`. Unica area do backen
 
 ## Regras
 
-- `GET /dashboard/summary?year&month`: `year`/`month` devem vir juntos ou nenhum (default = mes atual); `BadRequestException` se so um for enviado; `month` validado 1..12.
+- `GET /dashboard/summary?year&month`: `year`/`month` devem vir juntos ou nenhum (default = mes atual); `BadRequestException` se so um for enviado ("Informe o ano e o mês juntos."); `month` validado 1..12 ("O mês deve estar entre 1 e 12."). As duas mensagens estavam em ingles ate a issue #39 e, com o `BusinessExceptionMapper`, passaram a chegar ao cliente no corpo da resposta.
 - **Totais** — despesas `PENDING` saem de todo lugar do Resumo exceto o proprio card "Pendente":
   - `total_income`: soma receitas (`type = INCOME`) com `status IS NULL OR status <> 'CANCELED'` (receita normalmente tem `status = null`, ver [transactions.md](transactions.md); so fica `CANCELED` se cancelada via `DELETE`).
   - `total_expense`: soma despesas (`type = EXPENSE`) com **`status = 'PAID'` apenas** — despesas `PENDING` nao entram mais aqui (ate a issue #16 entravam, junto com `PAID`).
@@ -19,6 +19,7 @@ Qualquer mudanca nos totais/regras de negocio de outras areas (ex.: mudar o que 
 ## Frontend (`frontend/src/app/features/dashboard/`)
 
 - Sem botao "Atualizar": o resumo recarrega automaticamente ao trocar Ano ou Mes, via `(change)` (evento nativo — nao `(ngModelChange)`, para nao disparar uma chamada a API a cada digito digitado no campo Ano).
+- Falha de carga (API fora do ar, 5xx) vira toast de **Falha** desde a issue #39, no lugar da faixa `.status-bar` do topo. O `.empty-state` "Sem dados no período" dos paineis **nao** e feedback de acao e continua inline na tela — decisao explicita do usuario: periodo sem dados nao vira toast de Alerta.
 - Ordem dos 4 cards de metricas do topo: Receitas, Despesas, Pendente, Saldo.
 - O painel antes chamado "Categorias" agora e "Detalhamento": duas secoes empilhadas (nao lado a lado, nao em abas) com cabecalho colorido — "Receitas" (verde) e "Despesas" (vermelho) — cada uma mostrando o total do tipo no cabecalho e um estado vazio proprio ("Sem dados no periodo"); a contagem total fica no rodape do painel. Desde a issue #35 ele ocupa uma coluna de 360px a direita do grafico, e cada categoria ganha uma barra proporcional ao maior valor **da propria secao** (`maxAmount(type)`).
 - **Painel "Evolucao anual"** (issue #35): `<svg viewBox="0 0 840 210">` com, por mes, uma barra de receita e uma de despesa mais uma `polyline` de saldo com um ponto por mes, alimentado pelo `computed` `chart()` sobre `summary()?.monthlyEvolution` — **o campo ja era retornado pela API, nenhum endpoint novo foi criado e o backend nao foi tocado**. Como `monthlyEvolution` sempre traz os 12 meses zero-preenchidos, nao existe caso de lista vazia; o caso degenerado e outro: um ano sem lancamentos (`maxValue = 0`) ou com todos os saldos iguais (`balanceRange = 0`) geraria `NaN` nos atributos do SVG, por isso o `chart()` tem guardas `|| 1` nos dois divisores. Trocar o Ano redesenha o grafico com a serie nova pelo mesmo `(change)` que ja recarregava os cards.
