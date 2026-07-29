@@ -12,7 +12,6 @@ const CATEGORY: Category = {
   name: 'Mercado',
   type: 'EXPENSE',
   color: '#123456',
-  icon: 'carrinho',
   active: true,
 };
 
@@ -22,7 +21,6 @@ const OTHER_CATEGORY: Category = {
   name: 'Salario',
   type: 'INCOME',
   color: null,
-  icon: null,
   active: true,
 };
 
@@ -116,12 +114,37 @@ describe('Categories', () => {
     await click(query<HTMLButtonElement>('tbody button.ghost-button'));
   }
 
+  function fieldErrorTexts(scope: string): string[] {
+    return queryAll(`${scope} .field-error`).map((element) => element.textContent?.trim() ?? '');
+  }
+
+  async function flushCreateValidationError(): Promise<void> {
+    httpMock.expectOne(`${API_BASE}/categories`).flush(
+      {
+        violations: [
+          { field: 'create.request.name', message: 'O nome é obrigatório.' },
+          { field: 'create.request.color', message: 'A cor é obrigatória.' },
+          { field: 'create.request.active', message: 'A situação é obrigatória.' },
+        ],
+        message: 'Informe os campos obrigatórios: Nome, Cor, Situação.',
+      },
+      { status: 400, statusText: 'Bad Request' },
+    );
+    await settle();
+  }
+
   function expectBlankForm(): void {
     expect(query<HTMLInputElement>('form input[name="name"]').value).toBe('');
     expect(query<HTMLSelectElement>('form select[name="type"]').value).toBe('EXPENSE');
     expect(query<HTMLInputElement>('form input[name="color"]').value).toBe('#2f7d62');
-    expect(query<HTMLInputElement>('form input[name="icon"]').value).toBe('');
     expect(query<HTMLSelectElement>('form select[name="active"]').selectedIndex).toBe(0);
+    expect(controlNames('form')).toEqual(['name', 'type', 'color', 'active']);
+  }
+
+  function controlNames(scope: string): string[] {
+    return queryAll(`${scope} input[name], ${scope} select[name]`).map(
+      (control) => control.getAttribute('name') ?? '',
+    );
   }
 
   it('exibe o formulário somente de criação com título fixo e Cancelar secundário', async () => {
@@ -146,7 +169,6 @@ describe('Categories', () => {
     await fillText('form input[name="name"]', 'Alterado');
     await selectValue('form select[name="type"]', 'INCOME');
     await fillText('form input[name="color"]', '#aabbcc');
-    await fillText('form input[name="icon"]', 'outro');
     await selectIndex('form select[name="active"]', 1);
 
     await click(cancelButton());
@@ -157,14 +179,14 @@ describe('Categories', () => {
     httpMock.expectNone(() => true);
   });
 
-  it('entra em edição inline com controles de nome, tipo, situação, cor e ícone sem tocar o formulário lateral', async () => {
+  it('entra em edição inline com controles de nome, tipo, situação e cor sem tocar o formulário lateral', async () => {
     await render();
 
     await startEditing();
 
     expect(query<HTMLInputElement>('tbody input[name="editName"]').value).toBe('Mercado');
     expect(query<HTMLInputElement>('tbody input[name="editColor"]').value).toBe('#123456');
-    expect(query<HTMLInputElement>('tbody input[name="editIcon"]').value).toBe('carrinho');
+    expect(controlNames('tbody')).toEqual(['editName', 'editColor', 'editType', 'editActive']);
     expect(query<HTMLSelectElement>('tbody select[name="editType"]').value).toBe('EXPENSE');
     expect(query<HTMLSelectElement>('tbody select[name="editActive"]').selectedIndex).toBe(0);
     expect(formTitle()).toBe('Nova categoria');
@@ -182,12 +204,11 @@ describe('Categories', () => {
     expect(editButtons[0].disabled).toBe(true);
   });
 
-  it('salva a edição com PUT incluindo cor e ícone, recarrega e volta ao modo leitura', async () => {
+  it('salva a edição com PUT incluindo a cor, recarrega e volta ao modo leitura', async () => {
     await render();
     await startEditing();
     await fillText('tbody input[name="editName"]', 'Feira');
     await fillText('tbody input[name="editColor"]', '#aabbcc');
-    await fillText('tbody input[name="editIcon"]', 'cesta');
 
     await click(rowSaveButton());
 
@@ -197,10 +218,10 @@ describe('Categories', () => {
       name: 'Feira',
       type: 'EXPENSE',
       color: '#aabbcc',
-      icon: 'cesta',
       active: true,
     });
-    request.flush({ ...CATEGORY, name: 'Feira', color: '#aabbcc', icon: 'cesta' });
+    expect(Object.keys(request.request.body).sort()).toEqual(['active', 'color', 'name', 'type']);
+    request.flush({ ...CATEGORY, name: 'Feira', color: '#aabbcc' });
     await settle();
     httpMock.expectOne(`${API_BASE}/categories`).flush([{ ...CATEGORY, name: 'Feira' }]);
     await settle();
@@ -311,23 +332,80 @@ describe('Categories', () => {
     expect(toasts()[0].message).toBe('Categoria atualizada com sucesso.');
   });
 
-  it('exibe alerta nomeando o campo Nome quando o backend recusa por validação', async () => {
+  it('exibe alerta nomeando os campos obrigatórios quando o backend recusa por validação', async () => {
     await render();
 
     await click(query<HTMLButtonElement>('form button[type="submit"]'));
+    await flushCreateValidationError();
 
-    httpMock.expectOne(`${API_BASE}/categories`).flush(
+    expect(toasts()).toHaveLength(1);
+    expect(toasts()[0].title).toBe('Alerta');
+    expect(toasts()[0].message).toBe('Informe os campos obrigatórios: Nome, Cor, Situação.');
+  });
+
+  it('destaca em vermelho cada campo citado no 400 e exibe a legenda da violação', async () => {
+    await render();
+
+    await click(query<HTMLButtonElement>('form button[type="submit"]'));
+    await flushCreateValidationError();
+
+    expect(query('form input[name="name"]').classList.contains('invalid')).toBe(true);
+    expect(query('form input[name="color"]').classList.contains('invalid')).toBe(true);
+    expect(query('form select[name="active"]').classList.contains('invalid')).toBe(true);
+    expect(query('form select[name="type"]').classList.contains('invalid')).toBe(false);
+    expect(fieldErrorTexts('form')).toEqual([
+      'O nome é obrigatório.',
+      'A cor é obrigatória.',
+      'A situação é obrigatória.',
+    ]);
+  });
+
+  it('limpa o destaque apenas do campo editado', async () => {
+    await render();
+    await click(query<HTMLButtonElement>('form button[type="submit"]'));
+    await flushCreateValidationError();
+
+    await fillText('form input[name="name"]', 'Lazer');
+
+    expect(query('form input[name="name"]').classList.contains('invalid')).toBe(false);
+    expect(query('form input[name="color"]').classList.contains('invalid')).toBe(true);
+    expect(fieldErrorTexts('form')).toEqual(['A cor é obrigatória.', 'A situação é obrigatória.']);
+  });
+
+  it('destaca os campos da linha em edição sem tocar o formulário lateral', async () => {
+    await render();
+    await startEditing();
+    await fillText('tbody input[name="editName"]', '');
+
+    await click(rowSaveButton());
+
+    httpMock.expectOne(`${API_BASE}/categories/cat-1`).flush(
       {
-        violations: [{ field: 'create.request.name', message: 'O nome é obrigatório.' }],
+        violations: [{ field: 'update.request.name', message: 'O nome é obrigatório.' }],
         message: 'Informe os campos obrigatórios: Nome.',
       },
       { status: 400, statusText: 'Bad Request' },
     );
     await settle();
 
-    expect(toasts()).toHaveLength(1);
-    expect(toasts()[0].title).toBe('Alerta');
-    expect(toasts()[0].message).toBe('Informe os campos obrigatórios: Nome.');
+    expect(query('tbody input[name="editName"]').classList.contains('invalid')).toBe(true);
+    expect(fieldErrorTexts('tbody')).toEqual(['O nome é obrigatório.']);
+    expect(fieldErrorTexts('form')).toEqual([]);
+    expect(query('tbody input[name="editName"]')).toBeTruthy();
+  });
+
+  it('limpa os destaques ao cancelar o formulário, sem HTTP e sem toast novo', async () => {
+    await render();
+    await click(query<HTMLButtonElement>('form button[type="submit"]'));
+    await flushCreateValidationError();
+    const toastsAfterError = toasts().length;
+
+    await click(cancelButton());
+
+    expect(queryAll('.field-error')).toHaveLength(0);
+    expect(queryAll('.invalid')).toHaveLength(0);
+    expect(toasts()).toHaveLength(toastsAfterError);
+    httpMock.expectNone(() => true);
   });
 
   it('exibe toast de falha quando a API responde 500', async () => {

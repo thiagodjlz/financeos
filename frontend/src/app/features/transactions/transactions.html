@@ -1,44 +1,101 @@
 <h2 class="page-title">Lançamentos</h2>
 
 <section class="content-grid">
-  <form class="panel form-panel" *ngIf="authService.can('TRANSACTIONS', 'CREATE')" (ngSubmit)="saveTransaction()">
+  <form
+    class="panel form-panel"
+    *ngIf="authService.can('TRANSACTIONS', 'CREATE')"
+    #createForm
+    (ngSubmit)="saveTransaction()"
+  >
     <div class="panel-heading">
       <h3>Novo lançamento</h3>
     </div>
     <label>
       Data
-      <input type="date" name="transactionDate" [(ngModel)]="transactionForm.transactionDate" required />
+      <input
+        type="date"
+        name="transactionDate"
+        [(ngModel)]="transactionForm.transactionDate"
+        required
+        [class.invalid]="fieldErrors.invalid('transactionDate')"
+        (input)="fieldErrors.clear('transactionDate')"
+      />
+      <small class="field-error" *ngIf="fieldErrors.invalid('transactionDate')">
+        {{ fieldErrors.message('transactionDate') }}
+      </small>
     </label>
     <label>
       Descrição
-      <input name="description" [(ngModel)]="transactionForm.description" maxlength="255" required />
+      <input
+        name="description"
+        [(ngModel)]="transactionForm.description"
+        maxlength="255"
+        required
+        [class.invalid]="fieldErrors.invalid('description')"
+        (input)="fieldErrors.clear('description')"
+      />
+      <small class="field-error" *ngIf="fieldErrors.invalid('description')">
+        {{ fieldErrors.message('description') }}
+      </small>
     </label>
     <label>
       Valor
-      <input type="number" name="amount" [(ngModel)]="transactionForm.amount" min="0.01" step="0.01" required />
+      <input
+        type="number"
+        name="amount"
+        [(ngModel)]="transactionForm.amount"
+        min="0.01"
+        step="0.01"
+        required
+        [class.invalid]="fieldErrors.invalid('amount')"
+        (input)="fieldErrors.clear('amount')"
+      />
+      <small class="field-error" *ngIf="fieldErrors.invalid('amount')">{{ fieldErrors.message('amount') }}</small>
     </label>
     <div class="two-cols">
       <label>
         Tipo
-        <select name="type" [(ngModel)]="transactionForm.type" (ngModelChange)="onTypeChange()">
+        <select
+          name="type"
+          [(ngModel)]="transactionForm.type"
+          (ngModelChange)="onTypeChange()"
+          [class.invalid]="fieldErrors.invalid('type')"
+          (change)="fieldErrors.clear('type')"
+        >
           <option value="EXPENSE">Despesa</option>
           <option value="INCOME">Receita</option>
         </select>
+        <small class="field-error" *ngIf="fieldErrors.invalid('type')">{{ fieldErrors.message('type') }}</small>
       </label>
       <label *ngIf="transactionForm.type !== 'INCOME'">
         Status
-        <select name="status" [(ngModel)]="transactionForm.status">
+        <select
+          name="status"
+          [(ngModel)]="transactionForm.status"
+          [class.invalid]="fieldErrors.invalid('status')"
+          (change)="fieldErrors.clear('status')"
+        >
           <option value="PENDING">Pendente</option>
           <option value="PAID">Pago</option>
         </select>
+        <small class="field-error" *ngIf="fieldErrors.invalid('status')">{{ fieldErrors.message('status') }}</small>
       </label>
     </div>
     <label>
       Categoria
-      <select name="categoryId" [(ngModel)]="transactionForm.categoryId">
-        <option value="">Sem categoria</option>
+      <select
+        name="categoryId"
+        [(ngModel)]="transactionForm.categoryId"
+        required
+        [class.invalid]="fieldErrors.invalid('categoryId')"
+        (change)="fieldErrors.clear('categoryId')"
+      >
+        <option value="">Selecione</option>
         <option *ngFor="let category of filteredCategories()" [value]="category.id">{{ category.name }}</option>
       </select>
+      <small class="field-error" *ngIf="fieldErrors.invalid('categoryId')">
+        {{ fieldErrors.message('categoryId') }}
+      </small>
     </label>
     <div class="two-cols">
       <button class="primary-button" type="submit" [disabled]="saving()">Salvar</button>
@@ -107,34 +164,91 @@
             </tr>
             <tr *ngIf="editingId() === transaction.id">
               <td>
-                <input type="date" name="editDate" [(ngModel)]="editForm.transactionDate" />
+                <input
+                  type="date"
+                  name="editDate"
+                  [(ngModel)]="editForm.transactionDate"
+                  [class.invalid]="editFieldErrors.invalid('transactionDate')"
+                  (input)="editFieldErrors.clear('transactionDate')"
+                />
+                <small class="field-error" *ngIf="editFieldErrors.invalid('transactionDate')">
+                  {{ editFieldErrors.message('transactionDate') }}
+                </small>
               </td>
               <td>
-                <input name="editDescription" [(ngModel)]="editForm.description" maxlength="255" />
+                <input
+                  name="editDescription"
+                  [(ngModel)]="editForm.description"
+                  maxlength="255"
+                  [class.invalid]="editFieldErrors.invalid('description')"
+                  (input)="editFieldErrors.clear('description')"
+                />
+                <small class="field-error" *ngIf="editFieldErrors.invalid('description')">
+                  {{ editFieldErrors.message('description') }}
+                </small>
               </td>
               <td>
-                <select name="editCategoryId" [(ngModel)]="editForm.categoryId" (ngModelChange)="onEditCategoryIdChange()">
-                  <option value="">Sem categoria</option>
+                <select
+                  name="editCategoryId"
+                  [(ngModel)]="editForm.categoryId"
+                  (ngModelChange)="onEditCategoryIdChange()"
+                  required
+                  [class.invalid]="editFieldErrors.invalid('categoryId')"
+                  (change)="editFieldErrors.clear('categoryId')"
+                >
+                  <option value="">Selecione</option>
                   <option *ngIf="editPreselectedInactiveCategory() as inactiveCategory" [value]="inactiveCategory.id">
                     {{ inactiveCategory.name }} (Inativo)
                   </option>
                   <option *ngFor="let category of editCategories()" [value]="category.id">{{ category.name }}</option>
                 </select>
+                <small class="field-error" *ngIf="editFieldErrors.invalid('categoryId')">
+                  {{ editFieldErrors.message('categoryId') }}
+                </small>
               </td>
               <td>
                 <div class="two-cols">
-                  <select name="editType" [(ngModel)]="editForm.type" (ngModelChange)="onEditTypeChange()">
+                  <select
+                    name="editType"
+                    [(ngModel)]="editForm.type"
+                    (ngModelChange)="onEditTypeChange()"
+                    [class.invalid]="editFieldErrors.invalid('type')"
+                    (change)="editFieldErrors.clear('type')"
+                  >
                     <option value="EXPENSE">Despesa</option>
                     <option value="INCOME">Receita</option>
                   </select>
-                  <select name="editStatus" *ngIf="editForm.type !== 'INCOME'" [(ngModel)]="editForm.status">
+                  <select
+                    name="editStatus"
+                    *ngIf="editForm.type !== 'INCOME'"
+                    [(ngModel)]="editForm.status"
+                    [class.invalid]="editFieldErrors.invalid('status')"
+                    (change)="editFieldErrors.clear('status')"
+                  >
                     <option value="PENDING">Pendente</option>
                     <option value="PAID">Pago</option>
                   </select>
                 </div>
+                <small class="field-error" *ngIf="editFieldErrors.invalid('type')">
+                  {{ editFieldErrors.message('type') }}
+                </small>
+                <small class="field-error" *ngIf="editFieldErrors.invalid('status')">
+                  {{ editFieldErrors.message('status') }}
+                </small>
               </td>
               <td>
-                <input type="number" name="editAmount" [(ngModel)]="editForm.amount" min="0.01" step="0.01" />
+                <input
+                  type="number"
+                  name="editAmount"
+                  [(ngModel)]="editForm.amount"
+                  min="0.01"
+                  step="0.01"
+                  [class.invalid]="editFieldErrors.invalid('amount')"
+                  (input)="editFieldErrors.clear('amount')"
+                />
+                <small class="field-error" *ngIf="editFieldErrors.invalid('amount')">
+                  {{ editFieldErrors.message('amount') }}
+                </small>
               </td>
               <td class="row-actions">
                 <button type="button" class="primary-button" [disabled]="saving()" (click)="saveEdit(transaction)">

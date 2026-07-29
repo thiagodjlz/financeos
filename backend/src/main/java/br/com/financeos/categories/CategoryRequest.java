@@ -10,7 +10,6 @@ public record CategoryRequest(
         @NotBlank(message = "O nome é obrigatório.") @Size(max = 120, message = "O nome deve ter no máximo 120 caracteres.") String name,
         @NotNull(message = "O tipo é obrigatório.") CategoryType type,
         UUID parentId,
-        @Size(max = 20, message = "A cor deve ter no máximo 20 caracteres.") String color,
-        @Size(max = 80, message = "O ícone deve ter no máximo 80 caracteres.") String icon,
-        Boolean active) {
+        @NotBlank(message = "A cor é obrigatória.") @Size(max = 20, message = "A cor deve ter no máximo 20 caracteres.") String color,
+        @NotNull(message = "A situação é obrigatória.") Boolean active) {
 }

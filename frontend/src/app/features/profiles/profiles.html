@@ -1,13 +1,25 @@
 <h2 class="page-title">Perfis</h2>
 
 <section class="profiles-grid">
-  <form class="panel form-panel" *ngIf="authService.can('PROFILES', 'CREATE') || editingId()" (ngSubmit)="save()">
+  <form
+    class="panel form-panel"
+    *ngIf="authService.can('PROFILES', 'CREATE') || editingId()"
+    #profileForm
+    (ngSubmit)="save()"
+  >
     <div class="panel-heading">
       <h3>{{ editingId() ? 'Editar perfil' : 'Novo perfil' }}</h3>
     </div>
     <label class="name-field">
       Nome
-      <input name="name" [(ngModel)]="name" required />
+      <input
+        name="name"
+        [(ngModel)]="name"
+        required
+        [class.invalid]="fieldErrors.invalid('name')"
+        (input)="fieldErrors.clear('name')"
+      />
+      <small class="field-error" *ngIf="fieldErrors.invalid('name')">{{ fieldErrors.message('name') }}</small>
     </label>
 
     <div class="table-wrap">

@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { FieldErrorState, focusFirstInvalidField } from '../../core/field-errors';
 import { Category, TransactionType } from '../../core/models';
 import { AuthService } from '../../core/services/auth.service';
 import { CategoryService } from '../../core/services/category.service';
@@ -9,12 +10,13 @@ import { ToastService } from '../../core/services/toast.service';
 const LOAD_FALLBACK = 'Não foi possível carregar as categorias.';
 const SAVE_FALLBACK = 'Não foi possível salvar a categoria. Revise os campos e tente novamente.';
 
+const FIELDS = ['name', 'type', 'color', 'active'] as const;
+
 function newCategoryForm() {
   return {
     name: '',
     type: 'EXPENSE' as TransactionType,
     color: '#2f7d62',
-    icon: '',
     active: true,
   };
 }
@@ -30,10 +32,15 @@ export class Categories implements OnInit {
   private readonly toast = inject(ToastService);
   protected readonly authService = inject(AuthService);
 
+  @ViewChild('createForm') private createForm?: ElementRef<HTMLFormElement>;
+
   protected readonly loading = signal(false);
   protected readonly saving = signal(false);
 
   protected readonly categories = this.categoryService.categories;
+
+  protected readonly fieldErrors = new FieldErrorState(FIELDS);
+  protected readonly editFieldErrors = new FieldErrorState(FIELDS);
 
   protected form = newCategoryForm();
 
@@ -62,24 +69,27 @@ export class Categories implements OnInit {
 
   protected cancel(): void {
     this.form = newCategoryForm();
+    this.fieldErrors.reset();
   }
 
   protected async save(): Promise<void> {
     this.saving.set(true);
+    this.fieldErrors.reset();
 
     try {
       await this.categoryService.create({
         name: this.form.name,
         type: this.form.type,
         color: this.emptyToNull(this.form.color),
-        icon: this.emptyToNull(this.form.icon),
         active: this.form.active,
       });
       await this.categoryService.refresh();
       this.form = newCategoryForm();
       this.toast.success('Categoria salva com sucesso.');
     } catch (err) {
+      const errors = this.fieldErrors.apply(err);
       this.toast.fromHttpError(err, SAVE_FALLBACK);
+      focusFirstInvalidField(this.createForm?.nativeElement, errors);
     } finally {
       this.saving.set(false);
     }
@@ -94,10 +104,10 @@ export class Categories implements OnInit {
       name: category.name,
       type: category.type,
       color: category.color ?? '#2f7d62',
-      icon: category.icon ?? '',
       active: category.active,
     };
     this.editSnapshot = { ...this.editForm };
+    this.editFieldErrors.reset();
     this.confirmingExit.set(false);
     this.editingId.set(category.id);
   }
@@ -112,19 +122,20 @@ export class Categories implements OnInit {
 
   protected async saveEdit(category: Category): Promise<void> {
     this.saving.set(true);
+    this.editFieldErrors.reset();
 
     try {
       await this.categoryService.update(category.id, {
         name: this.editForm.name,
         type: this.editForm.type,
         color: this.emptyToNull(this.editForm.color),
-        icon: this.emptyToNull(this.editForm.icon),
         active: this.editForm.active,
       });
       await this.categoryService.refresh();
       this.exitEditDiscarding();
       this.toast.success('Categoria atualizada com sucesso.');
     } catch (err) {
+      this.editFieldErrors.apply(err);
       this.toast.fromHttpError(err, SAVE_FALLBACK);
     } finally {
       this.saving.set(false);
@@ -153,6 +164,7 @@ export class Categories implements OnInit {
     this.editingId.set(null);
     this.confirmingExit.set(false);
     this.editSnapshot = null;
+    this.editFieldErrors.reset();
   }
 
   private emptyToNull(value: string): string | null {
