@@ -9,7 +9,6 @@ public record CategoryResponse(
         String name,
         CategoryType type,
         String color,
-        String icon,
         boolean active,
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt) {
@@ -21,7 +20,6 @@ public record CategoryResponse(
                 category.name,
                 category.type,
                 category.color,
-                category.icon,
                 category.active,
                 category.createdAt,
                 category.updatedAt);

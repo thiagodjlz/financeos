@@ -104,6 +104,17 @@ describe('Profiles', () => {
     await click(query<HTMLButtonElement>('.compact-list button.ghost-button'));
   }
 
+  async function flushValidationError(url: string): Promise<void> {
+    httpMock.expectOne(url).flush(
+      {
+        violations: [{ field: 'create.request.name', message: 'O nome é obrigatório.' }],
+        message: 'Informe os campos obrigatórios: Nome.',
+      },
+      { status: 400, statusText: 'Bad Request' },
+    );
+    await settle();
+  }
+
   function expectLoadedProfileInForm(): void {
     expect(query<HTMLInputElement>('form input[name="name"]').value).toBe('Administrador');
     expect(checkbox('Resumo.view').checked).toBe(true);
@@ -288,6 +299,73 @@ describe('Profiles', () => {
 
     expect(toasts()).toHaveLength(1);
     expect(toasts()[0].title).toBe('Falha');
+  });
+
+  it('destaca o campo Nome com legenda e alerta agregado no 400 do backend', async () => {
+    await render();
+
+    await click(query<HTMLButtonElement>('form button[type="submit"]'));
+    await flushValidationError(`${API_BASE}/profiles`);
+
+    const input = query<HTMLInputElement>('form input[name="name"]');
+    expect(input.classList.contains('invalid')).toBe(true);
+    expect(query('form .field-error').textContent?.trim()).toBe('O nome é obrigatório.');
+    expect(document.activeElement).toBe(input);
+    expect(toasts()).toHaveLength(1);
+    expect(toasts()[0].title).toBe('Alerta');
+    expect(toasts()[0].message).toBe('Informe os campos obrigatórios: Nome.');
+  });
+
+  it('mantém a violação da matriz de permissões apenas no toast', async () => {
+    await render();
+
+    await click(query<HTMLButtonElement>('form button[type="submit"]'));
+    httpMock.expectOne(`${API_BASE}/profiles`).flush(
+      {
+        violations: [{ field: 'create.request.permissions[0].screen', message: 'A tela é obrigatória.' }],
+        message: 'Informe os campos obrigatórios: Tela.',
+      },
+      { status: 400, statusText: 'Bad Request' },
+    );
+    await settle();
+
+    expect(query('form .field-error')).toBeNull();
+    expect(toasts()[0].message).toBe('Informe os campos obrigatórios: Tela.');
+  });
+
+  it('limpa o destaque ao digitar no campo Nome', async () => {
+    await render();
+    await click(query<HTMLButtonElement>('form button[type="submit"]'));
+    await flushValidationError(`${API_BASE}/profiles`);
+
+    await fillName('Financeiro');
+
+    expect(query<HTMLInputElement>('form input[name="name"]').classList.contains('invalid')).toBe(false);
+    expect(query('form .field-error')).toBeNull();
+  });
+
+  it('limpa os destaques nos dois estágios do Cancelar, sem HTTP e sem toast novo', async () => {
+    await render();
+    await startEditing();
+    await fillName('Outro nome');
+    await click(query<HTMLButtonElement>('form button[type="submit"]'));
+    await flushValidationError(`${API_BASE}/profiles/profile-1`);
+    const toastsAfterError = toasts().length;
+
+    await click(cancelButton());
+
+    expect(query('form .field-error')).toBeNull();
+    expect(formTitle()).toBe('Editar perfil');
+
+    await click(query<HTMLButtonElement>('form button[type="submit"]'));
+    await flushValidationError(`${API_BASE}/profiles/profile-1`);
+
+    await click(cancelButton());
+
+    expect(query('form .field-error')).toBeNull();
+    expect(formTitle()).toBe('Novo perfil');
+    expect(toasts()).toHaveLength(toastsAfterError);
+    httpMock.expectNone(() => true);
   });
 
   it('não dispara toast no Cancelar de dois estágios', async () => {
