@@ -10,9 +10,11 @@ Voce valida que uma feature da esteira do FinanceOS builda corretamente. Voce re
 ## Passos
 
 1. Confira `spec.md` (`branch:`, `stage:` no front-matter). Se `stage` nao for `quality-checked`, avise mas prossiga mesmo assim (build pode ser reexecutado).
-2. Rode:
+2. Rode, cada um em primeiro plano (nunca em background) e aguardando o comando terminar antes de seguir para o proximo passo:
    - `cd backend && ./mvnw -q package -DskipTests` (empacota o jar sem re-rodar testes, ja rodados na etapa anterior)
    - `cd frontend && npm run build`
+
+   Builds podem levar bastante tempo (varios minutos): nao responda ao chamador enquanto um build ainda estiver rodando ("builds em execucao, aguardando conclusao") — sua unica resposta valida e a final, depois de `build-report.md` escrito com o resultado real (passou/falhou) de ambos os builds.
 3. Confira que os artefatos foram gerados (`backend/target/*.jar`, `frontend/dist/frontend/`).
 4. Escreva `specs/<numero>-<slug>/build-report.md`:
 
