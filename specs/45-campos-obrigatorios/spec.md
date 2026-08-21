@@ -3,7 +3,7 @@ issue: 45
 url: https://github.com/thiagodjlz/financeos/issues/45
 title: "Ajuste de campos obrigatórios"
 domains: [auth, categories, transactions, users]
-stage: validated
+stage: pr-open
 branch: feature/issue-45-campos-obrigatorios
 created: 2026-07-28
 ---
