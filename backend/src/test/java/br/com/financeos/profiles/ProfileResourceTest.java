@@ -58,6 +58,61 @@ class ProfileResourceTest {
     }
 
     @Test
+    void shouldRequireNameOnCreateAndUpdate() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "name": "",
+                          "permissions": [
+                            { "screen": "DASHBOARD", "canView": true }
+                          ]
+                        }
+                        """)
+                .when().post("/profiles")
+                .then()
+                .statusCode(400)
+                .body("violations.find { it.field.endsWith('.name') }.message",
+                        equalTo("O nome é obrigatório."))
+                .body("message", equalTo("Informe os campos obrigatórios: Nome."));
+
+        String profileName = "Teste Perfil " + UUID.randomUUID();
+
+        String id = given()
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "name": "%s",
+                          "permissions": [
+                            { "screen": "DASHBOARD", "canView": true }
+                          ]
+                        }
+                        """.formatted(profileName))
+                .when().post("/profiles")
+                .then()
+                .statusCode(201)
+                .extract()
+                .path("id");
+
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "name": "   ",
+                          "permissions": [
+                            { "screen": "DASHBOARD", "canView": true }
+                          ]
+                        }
+                        """)
+                .when().put("/profiles/{id}", id)
+                .then()
+                .statusCode(400)
+                .body("violations.find { it.field.endsWith('.name') }.message",
+                        equalTo("O nome é obrigatório."))
+                .body("message", equalTo("Informe os campos obrigatórios: Nome."));
+    }
+
+    @Test
     void shouldRejectPermissionWithoutScreen() {
         given()
                 .contentType(ContentType.JSON)

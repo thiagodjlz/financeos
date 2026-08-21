@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { FieldErrorState, focusFirstInvalidField } from '../../core/field-errors';
 import { money, transactionStatusLabel } from '../../core/formatters';
 import { Category, Transaction, TransactionStatus, TransactionType } from '../../core/models';
 import { AuthService } from '../../core/services/auth.service';
@@ -10,6 +11,8 @@ import { TransactionService } from '../../core/services/transaction.service';
 
 const LOAD_FALLBACK = 'Não foi possível carregar os lançamentos.';
 const SAVE_FALLBACK = 'Não foi possível salvar o lançamento. Revise os campos e tente novamente.';
+
+const FIELDS = ['transactionDate', 'description', 'amount', 'type', 'status', 'categoryId'] as const;
 
 function newTransactionForm() {
   return {
@@ -34,8 +37,13 @@ export class Transactions implements OnInit {
   private readonly toast = inject(ToastService);
   protected readonly authService = inject(AuthService);
 
+  @ViewChild('createForm') private createForm?: ElementRef<HTMLFormElement>;
+
   protected readonly loading = signal(false);
   protected readonly saving = signal(false);
+
+  protected readonly fieldErrors = new FieldErrorState(FIELDS);
+  protected readonly editFieldErrors = new FieldErrorState(FIELDS);
 
   protected readonly transactions = this.transactionService.transactions;
   protected readonly categories = this.categoryService.categories;
@@ -95,6 +103,7 @@ export class Transactions implements OnInit {
 
   protected clearTransactionForm(): void {
     this.transactionForm = newTransactionForm();
+    this.fieldErrors.reset();
     this.filteredCategories.set(this.categoriesByType.get(this.transactionForm.type) ?? this.filteredCategories());
   }
 
@@ -106,6 +115,7 @@ export class Transactions implements OnInit {
 
   protected async saveTransaction(): Promise<void> {
     this.saving.set(true);
+    this.fieldErrors.reset();
 
     try {
       await this.transactionService.create({
@@ -120,7 +130,9 @@ export class Transactions implements OnInit {
       this.transactionForm.amount = 0;
       this.toast.success('Lançamento salvo com sucesso.');
     } catch (err) {
+      const errors = this.fieldErrors.apply(err);
       this.toast.fromHttpError(err, SAVE_FALLBACK);
+      focusFirstInvalidField(this.createForm?.nativeElement, errors);
     } finally {
       this.saving.set(false);
     }
@@ -182,6 +194,7 @@ export class Transactions implements OnInit {
       categoryId: transaction.categoryId ?? '',
     };
     this.editSnapshot = { ...this.editForm };
+    this.editFieldErrors.reset();
     this.confirmingExit.set(false);
     this.editingId.set(transaction.id);
     this.updatePreselectedInactiveCategory(transaction.categoryId);
@@ -223,6 +236,7 @@ export class Transactions implements OnInit {
 
   protected async saveEdit(transaction: Transaction): Promise<void> {
     this.saving.set(true);
+    this.editFieldErrors.reset();
 
     try {
       await this.transactionService.update(transaction.id, {
@@ -235,6 +249,7 @@ export class Transactions implements OnInit {
       this.exitEditDiscarding();
       this.toast.success('Lançamento atualizado com sucesso.');
     } catch (err) {
+      this.editFieldErrors.apply(err);
       this.toast.fromHttpError(err, SAVE_FALLBACK);
     } finally {
       this.saving.set(false);
@@ -263,6 +278,7 @@ export class Transactions implements OnInit {
     this.editingId.set(null);
     this.confirmingExit.set(false);
     this.editSnapshot = null;
+    this.editFieldErrors.reset();
   }
 
   private emptyToNull(value: string): string | null {

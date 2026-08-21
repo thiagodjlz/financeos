@@ -24,7 +24,7 @@ describe('CategoryService', () => {
     const req = httpMock.expectOne(`${API_BASE}/categories`);
     expect(req.request.method).toBe('GET');
     req.flush([
-      { id: '1', parentId: null, name: 'Mercado', type: 'EXPENSE', color: '#000', icon: null, active: true },
+      { id: '1', parentId: null, name: 'Mercado', type: 'EXPENSE', color: '#000', active: true },
     ]);
 
     await refreshPromise;
@@ -37,7 +37,7 @@ describe('CategoryService', () => {
 
     const req = httpMock.expectOne(`${API_BASE}/categories`);
     expect(req.request.method).toBe('POST');
-    req.flush({ id: '2', parentId: null, name: 'Salario', type: 'INCOME', color: null, icon: null, active: true });
+    req.flush({ id: '2', parentId: null, name: 'Salario', type: 'INCOME', color: null, active: true });
 
     await expect(createPromise).resolves.toMatchObject({ id: '2' });
   });
@@ -47,7 +47,7 @@ describe('CategoryService', () => {
 
     const req = httpMock.expectOne(`${API_BASE}/categories/2`);
     expect(req.request.method).toBe('PUT');
-    req.flush({ id: '2', parentId: null, name: 'Salario CLT', type: 'INCOME', color: null, icon: null, active: false });
+    req.flush({ id: '2', parentId: null, name: 'Salario CLT', type: 'INCOME', color: null, active: false });
 
     await expect(updatePromise).resolves.toMatchObject({ id: '2', active: false });
   });

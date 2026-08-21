@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { FieldErrorState, focusFirstInvalidField } from '../../core/field-errors';
 import { PermissionEntry, Profile, Screen } from '../../core/models';
 import { AuthService } from '../../core/services/auth.service';
 import { ProfileService } from '../../core/services/profile.service';
@@ -35,10 +36,16 @@ export class Profiles implements OnInit {
   private readonly toast = inject(ToastService);
   protected readonly authService = inject(AuthService);
 
+  @ViewChild('profileForm') private profileForm?: ElementRef<HTMLFormElement>;
+
   protected readonly screens = SCREENS;
   protected readonly loading = signal(false);
   protected readonly saving = signal(false);
   protected readonly editingId = signal<string | null>(null);
+
+  // A matriz de permissões não recebe destaque por campo: a violação de `permissions`/`screen`
+  // fica só no toast (decisão DEC-3 da issue #45).
+  protected readonly fieldErrors = new FieldErrorState(['name']);
 
   protected readonly profiles = this.profileService.profiles;
 
@@ -73,10 +80,12 @@ export class Profiles implements OnInit {
         : { screen: screen.code, canView: false, canCreate: false, canEdit: false, canDelete: false };
     });
     this.editSnapshot = { name: this.name, permissions: this.clonePermissions(this.permissions) };
+    this.fieldErrors.reset();
   }
 
   protected cancel(): void {
     const snapshot = this.editSnapshot;
+    this.fieldErrors.reset();
 
     if (snapshot && this.isDirty()) {
       this.name = snapshot.name;
@@ -105,6 +114,7 @@ export class Profiles implements OnInit {
 
   protected async save(): Promise<void> {
     this.saving.set(true);
+    this.fieldErrors.reset();
 
     try {
       const id = this.editingId();
@@ -122,7 +132,9 @@ export class Profiles implements OnInit {
       this.resetForm();
       this.toast.success(id ? 'Perfil atualizado com sucesso.' : 'Perfil salvo com sucesso.');
     } catch (err) {
+      const errors = this.fieldErrors.apply(err);
       this.toast.fromHttpError(err, 'Não foi possível salvar o perfil. Revise os campos e tente novamente.');
+      focusFirstInvalidField(this.profileForm?.nativeElement, errors);
     } finally {
       this.saving.set(false);
     }

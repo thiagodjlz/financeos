@@ -3,6 +3,7 @@ package br.com.financeos.transactions;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 
 import org.junit.jupiter.api.AfterEach;
@@ -62,6 +63,8 @@ class TransactionResourceTest {
 
     @Test
     void shouldCreateListUpdateAndCancelTransaction() {
+        Category category = createCategory(CategoryType.EXPENSE, true);
+
         String id = given()
                 .contentType(ContentType.JSON)
                 .body("""
@@ -71,9 +74,10 @@ class TransactionResourceTest {
                           "amount": 145.90,
                           "type": "EXPENSE",
                           "status": "PENDING",
+                          "categoryId": "%s",
                           "notes": "Compra de teste"
                         }
-                        """)
+                        """.formatted(category.id))
                 .when().post("/transactions")
                 .then()
                 .statusCode(201)
@@ -106,9 +110,10 @@ class TransactionResourceTest {
                           "description": "Teste mercado semanal atualizado",
                           "amount": 200.00,
                           "type": "EXPENSE",
-                          "status": "PAID"
+                          "status": "PAID",
+                          "categoryId": "%s"
                         }
-                        """)
+                        """.formatted(category.id))
                 .when().put("/transactions/{id}", id)
                 .then()
                 .statusCode(200)
@@ -138,6 +143,7 @@ class TransactionResourceTest {
                           "description": "Teste mercado categoria inexistente",
                           "amount": 10.00,
                           "type": "EXPENSE",
+                          "status": "PENDING",
                           "categoryId": "%s"
                         }
                         """.formatted(UUID.randomUUID()))
@@ -159,6 +165,7 @@ class TransactionResourceTest {
                           "description": "Teste mercado tipo incompativel",
                           "amount": 10.00,
                           "type": "EXPENSE",
+                          "status": "PENDING",
                           "categoryId": "%s"
                         }
                         """.formatted(incomeCategory.id))
@@ -180,6 +187,7 @@ class TransactionResourceTest {
                           "description": "Teste mercado categoria inativa",
                           "amount": 10.00,
                           "type": "EXPENSE",
+                          "status": "PENDING",
                           "categoryId": "%s"
                         }
                         """.formatted(inactiveCategory.id))
@@ -201,6 +209,7 @@ class TransactionResourceTest {
                           "description": "Teste mercado categoria mantida",
                           "amount": 10.00,
                           "type": "EXPENSE",
+                          "status": "PENDING",
                           "categoryId": "%s"
                         }
                         """.formatted(category.id))
@@ -232,6 +241,8 @@ class TransactionResourceTest {
 
     @Test
     void shouldRejectCanceledStatusOnCreate() {
+        Category category = createCategory(CategoryType.EXPENSE, true);
+
         given()
                 .contentType(ContentType.JSON)
                 .body("""
@@ -240,9 +251,10 @@ class TransactionResourceTest {
                           "description": "Teste mercado cancelado direto",
                           "amount": 10.00,
                           "type": "EXPENSE",
-                          "status": "CANCELED"
+                          "status": "CANCELED",
+                          "categoryId": "%s"
                         }
-                        """)
+                        """.formatted(category.id))
                 .when().post("/transactions")
                 .then()
                 .statusCode(400)
@@ -252,6 +264,8 @@ class TransactionResourceTest {
 
     @Test
     void shouldRejectInvalidTransaction() {
+        Category category = createCategory(CategoryType.EXPENSE, true);
+
         given()
                 .contentType(ContentType.JSON)
                 .body("""
@@ -259,12 +273,127 @@ class TransactionResourceTest {
                           "transactionDate": "2026-06-30",
                           "description": "",
                           "amount": 0,
-                          "type": "EXPENSE"
+                          "type": "EXPENSE",
+                          "status": "PENDING",
+                          "categoryId": "%s"
+                        }
+                        """.formatted(category.id))
+                .when().post("/transactions")
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
+    void shouldRequireCategoryOnCreateAndUpdate() {
+        Category category = createCategory(CategoryType.EXPENSE, true);
+
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "transactionDate": "2026-06-30",
+                          "description": "Teste mercado sem categoria",
+                          "amount": 10.00,
+                          "type": "EXPENSE",
+                          "status": "PENDING"
                         }
                         """)
                 .when().post("/transactions")
                 .then()
-                .statusCode(400);
+                .statusCode(400)
+                .body("violations.find { it.field.endsWith('.categoryId') }.message",
+                        equalTo("A categoria é obrigatória."))
+                .body("message", equalTo("Informe os campos obrigatórios: Categoria."));
+
+        String id = given()
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "transactionDate": "2026-06-30",
+                          "description": "Teste mercado com categoria",
+                          "amount": 10.00,
+                          "type": "EXPENSE",
+                          "status": "PENDING",
+                          "categoryId": "%s"
+                        }
+                        """.formatted(category.id))
+                .when().post("/transactions")
+                .then()
+                .statusCode(201)
+                .extract()
+                .path("id");
+
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "transactionDate": "2026-06-30",
+                          "description": "Teste mercado com categoria editado",
+                          "amount": 10.00,
+                          "type": "EXPENSE",
+                          "status": "PENDING"
+                        }
+                        """)
+                .when().put("/transactions/{id}", id)
+                .then()
+                .statusCode(400)
+                .body("violations.find { it.field.endsWith('.categoryId') }.message",
+                        equalTo("A categoria é obrigatória."))
+                .body("message", equalTo("Informe os campos obrigatórios: Categoria."));
+    }
+
+    @Test
+    void shouldRequireStatusForExpense() {
+        Category category = createCategory(CategoryType.EXPENSE, true);
+
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "transactionDate": "2026-06-30",
+                          "description": "Teste mercado despesa sem status",
+                          "amount": 10.00,
+                          "type": "EXPENSE",
+                          "categoryId": "%s"
+                        }
+                        """.formatted(category.id))
+                .when().post("/transactions")
+                .then()
+                .statusCode(400)
+                .body("message", equalTo("O status é obrigatório."));
+    }
+
+    @Test
+    void shouldKeepNullStatusForIncome() {
+        Category category = createCategory(CategoryType.INCOME, true);
+
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "transactionDate": "2026-06-30",
+                          "description": "Teste mercado receita sem status",
+                          "amount": 10.00,
+                          "type": "INCOME",
+                          "categoryId": "%s"
+                        }
+                        """.formatted(category.id))
+                .when().post("/transactions")
+                .then()
+                .statusCode(201)
+                .body("status", nullValue());
+    }
+
+    @Test
+    void shouldNameAllMissingFields() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("{}")
+                .when().post("/transactions")
+                .then()
+                .statusCode(400)
+                .body("message",
+                        equalTo("Informe os campos obrigatórios: Descrição, Valor, Data, Tipo, Categoria."));
     }
 
     @Test
@@ -284,11 +413,13 @@ class TransactionResourceTest {
                         equalTo("A descrição é obrigatória."))
                 .body("violations.find { it.field.endsWith('.amount') }.message",
                         equalTo("O valor é obrigatório."))
-                .body("message", equalTo("Informe os campos obrigatórios: Descrição, Valor."));
+                .body("message", equalTo("Informe os campos obrigatórios: Descrição, Valor, Categoria."));
     }
 
     @Test
     void shouldReturnLimitMessageForAmountBelowMinimum() {
+        Category category = createCategory(CategoryType.EXPENSE, true);
+
         given()
                 .contentType(ContentType.JSON)
                 .body("""
@@ -296,14 +427,16 @@ class TransactionResourceTest {
                           "transactionDate": "2026-06-30",
                           "description": "Teste mercado valor zero",
                           "amount": 0,
-                          "type": "EXPENSE"
+                          "type": "EXPENSE",
+                          "status": "PENDING",
+                          "categoryId": "%s"
                         }
-                        """)
+                        """.formatted(category.id))
                 .when().post("/transactions")
                 .then()
                 .statusCode(400)
                 .body("violations.find { it.field.endsWith('.amount') }.message",
-                        equalTo("O valor deve ser maior ou igual a 0,01."))
-                .body("message", equalTo("O valor deve ser maior ou igual a 0,01."));
+                        equalTo("O valor deve ser maior que zero."))
+                .body("message", equalTo("O valor deve ser maior que zero."));
     }
 }

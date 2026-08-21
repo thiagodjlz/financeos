@@ -128,16 +128,7 @@ public class CategoryResource {
         category.name = request.name().trim();
         category.type = request.type();
         category.parentId = request.parentId();
-        category.color = blankToNull(request.color());
-        category.icon = blankToNull(request.icon());
-        category.active = request.active() == null ? true : request.active();
-    }
-
-    private static String blankToNull(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-
-        return value.trim();
+        category.color = request.color().trim();
+        category.active = request.active();
     }
 }

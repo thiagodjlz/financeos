@@ -1,37 +1,57 @@
 <h2 class="page-title">Categorias</h2>
 
 <section class="content-grid">
-  <form class="panel form-panel" *ngIf="authService.can('CATEGORIES', 'CREATE')" (ngSubmit)="save()">
+  <form class="panel form-panel" *ngIf="authService.can('CATEGORIES', 'CREATE')" #createForm (ngSubmit)="save()">
     <div class="panel-heading">
       <h3>Nova categoria</h3>
     </div>
     <label>
       Nome
-      <input name="name" [(ngModel)]="form.name" required />
+      <input
+        name="name"
+        [(ngModel)]="form.name"
+        required
+        [class.invalid]="fieldErrors.invalid('name')"
+        (input)="fieldErrors.clear('name')"
+      />
+      <small class="field-error" *ngIf="fieldErrors.invalid('name')">{{ fieldErrors.message('name') }}</small>
     </label>
     <label>
       Tipo
-      <select name="type" [(ngModel)]="form.type">
+      <select
+        name="type"
+        [(ngModel)]="form.type"
+        [class.invalid]="fieldErrors.invalid('type')"
+        (change)="fieldErrors.clear('type')"
+      >
         <option value="EXPENSE">Despesa</option>
         <option value="INCOME">Receita</option>
       </select>
+      <small class="field-error" *ngIf="fieldErrors.invalid('type')">{{ fieldErrors.message('type') }}</small>
     </label>
-    <div class="two-cols">
-      <label>
-        Cor
-        <input type="color" name="color" [(ngModel)]="form.color" />
-      </label>
-      <label>
-        Ícone
-        <input name="icon" [(ngModel)]="form.icon" />
-      </label>
-    </div>
+    <label>
+      Cor
+      <input
+        type="color"
+        name="color"
+        [(ngModel)]="form.color"
+        [class.invalid]="fieldErrors.invalid('color')"
+        (input)="fieldErrors.clear('color')"
+      />
+      <small class="field-error" *ngIf="fieldErrors.invalid('color')">{{ fieldErrors.message('color') }}</small>
+    </label>
     <label>
       Situação
-      <select name="active" [(ngModel)]="form.active">
+      <select
+        name="active"
+        [(ngModel)]="form.active"
+        [class.invalid]="fieldErrors.invalid('active')"
+        (change)="fieldErrors.clear('active')"
+      >
         <option [ngValue]="true">Ativo</option>
         <option [ngValue]="false">Inativo</option>
       </select>
+      <small class="field-error" *ngIf="fieldErrors.invalid('active')">{{ fieldErrors.message('active') }}</small>
     </label>
     <div class="two-cols">
       <button class="primary-button" type="submit" [disabled]="saving()">Salvar</button>
@@ -90,22 +110,56 @@
             <tr *ngIf="editingId() === category.id">
               <td>
                 <div class="inline-name-fields">
-                  <input name="editName" [(ngModel)]="editForm.name" required />
-                  <input type="color" name="editColor" title="Cor" [(ngModel)]="editForm.color" />
-                  <input name="editIcon" placeholder="Ícone" [(ngModel)]="editForm.icon" />
+                  <input
+                    name="editName"
+                    [(ngModel)]="editForm.name"
+                    required
+                    [class.invalid]="editFieldErrors.invalid('name')"
+                    (input)="editFieldErrors.clear('name')"
+                  />
+                  <input
+                    type="color"
+                    name="editColor"
+                    title="Cor"
+                    [(ngModel)]="editForm.color"
+                    [class.invalid]="editFieldErrors.invalid('color')"
+                    (input)="editFieldErrors.clear('color')"
+                  />
                 </div>
+                <small class="field-error" *ngIf="editFieldErrors.invalid('name')">
+                  {{ editFieldErrors.message('name') }}
+                </small>
+                <small class="field-error" *ngIf="editFieldErrors.invalid('color')">
+                  {{ editFieldErrors.message('color') }}
+                </small>
               </td>
               <td>
-                <select name="editType" [(ngModel)]="editForm.type">
+                <select
+                  name="editType"
+                  [(ngModel)]="editForm.type"
+                  [class.invalid]="editFieldErrors.invalid('type')"
+                  (change)="editFieldErrors.clear('type')"
+                >
                   <option value="EXPENSE">Despesa</option>
                   <option value="INCOME">Receita</option>
                 </select>
+                <small class="field-error" *ngIf="editFieldErrors.invalid('type')">
+                  {{ editFieldErrors.message('type') }}
+                </small>
               </td>
               <td>
-                <select name="editActive" [(ngModel)]="editForm.active">
+                <select
+                  name="editActive"
+                  [(ngModel)]="editForm.active"
+                  [class.invalid]="editFieldErrors.invalid('active')"
+                  (change)="editFieldErrors.clear('active')"
+                >
                   <option [ngValue]="true">Ativo</option>
                   <option [ngValue]="false">Inativo</option>
                 </select>
+                <small class="field-error" *ngIf="editFieldErrors.invalid('active')">
+                  {{ editFieldErrors.message('active') }}
+                </small>
               </td>
               <td class="row-actions">
                 <button type="button" class="primary-button" [disabled]="saving()" (click)="saveEdit(category)">

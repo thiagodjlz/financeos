@@ -137,6 +137,10 @@ public class TransactionResource {
     }
 
     private static void validateStatus(TransactionRequest request, FinancialTransaction existing) {
+        if (request.type() == TransactionType.EXPENSE && request.status() == null) {
+            throw new WebApplicationException("O status é obrigatório.", Response.Status.BAD_REQUEST);
+        }
+
         if (request.status() != TransactionStatus.CANCELED || request.type() == TransactionType.INCOME) {
             return;
         }

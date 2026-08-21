@@ -22,7 +22,6 @@ public final class FieldLabels {
         LABELS.put("categoryId", "Categoria");
         LABELS.put("status", "Status");
         LABELS.put("color", "Cor");
-        LABELS.put("icon", "Ícone");
         LABELS.put("active", "Situação");
         LABELS.put("permissions", "Permissões");
         LABELS.put("screen", "Tela");

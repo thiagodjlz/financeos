@@ -6,14 +6,20 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.UUID;
 
+import br.com.financeos.transactions.FinancialTransaction;
 import br.com.financeos.transactions.TransactionRepository;
+import br.com.financeos.transactions.TransactionSource;
+import br.com.financeos.transactions.TransactionStatus;
+import br.com.financeos.transactions.TransactionType;
+import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.quarkus.test.security.jwt.Claim;
 import io.quarkus.test.security.jwt.JwtSecurity;
-import io.restassured.http.ContentType;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
@@ -87,23 +93,24 @@ class DashboardResourceTest {
                 .body("message", equalTo("O mês deve estar entre 1 e 12."));
     }
 
-    private static String createTransaction(String date, String description, int amount, String type, String status) {
-        return given()
-                .contentType(ContentType.JSON)
-                .body("""
-                        {
-                          "transactionDate": "%s",
-                          "description": "%s",
-                          "amount": %d,
-                          "type": "%s",
-                          "status": "%s"
-                        }
-                        """.formatted(date, description, amount, type, status))
-                .when().post("/transactions")
-                .then()
-                .statusCode(201)
-                .extract()
-                .path("id");
+    // Persistido direto pelo repositorio: o POST /transactions passou a exigir categoria (issue #45)
+    // e o agrupamento "Sem categoria" do DashboardRepository so e exercitado com category_id nulo.
+    private String createTransaction(String date, String description, int amount, String type, String status) {
+        return QuarkusTransaction.requiringNew().call(() -> {
+            FinancialTransaction transaction = new FinancialTransaction();
+            transaction.userId = TEST_USER_ID;
+            transaction.categoryId = null;
+            transaction.transactionDate = LocalDate.parse(date);
+            transaction.description = description;
+            transaction.amount = new BigDecimal(amount);
+            transaction.type = TransactionType.valueOf(type);
+            transaction.status = transaction.type == TransactionType.INCOME
+                    ? null
+                    : TransactionStatus.valueOf(status);
+            transaction.source = TransactionSource.MANUAL;
+            repository.persist(transaction);
+            return transaction.id.toString();
+        });
     }
 
     private static void cancelTransaction(String id) {

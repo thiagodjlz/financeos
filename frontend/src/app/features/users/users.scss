@@ -4,25 +4,6 @@ label span {
   text-transform: none;
 }
 
-input.invalid,
-select.invalid {
-  border-color: var(--expense);
-  box-shadow: 0 0 0 1px var(--expense);
-}
-
-input.invalid:focus,
-select.invalid:focus {
-  outline: 2px solid var(--expense);
-  outline-offset: 1px;
-}
-
-.field-error {
-  color: var(--expense-on-soft);
-  font-size: var(--fs-pill);
-  font-weight: 600;
-  text-transform: none;
-}
-
 table {
   min-width: 960px;
 }

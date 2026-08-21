@@ -1,7 +1,7 @@
-import { HttpErrorResponse } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { Component, ElementRef, OnInit, ViewChild, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { collectFieldErrors } from '../../core/field-errors';
 import { AppUserSummary } from '../../core/models';
 import { AuthService } from '../../core/services/auth.service';
 import { ProfileService } from '../../core/services/profile.service';
@@ -244,29 +244,7 @@ export class Users implements OnInit {
   }
 
   private collectFieldErrors(err: unknown): Map<string, string> {
-    const errors = new Map<string, string>();
-
-    for (const violation of this.extractViolations(err)) {
-      const field = violation.field.split('.').pop() ?? '';
-      if (field in FIELD_LABELS && !errors.has(field)) {
-        errors.set(field, violation.message);
-      }
-    }
-
-    return errors;
-  }
-
-  private extractViolations(err: unknown): { field: string; message: string }[] {
-    if (!(err instanceof HttpErrorResponse)) {
-      return [];
-    }
-
-    const body = err.error;
-    if (!body || typeof body !== 'object' || !Array.isArray(body.violations)) {
-      return [];
-    }
-
-    return body.violations;
+    return collectFieldErrors(err, Object.keys(FIELD_LABELS));
   }
 
   private focusFirstInvalidField(errors: Map<string, string>): void {

@@ -40,9 +40,6 @@ public class Category extends PanacheEntityBase {
     @Column(length = 20)
     public String color;
 
-    @Column(length = 80)
-    public String icon;
-
     @Column(nullable = false)
     public boolean active = true;
 

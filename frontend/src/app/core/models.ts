@@ -44,7 +44,6 @@ export interface Category {
   name: string;
   type: TransactionType;
   color: string | null;
-  icon: string | null;
   active: boolean;
 }
 

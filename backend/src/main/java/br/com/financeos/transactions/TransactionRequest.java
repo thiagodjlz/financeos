@@ -11,10 +11,10 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public record TransactionRequest(
-        UUID categoryId,
+        @NotNull(message = "A categoria é obrigatória.") UUID categoryId,
         @NotNull(message = "A data é obrigatória.") LocalDate transactionDate,
         @NotBlank(message = "A descrição é obrigatória.") @Size(max = 255, message = "A descrição deve ter no máximo 255 caracteres.") String description,
-        @NotNull(message = "O valor é obrigatório.") @DecimalMin(value = "0.01", message = "O valor deve ser maior ou igual a 0,01.") BigDecimal amount,
+        @NotNull(message = "O valor é obrigatório.") @DecimalMin(value = "0.01", message = "O valor deve ser maior que zero.") BigDecimal amount,
         @NotNull(message = "O tipo é obrigatório.") TransactionType type,
         TransactionStatus status,
         TransactionSource source,
