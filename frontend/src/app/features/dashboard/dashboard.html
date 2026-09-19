@@ -65,7 +65,7 @@
 <section class="panels-grid">
   <section class="panel chart-panel">
     <div class="panel-heading">
-      <h3>Evolucao anual</h3>
+      <h3>Evolução anual</h3>
       <div class="chart-legend">
         <span><i class="legend-marker income"></i>Receita</span>
         <span><i class="legend-marker expense"></i>Despesa</span>
@@ -73,43 +73,132 @@
       </div>
     </div>
 
-    <svg class="evolution-chart" viewBox="0 0 840 210" role="img" aria-label="Evolucao anual de receitas, despesas e saldo">
-      <ng-container *ngFor="let bar of chart().bars">
+    <div class="chart-viewport" #chartViewport>
+      <svg
+        class="evolution-chart"
+        [attr.viewBox]="chart().viewBox"
+        preserveAspectRatio="none"
+        role="img"
+        tabindex="0"
+        [attr.aria-label]="chartAriaLabel()"
+        (keydown)="onChartKeydown($event)"
+        (blur)="onChartBlur()"
+      >
+        <g class="chart-axis">
+          <ng-container *ngFor="let tick of chart().ticks">
+            <line
+              class="chart-grid-line"
+              [attr.x1]="chart().plotLeft"
+              [attr.y1]="tick.y"
+              [attr.x2]="chart().plotRight"
+              [attr.y2]="tick.y"
+            ></line>
+            <text
+              class="chart-axis-label"
+              [attr.x]="chart().axisLabelX"
+              [attr.y]="tick.y + 4"
+              font-size="11"
+              text-anchor="end"
+            >{{ tick.label }}</text>
+          </ng-container>
+        </g>
+
         <rect
-          class="bar-income"
-          [attr.x]="bar.incomeX"
-          [attr.y]="bar.incomeY"
-          [attr.width]="barWidth"
-          [attr.height]="bar.incomeH"
-          rx="2.5"
+          class="month-band"
+          *ngFor="let month of chart().months"
+          [class.is-active]="activeMonth() === month.index"
+          [attr.x]="month.left"
+          [attr.y]="chart().plotTop"
+          [attr.width]="month.width"
+          [attr.height]="chart().plotHeight"
         ></rect>
+
+        <ng-container *ngFor="let month of chart().months">
+          <rect
+            class="bar-income"
+            [attr.x]="month.incomeX"
+            [attr.y]="month.incomeY"
+            [attr.width]="chart().barWidth"
+            [attr.height]="month.incomeH"
+            rx="2.5"
+          ></rect>
+          <rect
+            class="bar-expense"
+            [attr.x]="month.expenseX"
+            [attr.y]="month.expenseY"
+            [attr.width]="chart().barWidth"
+            [attr.height]="month.expenseH"
+            rx="2.5"
+          ></rect>
+          <text
+            class="chart-month"
+            [attr.x]="month.center"
+            [attr.y]="chart().monthLabelY"
+            font-size="11"
+            text-anchor="middle"
+          >{{ month.label }}</text>
+        </ng-container>
+
+        <line
+          class="chart-zero-line"
+          [attr.x1]="chart().plotLeft"
+          [attr.y1]="chart().zeroY"
+          [attr.x2]="chart().plotRight"
+          [attr.y2]="chart().zeroY"
+        ></line>
+
+        <ng-container *ngIf="chart().balancePoints.length">
+          <polyline
+            class="balance-line"
+            [attr.points]="chart().linePoints"
+            fill="none"
+            stroke-width="2.5"
+            stroke-linejoin="round"
+            stroke-linecap="round"
+          ></polyline>
+          <circle
+            class="balance-point"
+            *ngFor="let point of chart().balancePoints"
+            [attr.cx]="point.cx"
+            [attr.cy]="point.cy"
+            r="3.5"
+            stroke-width="2"
+          ></circle>
+        </ng-container>
+
         <rect
-          class="bar-expense"
-          [attr.x]="bar.expenseX"
-          [attr.y]="bar.expenseY"
-          [attr.width]="barWidth"
-          [attr.height]="bar.expenseH"
-          rx="2.5"
+          class="month-hit"
+          *ngFor="let month of chart().months"
+          [attr.x]="month.left"
+          [attr.y]="chart().plotTop"
+          [attr.width]="month.width"
+          [attr.height]="chart().plotHeight"
+          fill="transparent"
+          (mouseenter)="onMonthEnter(month.index)"
+          (mousemove)="onMonthEnter(month.index)"
+          (mouseleave)="onMonthLeave()"
+          (pointerdown)="onMonthPointerDown($event, month.index)"
         ></rect>
-        <text class="chart-month" [attr.x]="bar.labelX" y="205" font-size="11" text-anchor="middle">{{ bar.label }}</text>
-      </ng-container>
-      <polyline
-        class="balance-line"
-        [attr.points]="chart().linePoints"
-        fill="none"
-        stroke-width="2.5"
-        stroke-linejoin="round"
-        stroke-linecap="round"
-      ></polyline>
-      <circle
-        class="balance-point"
-        *ngFor="let bar of chart().bars"
-        [attr.cx]="bar.lineX"
-        [attr.cy]="bar.lineY"
-        r="3.5"
-        stroke-width="2"
-      ></circle>
-    </svg>
+      </svg>
+
+      <div class="chart-tooltip-layer" aria-live="polite">
+        <ng-container *ngIf="activeTooltip() as tooltip">
+          <div class="chart-tooltip" [style.left.px]="tooltipLeft()">
+            <strong>{{ tooltip.title }}</strong>
+            <span class="chart-tooltip-row">
+              <i class="legend-marker income"></i>Receita<b>{{ tooltip.income }}</b>
+            </span>
+            <span class="chart-tooltip-row">
+              <i class="legend-marker expense"></i>Despesa<b>{{ tooltip.expense }}</b>
+            </span>
+            <span class="chart-tooltip-row">
+              <i class="legend-marker balance"></i>Saldo<b>{{ tooltip.balance }}</b>
+            </span>
+          </div>
+          <span class="sr-only">{{ announcement() }}</span>
+        </ng-container>
+      </div>
+    </div>
   </section>
 
   <section class="panel breakdown-panel">

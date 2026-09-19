@@ -145,10 +145,20 @@
   }
 }
 
+.chart-viewport {
+  position: relative;
+}
+
 .evolution-chart {
+  display: block;
   width: 100%;
-  height: 220px;
-  overflow: visible;
+  height: 240px;
+  border-radius: var(--radius-sm);
+
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
 }
 
 .bar-income {
@@ -163,6 +173,33 @@
   fill: var(--text-soft);
 }
 
+.chart-grid-line {
+  stroke: var(--chart-grid);
+  stroke-width: 1;
+}
+
+.chart-zero-line {
+  stroke: var(--chart-zero);
+  stroke-width: 1.5;
+}
+
+.chart-axis-label {
+  fill: var(--chart-label);
+}
+
+.month-band {
+  fill: transparent;
+
+  &.is-active {
+    fill: var(--chart-band-active);
+  }
+}
+
+.month-hit {
+  fill: transparent;
+  pointer-events: all;
+}
+
 .balance-line {
   stroke: var(--balance);
 }
@@ -170,6 +207,48 @@
 .balance-point {
   fill: var(--surface);
   stroke: var(--balance);
+}
+
+.chart-tooltip-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.chart-tooltip {
+  position: absolute;
+  top: 8px;
+  width: min(var(--chart-tooltip-w), 100%);
+  border: 1px solid var(--chart-tooltip-border);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  background: var(--chart-tooltip-bg);
+  box-shadow: var(--shadow-card);
+  font-size: var(--fs-table);
+
+  strong {
+    display: block;
+    margin-bottom: 8px;
+    font-size: var(--fs-sm-btn);
+    font-weight: 800;
+  }
+}
+
+.chart-tooltip-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+
+  + .chart-tooltip-row {
+    margin-top: 4px;
+  }
+
+  b {
+    margin-left: auto;
+    color: var(--text);
+    font-weight: 700;
+  }
 }
 
 .category-section + .category-section {
@@ -280,5 +359,10 @@
   .chart-panel,
   .breakdown-panel {
     padding: 18px;
+  }
+
+  .chart-month,
+  .chart-axis-label {
+    font-size: 9px;
   }
 }
