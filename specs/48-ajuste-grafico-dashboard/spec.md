@@ -4,7 +4,7 @@ url: https://github.com/thiagodjlz/financeos/issues/48
 title: "Ajuste de gráfico"
 domains: [dashboard]
 target: main
-stage: validated
+stage: pr-open
 branch: feature/issue-48-ajuste-grafico-dashboard
 created: 2026-09-19
 ---

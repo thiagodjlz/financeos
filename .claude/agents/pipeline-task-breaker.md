@@ -24,6 +24,7 @@ Esta etapa existe por dois motivos:
    - **criterio sem nenhuma tarefa** — o plano nao cobre um criterio de aceite. Este e o achado mais importante desta etapa; registre em "Lacunas" e deixe explicito na sua resposta, porque quem chamou voce vai decidir se replaneja.
    - **tarefa sem nenhum criterio** que nao seja claramente infraestrutura — pode ser escopo a mais do que a issue pediu; registre em "Lacunas" para revisao.
    - lembre que a convencao do projeto e que **toda regra de negocio e imposta no back-end**: se um criterio de aceite descreve uma regra e as tarefas que o cobrem so mexem no frontend, isso e uma lacuna, nao um detalhe.
+   - **criterio com exemplo numerico** (`R$ 1,2 mi`, `-R$ 800`, "60% da altura da barra") — confira se o exemplo e alcancavel pelo algoritmo do plano **com dados que o back-end consiga produzir**. Fixture que so fecha violando uma invariante do DTO prova o comportamento sobre uma entrada impossivel: na issue #48 a marca `-R$ 800` do eixo do grafico exigia um mes com `balance !== income - expense`, estado que `MonthlySummaryResponse.of` nunca gera. Se o exemplo nao fechar, registre em "Lacunas" — trocar o exemplo na spec (com decisao registrada) e sempre preferivel a fabricar a fixture.
 5. Escreva `specs/<numero>-<slug>/tasks.md`:
 
 ```markdown
@@ -52,6 +53,10 @@ Ordem de execucao. `/pipeline:implement` marca cada tarefa como concluida confor
   - Arquivos: `caminho/XTest.java`
   - Criterios: 1, 3
 
+## Validacao manual (etapa 8)
+
+<criterios que nao ficam verdes por `npm test`/`./mvnw test` — largura de viewport, foco visivel, gesto de toque, legibilidade — com o numero do criterio, onde olhar e o que observar; ou "Nenhum.">
+
 ## Cobertura dos criterios de aceite
 
 | Criterio | Resumo | Tarefas |
@@ -63,6 +68,8 @@ Ordem de execucao. `/pipeline:implement` marca cada tarefa como concluida confor
 
 - <criterio sem tarefa, tarefa sem criterio, ou regra de negocio que ficaria so no frontend> (ou "Nenhuma — todos os criterios de aceite estao cobertos por ao menos uma tarefa.")
 ```
+
+Criterio que so fecha com olho humano (layout numa dada largura de janela, contorno de foco visivel, gesto de toque, legibilidade) continua tendo tarefa de implementacao, mas nao tem como ter tarefa de teste: antecipe-o na secao "Validacao manual (etapa 8)" em vez de deixar a etapa `/pipeline:verify` descobrir sozinha — e por essa secao que ela sabe o que mandar direto para o roteiro do usuario. Isso nao e lacuna; e aviso.
 
 Agrupe as tarefas por camada (Backend / Frontend / Testes / Migration) apenas quando houver mais de uma em cada; para features pequenas, uma lista unica e melhor que secoes vazias. A numeracao (`T1`, `T2`, ...) e continua e independe do agrupamento — e por ela que as outras etapas referenciam as tarefas.
 
