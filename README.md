@@ -278,15 +278,22 @@ v1.0.2     branch da versao 1.0.2 - builds 1.0.2-01, ...
 
 O arquivo `VERSION` na raiz e a fonte da verdade. A versao completa aparece no rodape do login e do sistema, em `GET /api/health` (campo `version`) e nas tags das imagens Docker (`financeos-backend:1.0.1-03`).
 
-### Ativar o hook (uma vez por clone)
+### O hook da build
 
-O incremento automatico da build depende de um hook versionado em `.githooks/`. Git nao instala hooks sozinho:
+O incremento automatico da build depende de um hook versionado em `.githooks/`. Git nao instala hooks sozinho — por isso o clone se vira sozinho em tres pontos, e nenhum deles e um comando que voce precisa lembrar de rodar:
+
+- `npm install` no `frontend/` (script `prepare` -> `scripts/ensure-hooks.js`);
+- qualquer script de versao (`bump-build.ps1`, `new-version.ps1`, `update-environment.ps1`) confere e ativa se faltar;
+- a esteira, na etapa de implementacao, confere antes de criar a branch.
+
+Para forcar na mao (ou desligar), continua existindo:
 
 ```powershell
 powershell -File scripts/install-hooks.ps1
+powershell -File scripts/install-hooks.ps1 -Desinstalar
 ```
 
-A partir dai, todo commit feito numa branch de versao (ou numa branch criada a partir de uma) incrementa a build e inclui os arquivos de versao no proprio commit:
+Com o hook ativo, todo commit feito numa branch de versao (ou numa branch criada a partir de uma) incrementa a build e inclui os arquivos de versao no proprio commit:
 
 ```text
 pre-commit: commit pertence a versao v1.0.1 - incrementando a build...

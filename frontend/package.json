@@ -6,7 +6,8 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "prepare": "node -e \"require('fs').existsSync('../scripts/ensure-hooks.js')&&require('../scripts/ensure-hooks.js')\""
   },
   "private": true,
   "packageManager": "npm@10.9.8",

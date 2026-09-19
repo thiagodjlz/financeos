@@ -22,7 +22,7 @@ Cada versao tem a sua branch; `main` e a versao em desenvolvimento e nunca vai p
 
 - `main` -> `VERSION` sempre em `X.Y.Z-dev`. Feature nova entra aqui.
 - `vX.Y.Z` -> branch da versao cortada, `VERSION` em `X.Y.Z-NN`. E dela que sai o deploy.
-- Correcao de bug de versao ja cortada nasce de `vX.Y.Z` e **incrementa a build sozinha** no commit (hook `.githooks/pre-commit`, ativado por clone com `powershell -File scripts/install-hooks.ps1`). Nunca edite `VERSION`/`pom.xml`/`version.ts` na mao para mexer em numero de versao.
+- Correcao de bug de versao ja cortada nasce de `vX.Y.Z` e **incrementa a build sozinha** no commit (hook `.githooks/pre-commit`, que se ativa sozinho no `npm install` do frontend, nos scripts de versao e na etapa de implementacao da esteira). Nunca edite `VERSION`/`pom.xml`/`version.ts` na mao para mexer em numero de versao.
 - Cortar versao nova: `powershell -File scripts/new-version.ps1 -Versao X.Y.Z`. Publicar/atualizar um ambiente: `powershell -File scripts/update-environment.ps1 -Versao X.Y.Z`.
 - Depois de mergear uma correcao em `vX.Y.Z`, leve-a para a `main` (merge ou cherry-pick) — senao ela some na proxima versao.
 

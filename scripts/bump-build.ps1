@@ -10,6 +10,7 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'lib\version-lib.ps1')
 
 $repoRoot = Get-FinanceOsRepoRoot
+Confirm-FinanceOsHooks -RepoRoot $repoRoot | Out-Null
 $atual = Get-FinanceOsVersion -RepoRoot $repoRoot
 
 if ($atual.IsDev) {
