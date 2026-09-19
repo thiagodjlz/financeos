@@ -112,6 +112,8 @@ function Wait-Ambiente {
 }
 
 try {
+    Confirm-FinanceOsHooks -RepoRoot $repoRoot | Out-Null
+
     $envPath = Join-Path $repoRoot '.env'
     if (-not (Test-Path $envPath)) {
         throw ".env nao encontrado. Copie .env.example para .env e defina POSTGRES_PASSWORD antes de atualizar o ambiente."

@@ -169,6 +169,30 @@ function Get-FinanceOsVersionFiles {
     )
 }
 
+function Confirm-FinanceOsHooks {
+    # Ativa os hooks versionados se este clone ainda nao tiver feito isso.
+    # Silencioso quando ja esta ativo - a ideia e que ninguem precise lembrar do instalador.
+    param([string]$RepoRoot = (Get-FinanceOsRepoRoot))
+
+    if (-not (Test-Path (Join-Path $RepoRoot '.githooks\pre-commit'))) { return $false }
+
+    Push-Location $RepoRoot
+    try {
+        $atual = Invoke-FinanceOsGit config --get core.hooksPath
+        if ($atual.Ok -and $atual.Saida -eq '.githooks') { return $false }
+
+        $resultado = Invoke-FinanceOsGit config core.hooksPath .githooks
+        if ($resultado.Ok) {
+            Write-Host "Hooks do FinanceOS ativados neste clone (core.hooksPath = .githooks)." -ForegroundColor Yellow
+            return $true
+        }
+        return $false
+    }
+    finally {
+        Pop-Location
+    }
+}
+
 function Get-FinanceOsVersionBranch {
     # Descobre a branch de versao (vX.Y.Z) alvo do commit atual:
     #   1. a propria branch, se ela for uma branch de versao;

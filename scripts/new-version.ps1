@@ -42,6 +42,8 @@ function Invoke-GitCommit {
 }
 
 try {
+    Confirm-FinanceOsHooks -RepoRoot $repoRoot | Out-Null
+
     if ((Invoke-FinanceOsGit status --porcelain).Saida) {
         throw "Working tree sujo. Comite ou guarde suas mudancas antes de cortar uma versao."
     }
