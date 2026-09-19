@@ -11,19 +11,31 @@ Voce implementa o codigo de uma feature da esteira do FinanceOS. Voce recebe o c
 ## Passos
 
 1. Leia `tasks.md` (a lista de tarefas na ordem de execucao — e o seu roteiro), `spec.md` (criterios de aceite, front-matter) e `plan.md` (abordagem, arquivos, riscos) da pasta indicada. Leia os arquivos de `knowledge/` listados em `domains` do front-matter. Se `tasks.md` tiver tarefas ja marcadas como concluidas de uma rodada anterior, comece pela primeira que ainda esta aberta em vez de refazer tudo.
-2. Confira o estado do git (`git status`).
-   - Se voce **ja esta** na branch `feature/issue-<numero>-<slug>`, siga nela — mesmo com mudancas nao commitadas, que sao o trabalho desta feature (rodada de correcao ou de ajuste). Nunca rode `git stash`, `git checkout -- <arquivo>` ou `git reset --hard`: isso apaga trabalho que ainda nao foi commitado por decisao de processo.
+2. Descubra o **alvo** e o nome da branch a partir do campo `target` do front-matter de `spec.md` (ver README.md, secao "Versionamento e branches"):
+   - `target: main` (ou campo ausente, em specs antigas) -> branch `feature/issue-<numero>-<slug>`, criada a partir de `main`.
+   - `target: vX.Y.Z` -> e correcao de uma versao ja cortada: branch `fix/issue-<numero>-<slug>`, criada **a partir de `vX.Y.Z`** (nunca de `main`, senao a correcao arrasta codigo que ainda nao esta naquela versao).
+
+   Daqui em diante, "a branch da feature" significa a branch resolvida aqui, e "a branch base" significa o `target`.
+3. Confira o estado do git (`git status`).
+   - Se voce **ja esta** na branch da feature, siga nela — mesmo com mudancas nao commitadas, que sao o trabalho desta feature (rodada de correcao ou de ajuste). Nunca rode `git stash`, `git checkout -- <arquivo>` ou `git reset --hard`: isso apaga trabalho que ainda nao foi commitado por decisao de processo.
    - Se a branch existe mas voce esta em outra, so troque se o working tree estiver limpo. Se estiver sujo, pare e reporte — trocar de branch com mudancas soltas mistura trabalho.
-   - Se a branch nao existe, crie a partir da `main` atualizada (`git checkout main && git pull`, depois `git checkout -b feature/issue-<numero>-<slug>`) e nao da branch atual, que pode ser a branch (ja mergeada) da feature anterior. A pasta `specs/<numero>-*`, ainda untracked nesse momento, acompanha a troca de branch sem problema.
-3. Execute as tarefas de `tasks.md` na ordem em que estao, e **marque cada uma como `- [x]` em `tasks.md` assim que concluir** — nao deixe todas as marcacoes para o fim: se a sessao for interrompida, o que estiver marcado e o que diz onde a implementacao parou. Siga os padroes ja existentes no codigo (mesmo estilo de `Resource`/`Repository`/`service`/componente das areas vizinhas). Sem comentarios no codigo a menos que expliquem um "porque" nao obvio. Todo endpoint novo comeca com `accessControl.require(Screen.X, Action.Y)`. **Toda regra de negocio/validacao deve ser imposta no back-end** (Bean Validation no DTO ou checagem no `Resource`, respondendo 400/409 com mensagem em portugues) — nunca implemente uma regra apenas no front-end ou conte apenas com constraint do banco (excecao: PKs e FKs); o front-end espelha a regra como UX quando fizer sentido.
-4. Se o plano ou uma tarefa se mostrar errado ou incompleto durante a implementacao (arquivo que nao existia, dependencia esquecida, tarefa que na pratica eram duas), ajuste a implementacao mesmo assim e registre o desvio nas notas — nao pare por causa disso, a menos que seja um bloqueio real (ex.: decisao de produto em aberto que a spec deixou como "ponto em aberto"). Se precisar de um passo que `tasks.md` nao previa, acrescente a tarefa no fim da lista (proximo numero livre, ja marcada como concluida) com os arquivos e os criterios que ela atende, para a lista continuar sendo o registro fiel do que foi feito. Se decidir **nao** fazer uma tarefa, deixe-a desmarcada e explique o motivo nas notas — nunca marque como concluida o que voce nao fez.
-5. **Nao rode `git add` nem `git commit`** — deixe tudo no working tree. Liste os arquivos alterados nas notas (passo 6) com precisao: e essa lista que a etapa `/pipeline:open-pr` usa para montar o commit depois da validacao do usuario.
-6. Escreva `specs/<numero>-<slug>/implementation-notes.md`:
+   - Se a branch nao existe, crie a partir da **branch base atualizada** (`git checkout <base> && git pull`, depois `git checkout -b <branch da feature>`) e nao da branch atual, que pode ser a branch (ja mergeada) da feature anterior. A pasta `specs/<numero>-*`, ainda untracked nesse momento, acompanha a troca de branch sem problema.
+   - Quando a base e uma branch de versao (`vX.Y.Z`), rode logo apos criar a branch:
+
+     ```bash
+     git config branch.fix/issue-<numero>-<slug>.financeosVersionBase vX.Y.Z
+     ```
+
+     E isso que faz o hook `pre-commit` reconhecer que os commits dessa branch pertencem aquela versao e incrementar a build automaticamente. Sem essa linha, a correcao entra sem gerar build nova.
+4. Execute as tarefas de `tasks.md` na ordem em que estao, e **marque cada uma como `- [x]` em `tasks.md` assim que concluir** — nao deixe todas as marcacoes para o fim: se a sessao for interrompida, o que estiver marcado e o que diz onde a implementacao parou. Siga os padroes ja existentes no codigo (mesmo estilo de `Resource`/`Repository`/`service`/componente das areas vizinhas). Sem comentarios no codigo a menos que expliquem um "porque" nao obvio. Todo endpoint novo comeca com `accessControl.require(Screen.X, Action.Y)`. **Toda regra de negocio/validacao deve ser imposta no back-end** (Bean Validation no DTO ou checagem no `Resource`, respondendo 400/409 com mensagem em portugues) — nunca implemente uma regra apenas no front-end ou conte apenas com constraint do banco (excecao: PKs e FKs); o front-end espelha a regra como UX quando fizer sentido.
+5. Se o plano ou uma tarefa se mostrar errado ou incompleto durante a implementacao (arquivo que nao existia, dependencia esquecida, tarefa que na pratica eram duas), ajuste a implementacao mesmo assim e registre o desvio nas notas — nao pare por causa disso, a menos que seja um bloqueio real (ex.: decisao de produto em aberto que a spec deixou como "ponto em aberto"). Se precisar de um passo que `tasks.md` nao previa, acrescente a tarefa no fim da lista (proximo numero livre, ja marcada como concluida) com os arquivos e os criterios que ela atende, para a lista continuar sendo o registro fiel do que foi feito. Se decidir **nao** fazer uma tarefa, deixe-a desmarcada e explique o motivo nas notas — nunca marque como concluida o que voce nao fez.
+6. **Nao rode `git add` nem `git commit`** — deixe tudo no working tree. Nunca edite `VERSION`, `backend/pom.xml`, `frontend/src/app/core/version.ts` ou `package.json` para mexer em numero de versao: em branch de correcao de versao quem faz isso e o hook `pre-commit`, no commit da etapa `/pipeline:open-pr`. Liste os arquivos alterados nas notas (passo 6) com precisao: e essa lista que a etapa `/pipeline:open-pr` usa para montar o commit depois da validacao do usuario.
+7. Escreva `specs/<numero>-<slug>/implementation-notes.md`:
 
 ```markdown
 # Notas de implementacao
 
-Branch: `feature/issue-<numero>-<slug>` (mudancas nao commitadas — commit na etapa `/pipeline:open-pr`)
+Branch: `<branch da feature>` (base: `<target>`; mudancas nao commitadas — commit na etapa `/pipeline:open-pr`)
 
 Tarefas: <N de M concluidas> (ver `tasks.md`)
 
@@ -40,8 +52,8 @@ Tarefas: <N de M concluidas> (ver `tasks.md`)
 - <o que mudou em relacao a plan.md/tasks.md e por que: tarefa acrescentada, tarefa nao feita e o motivo> (ou "Nenhum desvio.")
 ```
 
-7. Atualize o front-matter de `spec.md`: `stage: implemented`, `branch: feature/issue-<numero>-<slug>`.
-8. Responda com um resumo curto: branch usada, quantas tarefas concluidas de quantas (e quais ficaram abertas, se alguma), arquivos alterados, se houve desvio do plano.
+8. Atualize o front-matter de `spec.md`: `stage: implemented`, `branch: <branch da feature>`.
+9. Responda com um resumo curto: branch usada, quantas tarefas concluidas de quantas (e quais ficaram abertas, se alguma), arquivos alterados, se houve desvio do plano.
 
 ## Se estiver corrigindo apos falha de qualidade/build
 

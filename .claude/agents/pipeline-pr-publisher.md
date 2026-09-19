@@ -10,19 +10,22 @@ O commit acontece aqui, e nao na etapa de implementacao, porque a esteira para a
 
 ## Passos
 
-1. Leia `spec.md` (`branch`, `title`, `url` da issue, `stage`), `implementation-notes.md` (arquivos alterados), `plan.md`, `quality-report.md`, `build-report.md` e `verification-report.md` da pasta.
+1. Leia `spec.md` (`branch`, `target`, `title`, `url` da issue, `stage`), `implementation-notes.md` (arquivos alterados), `plan.md`, `quality-report.md`, `build-report.md` e `verification-report.md` da pasta.
 2. Confirme que `stage: validated` no front-matter de `spec.md`. Se nao estiver, **pare e reporte** sem commitar nem abrir PR: significa que o usuario nao validou a feature.
-3. Confira `git status` e `git branch --show-current` (precisa ser a `branch` da spec). Crie o commit:
+3. Confira `git status` e `git branch --show-current` (precisa ser a `branch` da spec). O **`target` da spec e a branch base do PR**: `main` para feature, `vX.Y.Z` para correcao de uma versao ja cortada (campo ausente em spec antiga = `main`). Crie o commit:
    - `git add` **apenas** nos arquivos listados em `implementation-notes.md` mais a pasta `specs/<numero>-<slug>/` (os artefatos da esteira entram no mesmo commit). Nunca `git add -A` nem `git add .` — pode arrastar arquivo local que nao e da feature.
    - `git commit` com mensagem em portugues, curta e direta (ex.: "Adiciona exportacao de lancamentos em CSV").
    - Se, depois do `git add`, `git status` ainda mostrar arquivo modificado relevante que nao esta nas notas (ex.: arquivo que a rodada de ajuste tocou e ninguem registrou), inclua-o no commit e registre isso na sua resposta — mas nao inclua arquivo obviamente alheio a feature (`.env`, chaves `.pem`, logs); nesse caso deixe fora e avise.
+   - Se o `target` e uma branch de versao, o hook `pre-commit` incrementa a build no momento do commit e acrescenta `VERSION`, `backend/pom.xml`, `frontend/src/app/core/version.ts` (e, quando a base muda, `package.json`/`package-lock.json`) ao commit sozinho. Isso e esperado: nao desfaca, nao use `FINANCEOS_SKIP_BUILD_BUMP`, e registre no corpo do PR qual build foi gerada (leia o `VERSION` depois do commit). Se o hook nao rodou (build inalterada num PR de correcao de versao), o clone provavelmente esta sem os hooks: avise o usuario para rodar `powershell -File scripts/install-hooks.ps1` e refaca o commit.
    - Atencao especial a `knowledge/*.md`, `.claude/agents/*` e `.claude/skills/*` modificados: como o `/pipeline:sync-knowledge` da feature **anterior** nao comita sozinho, e comum o working tree conter essas mudancas pendentes de revisao do usuario (aconteceu na esteira da issue #33, que rodou com o sync da #31 pendente). So entram no commit se estiverem listados em `implementation-notes.md` desta feature; caso contrario, deixe-os fora e mencione na resposta que ha saida de sync-knowledge anterior aguardando commit do usuario.
 4. `git push -u origin <branch>` — sempre com remoto e branch explicitos. A branch da feature costuma nascer de `git checkout -b <branch> origin/main`, e nesse caso ela fica com **upstream apontando para `origin/main`**: um `git push` sem argumentos tentaria empurrar a feature direto para a `main` (constatado na esteira da issue #39). Confira com `git rev-parse --abbrev-ref @{upstream}` se o push reclamar de algo.
-5. Abra o PR:
+5. Abra o PR **contra a branch base** (`target`):
 
 ```
-gh pr create --title "<titulo curto em portugues>" --body "<corpo>"
+gh pr create --base <target> --title "<titulo curto em portugues>" --body "<corpo>"
 ```
+
+Nunca omita `--base`: sem ele o `gh` usa a branch padrao do repositorio (`main`) e uma correcao de versao acabaria mergeada na branch errada.
 
 Corpo do PR (em portugues), formato:
 
@@ -40,11 +43,15 @@ Resolve #<numero da issue>
 ## Verificacao
 
 <de verification-report.md: quantos criterios de aceite foram verificados automaticamente e que a validacao manual no ambiente local foi aprovada pelo usuario (com a data)>
+
+## Versao
+
+<so quando o PR e contra uma branch de versao: "Correcao para a versao X.Y.Z - build gerada: X.Y.Z-NN.">
 ```
 
 6. Escreva `specs/<numero>-<slug>/pr.md` com a URL retornada pelo `gh pr create`, o hash do commit criado e um resumo curto.
 7. Atualize o front-matter de `spec.md`: `stage: pr-open`.
-8. Responda com a URL do PR e o hash do commit.
+8. Responda com a URL do PR e o hash do commit. Quando o PR e contra uma branch de versao, acrescente duas informacoes ao usuario: a build gerada (`X.Y.Z-NN`) e o lembrete de que, depois do merge, a correcao ainda precisa ser levada para a `main` (`git checkout main && git merge vX.Y.Z`, ou cherry-pick do commit) — senao ela se perde na proxima versao.
 
 ## Importante
 

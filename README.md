@@ -262,30 +262,85 @@ Para desenvolvimento com hot-reload continua valendo o fluxo de sempre — só o
 docker compose up -d postgres
 ```
 
-## Versionamento
+## Versionamento e branches
 
-O projeto usa `MAJOR.MINOR.PATCH` (arquivo `VERSION` na raiz e a fonte de verdade):
+Cada versao do sistema tem a sua propria branch; dentro dela, cada correcao gera uma build nova.
 
 ```text
-versao  (MAJOR) - mudancas grandes/quebra de compatibilidade
-release (MINOR) - mudancas menores/novas funcionalidades
-build   (PATCH) - ajustes de bug
+main       versao em desenvolvimento (X.Y.Z-dev) - nunca e publicada
+v1.0.1     branch da versao 1.0.1 - builds 1.0.1-01, 1.0.1-02, 1.0.1-03 ...
+v1.0.2     branch da versao 1.0.2 - builds 1.0.2-01, ...
 ```
 
-Subir uma parte (sempre manual, nunca automatico):
+- **`main`** e a versao em desenvolvimento. O `VERSION` dela sempre termina em `-dev` (ex.: `1.0.1-dev`) e indica a proxima versao a ser cortada. Funcionalidades novas entram aqui.
+- **`vX.Y.Z`** e a branch de uma versao cortada — e dela que sai o deploy. O `VERSION` dela e `X.Y.Z-NN`, onde `NN` e o numero da build.
+- **Correcao de bug** de uma versao ja publicada e feita na branch daquela versao (ou numa branch curta criada a partir dela) e **sobe a build automaticamente**, sem ninguem lembrar de editar numero nenhum.
+
+O arquivo `VERSION` na raiz e a fonte da verdade. A versao completa aparece no rodape do login e do sistema, em `GET /api/health` (campo `version`) e nas tags das imagens Docker (`financeos-backend:1.0.1-03`).
+
+### Ativar o hook (uma vez por clone)
+
+O incremento automatico da build depende de um hook versionado em `.githooks/`. Git nao instala hooks sozinho:
 
 ```powershell
-powershell -File scripts/bump-version.ps1 -Parte build
-powershell -File scripts/bump-version.ps1 -Parte release
-powershell -File scripts/bump-version.ps1 -Parte versao
+powershell -File scripts/install-hooks.ps1
 ```
 
-O script atualiza junto `VERSION`, `frontend/package.json`, `frontend/package-lock.json`, `backend/pom.xml`, `frontend/src/app/core/version.ts` (rodape do login e do sistema) e `APP_VERSION` em `.env`/`.env.example`. Nao cria tag git nem commita — revise o diff e commite do seu jeito.
+A partir dai, todo commit feito numa branch de versao (ou numa branch criada a partir de uma) incrementa a build e inclui os arquivos de versao no proprio commit:
 
-A versao tambem fica exposta em `GET /api/health` (campo `version`, lido automaticamente do `pom.xml` pelo Quarkus). Depois de subir a versao, rebuilde e publique:
+```text
+pre-commit: commit pertence a versao v1.0.1 - incrementando a build...
+Build: 1.0.1-02 -> 1.0.1-03
+```
+
+O hook reconhece que um commit pertence a uma versao quando: a branch atual e `vX.Y.Z`; **ou** a branch tem `branch.<nome>.financeosVersionBase` apontando para uma (a esteira grava isso ao criar branch de correcao); **ou** o upstream da branch e `origin/vX.Y.Z`. Em `main` e em branches de feature nada acontece.
+
+Ele nao incrementa em merge, rebase ou cherry-pick — nesses casos a build ja foi contada no commit de origem. Para pular pontualmente:
 
 ```bash
-docker compose up -d --build
+FINANCEOS_SKIP_BUILD_BUMP=1 git commit -m "..."
 ```
 
-Isso gera imagens ja tagueadas com a versao atual (`financeos-backend:X.Y.Z`, `financeos-frontend:X.Y.Z`, visiveis em `docker images`) em vez de sempre sobrescrever uma tag generica. Nota: `.env` nao e versionado (so `.env.example`) — numa maquina nova, copie `.env.example` para `.env` antes de subir a stack.
+Para incrementar na mao (sem commitar): `powershell -File scripts/bump-build.ps1`.
+
+### Cortar uma versao nova
+
+O "atualizador de versao" faz os dois lados da operacao: cria a branch da versao e devolve a `main` para a proxima:
+
+```powershell
+powershell -File scripts/new-version.ps1 -Versao 1.0.1
+```
+
+1. Confere que o working tree esta limpo, vai para a `main` e atualiza com o origin.
+2. Cria `v1.0.1`, grava `VERSION = 1.0.1-01` e commita ("Inicia a versao 1.0.1 (build 01)").
+3. Volta para a `main`, grava `VERSION = 1.0.2-dev` e commita ("Abre o desenvolvimento da versao 1.0.2").
+
+Sem `-Versao`, ele usa a versao que ja esta na `main` (o `-dev` vira a versao cortada). `-Proxima 1.1.0` escolhe outro numero para a `main` (o padrao e somar 1 ao patch). `-Push` empurra as duas branches; sem ele, nada vai para o origin.
+
+### Publicar/atualizar um ambiente
+
+O "atualizador de ambiente" leva uma stack Docker que ja esta rodando de uma versao para outra:
+
+```powershell
+powershell -File scripts/update-environment.ps1 -Versao 1.0.1
+```
+
+1. Faz backup do banco em `backups/<data>-antes-de-<versao>.sql` (pule com `-SemBackup`).
+2. Troca para a branch da versao, atualiza com o origin e sincroniza `APP_VERSION` no `.env`.
+3. Roda `docker compose up -d --build` (as imagens saem tagueadas com a versao completa).
+4. Espera o ambiente ficar saudavel: `GET /api/health` respondendo `UP` **com a versao esperada** e o frontend respondendo 200.
+5. Se nao ficar saudavel dentro do timeout, mostra os logs do backend e **faz rollback** para a versao anterior (`-SemRollback` desliga isso).
+
+Atencao: rollback devolve o codigo, nao o banco — migracoes Flyway ja aplicadas continuam aplicadas. Por isso o backup do passo 1; o comando de restauracao aparece na tela quando o rollback acontece.
+
+### Conflito de build
+
+Duas correcoes em paralelo para a mesma versao geram conflito em `VERSION`, `backend/pom.xml` e `frontend/src/app/core/version.ts` na hora do merge. Resolva **ficando com o numero de build maior** (ou rode `scripts/bump-build.ps1` depois do merge para gerar o proximo). Isso e esperado: a build conta correcoes publicadas na versao, entao ela tem que ser unica.
+
+### O que os scripts atualizam
+
+`VERSION`, `backend/pom.xml`, `frontend/src/app/core/version.ts`, `frontend/package.json`, `frontend/package-lock.json` e `APP_VERSION` em `.env`/`.env.example`.
+
+`package.json`/`package-lock.json` recebem so `X.Y.Z`, sem o sufixo de build: o npm exige semver estrito e `1.0.1-02` tem zero a esquerda no identificador numerico, o que invalidaria a versao. Quem carrega a versao completa e o `VERSION`, o `pom.xml` (e portanto o `/api/health`), o rodape do frontend e as tags Docker.
+
+Nota: `.env` nao e versionado (so `.env.example`) — numa maquina nova, copie `.env.example` para `.env` antes de subir a stack.
