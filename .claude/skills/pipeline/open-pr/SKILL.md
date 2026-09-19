@@ -9,7 +9,9 @@ O argumento (`$1`/`$ARGUMENTS`) e o numero da issue. Resolva a pasta via glob `s
 - `quality-report.md` e `build-report.md` existem e nao indicam falha (nao abra PR com qualidade/build falhando);
 - o front-matter de `spec.md` esta em `stage: validated`. Se estiver em `stage: verified` ou anterior, **pare**: o usuario ainda nao validou a feature. Avise que a validacao acontece em `/pipeline:verify <numero>` e nao contorne essa checagem — a parada para validacao humana e o ponto do processo.
 
-**Esta etapa cria o commit, faz `git push` e abre um Pull Request publico no GitHub.** Nao peca confirmacao: a autorizacao e o `stage: validated`, ou seja, o usuario ja disse na etapa `/pipeline:verify` que a implementacao esta correta. Apenas informe antes de chamar o agente o que vai acontecer: arquivos que entram no commit, branch que sera empurrada, titulo do PR e issue que sera fechada.
+**Esta etapa cria o commit, faz `git push` e abre um Pull Request publico no GitHub.** Nao peca confirmacao: a autorizacao e o `stage: validated`, ou seja, o usuario ja disse na etapa `/pipeline:verify` que a implementacao esta correta. Apenas informe antes de chamar o agente o que vai acontecer: arquivos que entram no commit, branch que sera empurrada, **branch base do PR** (o campo `target` da spec: `main` ou `vX.Y.Z`), titulo do PR e issue que sera fechada.
+
+Quando o `target` e uma branch de versao, o commit tambem carrega o incremento automatico da build (hook `pre-commit`) — diga isso ao usuario junto, e no fim repasse o lembrete do agente sobre levar a correcao para a `main` depois do merge.
 
 1. Chame a tool `Agent` com `subagent_type: pipeline-pr-publisher`, `run_in_background: false`, passando o caminho da pasta `specs/<numero>-<slug>/` e o numero da issue.
 2. Depois do retorno, leia `pr.md` e mostre ao usuario a URL do Pull Request criado.

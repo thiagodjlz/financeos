@@ -16,6 +16,16 @@ Regras de negocio e modelo de dados nao ficam aqui — ficam em [knowledge/](kno
 - Todo endpoint novo do backend comeca chamando `accessControl.require(Screen.X, Action.Y)` — ver [knowledge/auth-and-permissions.md](knowledge/auth-and-permissions.md).
 - Detalhes de stack/comandos de build e teste: [knowledge/architecture.md](knowledge/architecture.md).
 
+## Versionamento e branches
+
+Cada versao tem a sua branch; `main` e a versao em desenvolvimento e nunca vai para producao. Detalhes e comandos em [README.md](README.md#versionamento-e-branches).
+
+- `main` -> `VERSION` sempre em `X.Y.Z-dev`. Feature nova entra aqui.
+- `vX.Y.Z` -> branch da versao cortada, `VERSION` em `X.Y.Z-NN`. E dela que sai o deploy.
+- Correcao de bug de versao ja cortada nasce de `vX.Y.Z` e **incrementa a build sozinha** no commit (hook `.githooks/pre-commit`, ativado por clone com `powershell -File scripts/install-hooks.ps1`). Nunca edite `VERSION`/`pom.xml`/`version.ts` na mao para mexer em numero de versao.
+- Cortar versao nova: `powershell -File scripts/new-version.ps1 -Versao X.Y.Z`. Publicar/atualizar um ambiente: `powershell -File scripts/update-environment.ps1 -Versao X.Y.Z`.
+- Depois de mergear uma correcao em `vX.Y.Z`, leve-a para a `main` (merge ou cherry-pick) — senao ela some na proxima versao.
+
 ## Esteira automatizada de features (issue -> PR)
 
 Para transformar uma issue do GitHub em Pull Request, ver [specs/README.md](specs/README.md). Basta rodar a primeira etapa — cada etapa invoca a proxima automaticamente:
@@ -33,6 +43,8 @@ Para transformar uma issue do GitHub em Pull Request, ver [specs/README.md](spec
 ```
 
 Cada comando roda um subagente dedicado (`.claude/agents/pipeline-*.md`), grava o resultado em `specs/<numero>-<slug>/` e avanca sozinho para a proxima etapa. Os comandos individuais continuam disponiveis para (re)executar uma etapa especifica.
+
+**Cada issue tem um alvo (`target` no front-matter da spec).** `main` para funcionalidade nova (branch `feature/issue-<n>-<slug>`, PR contra `main`) ou `vX.Y.Z` para correcao de uma versao ja cortada (branch `fix/issue-<n>-<slug>` criada a partir da versao, PR contra ela, build incrementada automaticamente no commit). A etapa 1 pergunta ao usuario quando a issue e bug de versao ja cortada; as demais etapas seguem o `target`.
 
 **Cada tarefa e amarrada a um criterio de aceite.** A etapa 3 gera `tasks.md` com a matriz de cobertura criterio -> tarefas e recusa seguir para a implementacao se algum criterio de aceite ficou sem tarefa (volta uma vez para replanejar; persistindo, pergunta ao usuario). A etapa 4 marca as tarefas conforme conclui, e a etapa 8 usa a matriz para achar a evidencia de cada criterio.
 

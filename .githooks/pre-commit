@@ -1,0 +1,46 @@
+#!/bin/sh
+# Incrementa a build (X.Y.Z-NN) automaticamente em commits que pertencem a uma
+# branch de versao, e inclui os arquivos de versao no proprio commit.
+#
+# Pular pontualmente:  FINANCEOS_SKIP_BUILD_BUMP=1 git commit ...
+# Instalar/desinstalar: scripts/install-hooks.ps1 [-Desinstalar]
+
+[ "$FINANCEOS_SKIP_BUILD_BUMP" = "1" ] && exit 0
+
+# Merge/rebase em andamento: o commit nao e uma correcao nova, e sim a juncao de
+# trabalho que ja teve sua build contada na branch de origem.
+git_dir=$(git rev-parse --git-dir)
+if [ -f "$git_dir/MERGE_HEAD" ] || [ -f "$git_dir/CHERRY_PICK_HEAD" ] ||
+   [ -d "$git_dir/rebase-merge" ] || [ -d "$git_dir/rebase-apply" ]; then
+    exit 0
+fi
+
+repo_root=$(git rev-parse --show-toplevel)
+
+powershell_bin=""
+for candidato in powershell.exe pwsh powershell; do
+    if command -v "$candidato" >/dev/null 2>&1; then
+        powershell_bin="$candidato"
+        break
+    fi
+done
+
+if [ -z "$powershell_bin" ]; then
+    echo "pre-commit: PowerShell nao encontrado - build nao incrementada." >&2
+    exit 0
+fi
+
+alvo=$("$powershell_bin" -NoProfile -ExecutionPolicy Bypass -Command \
+    ". '$repo_root/scripts/lib/version-lib.ps1'; Get-FinanceOsVersionBranch -RepoRoot '$repo_root'" 2>/dev/null | tr -d '\r')
+
+if [ -z "$alvo" ]; then
+    exit 0
+fi
+
+echo "pre-commit: commit pertence a versao $alvo - incrementando a build..."
+"$powershell_bin" -NoProfile -ExecutionPolicy Bypass -File "$repo_root/scripts/bump-build.ps1" -Stage || {
+    echo "pre-commit: falha ao incrementar a build - commit abortado." >&2
+    exit 1
+}
+
+exit 0

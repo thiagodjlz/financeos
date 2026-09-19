@@ -52,9 +52,22 @@ Se `quality-check`, `build` ou `verify` encontrarem problema, a esteira roda aut
 
 E de proposito que essa checagem venha antes da implementacao: criterio esquecido descoberto aqui custa um paragrafo; descoberto na etapa 8 custa uma rodada inteira de correcao. A etapa 4 marca cada tarefa como concluida conforme avanca, e a etapa 8 usa a matriz para saber onde procurar a evidencia de cada criterio.
 
+## Feature na `main`, correcao numa versao (`target`)
+
+O campo `target` do front-matter diz em cima de que branch a issue e implementada (ver README.md, secao "Versionamento e branches"):
+
+| `target` | Quando | Branch de trabalho | Base do PR | Build |
+|---|---|---|---|---|
+| `main` | funcionalidade nova, melhoria, refatoracao | `feature/issue-<n>-<slug>` | `main` | nao muda (`main` fica em `X.Y.Z-dev`) |
+| `vX.Y.Z` | bug de uma versao ja cortada | `fix/issue-<n>-<slug>` | `vX.Y.Z` | sobe sozinha no commit (`X.Y.Z-NN`) |
+
+Quem decide isso e a etapa 1: para bug que afeta versao ja cortada, `/pipeline:spec-from-issue` pergunta ao usuario se a correcao sai numa build daquela versao ou so na proxima versao. As demais etapas apenas seguem o `target`.
+
+Na correcao de versao, a etapa 4 cria a branch a partir de `vX.Y.Z` e grava `branch.<nome>.financeosVersionBase = vX.Y.Z` — e isso que faz o hook `pre-commit` incrementar a build quando a etapa 9 commita. A etapa 9 abre o PR com `--base vX.Y.Z` e lembra o usuario de levar a correcao para a `main` depois do merge.
+
 ## Nada e commitado antes da sua validacao
 
-O commit, o push e o PR acontecem todos na etapa 9, depois que voce aprova a feature. Da etapa 4 a 8 o codigo fica no working tree da branch `feature/issue-<numero>-<slug>`, sem entrar no historico do git.
+O commit, o push e o PR acontecem todos na etapa 9, depois que voce aprova a feature. Da etapa 4 a 8 o codigo fica no working tree da branch de trabalho (`feature/issue-<numero>-<slug>` ou, em correcao de versao, `fix/issue-<numero>-<slug>`), sem entrar no historico do git.
 
 Isso funciona porque os Dockerfiles do `backend` e do `frontend` sao multi-stage e buildam a partir do codigo-fonte copiado: a stack Docker roda o working tree, sem depender de commit. Consequencia pratica: nenhum agente da esteira deve rodar `git stash`, `git reset --hard` ou `git checkout -- <arquivo>` entre as etapas 4 e 9, porque nao existe commit para onde voltar.
 
@@ -79,6 +92,7 @@ issue: 42
 url: https://github.com/thiagodjlz/financeos/issues/42
 title: "Titulo original da issue"
 domains: [transactions, dashboard]   # ver knowledge/README.md - so os dominios afetados
+target: main                         # branch base: main (versao em desenvolvimento) ou vX.Y.Z (correcao de versao)
 stage: spec                          # ver lista abaixo
 branch: feature/issue-42-exportar-lancamentos-csv   # preenchido a partir da etapa "implement"
 created: 2026-07-07

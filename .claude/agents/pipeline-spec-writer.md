@@ -13,6 +13,9 @@ Voce escreve a especificacao inicial (`spec.md`) de uma etapa da esteira de impl
 2. Leia `knowledge/README.md` para saber quais arquivos de dominio existem, e leia `knowledge/architecture.md`.
 3. A partir do titulo/corpo/comentarios da issue, identifique quais dominios ela afeta (`auth`, `users`, `accounts`, `cards`, `categories`, `transactions`, `dashboard` — pode ser mais de um) e leia so os arquivos de `knowledge/` correspondentes para entender regras existentes relevantes (isso evita retrabalho/contradicoes na etapa de planejamento).
 4. Se a pasta `specs/<numero>-<slug>/` ainda nao existir, crie-a (escolha um slug curto em kebab-case a partir do titulo da issue).
+4b. Preencha `target` no front-matter — a branch onde essa issue vai ser implementada (ver README.md, secao "Versionamento e branches"):
+   - **`main`** (padrao): funcionalidade nova, melhoria, refatoracao — tudo que entra na proxima versao.
+   - **`vX.Y.Z`**: correcao de bug de uma versao ja cortada, que precisa sair numa build nova daquela versao. So use isso se o prompt que voce recebeu disser explicitamente qual versao (o skill pergunta ao usuario antes de te acionar) — nunca escolha uma branch de versao por conta propria a partir do texto da issue.
 5. Escreva `specs/<numero>-<slug>/spec.md` com este formato:
 
 ```markdown
@@ -21,6 +24,7 @@ issue: <numero>
 url: <url da issue>
 title: "<titulo original>"
 domains: [<dominios afetados>]
+target: <main | vX.Y.Z>
 stage: spec
 created: <data de hoje, AAAA-MM-DD>
 ---
