@@ -23,3 +23,30 @@ export function transactionStatusLabel(status: TransactionStatus | null): string
       return '-';
   }
 }
+
+export function shortMoney(value: number | null | undefined): string {
+  const amount = value ?? 0;
+  const sign = amount < 0 ? '-' : '';
+  const absolute = Math.abs(amount);
+
+  if (absolute >= 1_000_000) {
+    return `${sign}R$ ${shortNumber(absolute / 1_000_000)} mi`;
+  }
+
+  if (absolute >= 1_000) {
+    return `${sign}R$ ${shortNumber(absolute / 1_000)} mil`;
+  }
+
+  return `${sign}R$ ${shortNumber(absolute)}`;
+}
+
+export function longMonthName(month: number): string {
+  const label = new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(
+    new Date(2026, month - 1, 1),
+  );
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+function shortNumber(value: number): string {
+  return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 2 }).format(value);
+}

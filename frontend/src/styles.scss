@@ -106,6 +106,14 @@
   --fs-pill: 12px;
   --fs-sm-btn: 12.5px;
   --fs-toast-msg: 13px;
+
+  --chart-grid: var(--border-th);
+  --chart-zero: var(--border-input);
+  --chart-band-active: var(--neutral-soft);
+  --chart-label: var(--text-faint);
+  --chart-tooltip-bg: var(--surface);
+  --chart-tooltip-border: var(--border-card);
+  --chart-tooltip-w: 196px;
 }
 
 * {
@@ -329,6 +337,19 @@ select.invalid:focus {
   margin: 14px 0 0;
   color: var(--text-muted);
   font-size: var(--fs-table);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
 }
 
 .app-footer {
