@@ -5,7 +5,7 @@ title: "Borda dos campos de formulario nao atinge o contraste minimo (1.44:1)"
 slug: contraste-borda-campos
 domains: [auth, users, categories, transactions, dashboard]
 target: v1.0.1
-stage: validated
+stage: pr-open
 branch: fix/issue-58-contraste-borda-campos
 created: 2026-09-20
 ---
