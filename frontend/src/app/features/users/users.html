@@ -58,7 +58,7 @@
       </select>
       <small class="field-error" *ngIf="isFieldInvalid('profileId')">{{ fieldError('profileId') }}</small>
     </label>
-    <div class="two-cols">
+    <div class="two-cols form-actions">
       <button class="primary-button" type="submit" [disabled]="saving()">Salvar</button>
       <button class="ghost-button" type="button" (click)="cancel()">Cancelar</button>
     </div>
@@ -69,7 +69,7 @@
       <h3>Usuários</h3>
       <span>{{ users().length }}</span>
     </div>
-    <div class="table-wrap">
+    <div class="table-wrap" [attr.aria-busy]="loading()">
       <table class="fixed-layout">
         <colgroup>
           <col />
@@ -84,16 +84,16 @@
             <th>E-mail</th>
             <th>Perfil</th>
             <th>Status</th>
-            <th></th>
+            <th><span class="sr-only">Ações</span></th>
           </tr>
         </thead>
         <tbody>
           <ng-container *ngFor="let user of users()">
             <tr *ngIf="editingId() !== user.id">
-              <td>{{ user.name }}</td>
-              <td>{{ user.email }}</td>
-              <td>{{ profileName(user.profileId) }}</td>
-              <td>
+              <td data-label="Nome">{{ user.name }}</td>
+              <td data-label="E-mail">{{ user.email }}</td>
+              <td data-label="Perfil">{{ profileName(user.profileId) }}</td>
+              <td data-label="Status">
                 <span class="status-pill" [class.pill-income]="user.active" [class.pill-neutral]="!user.active">
                   {{ user.active ? 'Ativo' : 'Inativo' }}
                 </span>
@@ -119,7 +119,7 @@
               </td>
             </tr>
             <tr *ngIf="editingId() === user.id">
-              <td>
+              <td data-label="Nome">
                 <input
                   name="editName"
                   [(ngModel)]="editForm.name"
@@ -128,7 +128,7 @@
                 />
                 <small class="field-error" *ngIf="isEditFieldInvalid('name')">{{ editFieldError('name') }}</small>
               </td>
-              <td>
+              <td data-label="E-mail">
                 <div class="inline-email-fields">
                   <input
                     type="email"
@@ -149,7 +149,7 @@
                   <small class="field-error" *ngIf="isEditFieldInvalid('password')">{{ editFieldError('password') }}</small>
                 </div>
               </td>
-              <td>
+              <td data-label="Perfil">
                 <select
                   name="editProfileId"
                   [(ngModel)]="editForm.profileId"
@@ -161,7 +161,7 @@
                 </select>
                 <small class="field-error" *ngIf="isEditFieldInvalid('profileId')">{{ editFieldError('profileId') }}</small>
               </td>
-              <td>
+              <td data-label="Status">
                 <select name="editActive" [(ngModel)]="editForm.active">
                   <option [ngValue]="true">Ativo</option>
                   <option [ngValue]="false">Inativo</option>
@@ -177,17 +177,17 @@
           </ng-container>
         </tbody>
       </table>
-      <p class="empty-state" *ngIf="!users().length">Nenhum usuário cadastrado</p>
+      <p class="loading-state" *ngIf="loading()"></p>
+      <p class="empty-state" *ngIf="!loading() && !users().length">Nenhum usuário cadastrado</p>
     </div>
   </section>
 </section>
 
-<div class="modal-backdrop" *ngIf="confirmingExit()" (click)="confirmExitNo()">
-  <div class="modal-card" (click)="$event.stopPropagation()">
-    <p>Deseja sair sem salvar?</p>
-    <div class="modal-actions">
-      <button type="button" class="ghost-button" (click)="confirmExitNo()">Não</button>
-      <button type="button" class="primary-button" (click)="confirmExitYes()">Sim</button>
-    </div>
-  </div>
-</div>
+<app-confirm-dialog
+  *ngIf="confirmingExit()"
+  message="Deseja sair sem salvar?"
+  cancelLabel="Continuar editando"
+  confirmLabel="Sair sem salvar"
+  (cancel)="confirmExitNo()"
+  (confirm)="confirmExitYes()"
+/>

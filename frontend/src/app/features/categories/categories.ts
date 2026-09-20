@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, ElementRef, OnInit, ViewChild, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ConfirmDialog } from '../../core/confirm-dialog/confirm-dialog';
 import { FieldErrorState, focusFirstInvalidField } from '../../core/field-errors';
 import { Category, TransactionType } from '../../core/models';
 import { AuthService } from '../../core/services/auth.service';
@@ -23,7 +24,7 @@ function newCategoryForm() {
 
 @Component({
   selector: 'app-categories',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ConfirmDialog],
   templateUrl: './categories.html',
   styleUrl: './categories.scss',
 })

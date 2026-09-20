@@ -36,25 +36,25 @@
         <tbody>
           <tr *ngFor="let permission of permissions">
             <td class="screen-cell">{{ screenLabel(permission.screen) }}</td>
-            <td class="checkbox-cell">
+            <td class="checkbox-cell" data-label="Ver">
               <label class="perm-switch">
                 <input type="checkbox" [(ngModel)]="permission.canView" [name]="permission.screen + '-view'" />
                 <span class="perm-switch-label">Ver {{ screenLabel(permission.screen) }}</span>
               </label>
             </td>
-            <td class="checkbox-cell">
+            <td class="checkbox-cell" data-label="Incluir">
               <label class="perm-switch">
                 <input type="checkbox" [(ngModel)]="permission.canCreate" [name]="permission.screen + '-create'" />
                 <span class="perm-switch-label">Incluir em {{ screenLabel(permission.screen) }}</span>
               </label>
             </td>
-            <td class="checkbox-cell">
+            <td class="checkbox-cell" data-label="Alterar">
               <label class="perm-switch">
                 <input type="checkbox" [(ngModel)]="permission.canEdit" [name]="permission.screen + '-edit'" />
                 <span class="perm-switch-label">Alterar em {{ screenLabel(permission.screen) }}</span>
               </label>
             </td>
-            <td class="checkbox-cell">
+            <td class="checkbox-cell" data-label="Excluir">
               <label class="perm-switch">
                 <input type="checkbox" [(ngModel)]="permission.canDelete" [name]="permission.screen + '-delete'" />
                 <span class="perm-switch-label">Excluir em {{ screenLabel(permission.screen) }}</span>
@@ -76,7 +76,7 @@
       <h3>Perfis</h3>
       <span>{{ profiles().length }}</span>
     </div>
-    <div class="compact-list">
+    <div class="compact-list" [attr.aria-busy]="loading()">
       <div class="list-row" *ngFor="let profile of profiles()">
         <div>
           <strong>{{ profile.name }}</strong>
@@ -90,7 +90,8 @@
           </button>
         </div>
       </div>
-      <p class="empty-state" *ngIf="!profiles().length">Nenhum perfil cadastrado</p>
+      <p class="loading-state" *ngIf="loading()"></p>
+      <p class="empty-state" *ngIf="!loading() && !profiles().length">Nenhum perfil cadastrado</p>
     </div>
   </section>
 </section>

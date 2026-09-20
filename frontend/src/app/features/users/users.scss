@@ -16,11 +16,13 @@ col.col-status {
   width: 140px;
 }
 
-col.col-actions {
-  width: 210px;
-}
-
 .inline-email-fields {
   display: grid;
   gap: 6px;
+}
+
+@media (max-width: 680px) {
+  table {
+    min-width: 0;
+  }
 }

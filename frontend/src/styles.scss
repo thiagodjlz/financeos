@@ -19,9 +19,29 @@
     U+2C60-2C7F, U+A720-A7FF;
 }
 
+/*
+ * Conjunto unico de breakpoints do FinanceOS. Toda `@media` de largura do frontend usa
+ * exatamente uma destas tres larguras — nao existe corte para aparelho especifico:
+ *
+ *   1080px (--bp-desktop) — desktop estreito/tablet: grids de duas colunas colapsam
+ *    680px (--bp-mobile)  — modo mobile: gaveta de navegacao e tabela em cartoes
+ *    480px (--bp-compact) — toque e tipografia de campo: alvos de 44px e campo de 16px
+ *
+ * `@media (hover: hover)` nao declara largura e por isso nao pertence a este conjunto:
+ * ela apenas restringe os estados de `:hover` a ponteiros reais (evita o hover preso no iOS).
+ *
+ * Os tokens `--bp-*` abaixo sao documentacao e inspecao no DevTools. Custom property NAO e
+ * avaliada dentro de media query: `@media (max-width: var(--bp-mobile))` compila e nunca casa.
+ * Por isso as `@media` deste projeto escrevem o literal correspondente.
+ */
+
 :root {
   --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
     sans-serif;
+
+  --bp-desktop: 1080px;
+  --bp-mobile: 680px;
+  --bp-compact: 480px;
 
   --bg-app: oklch(97.3% 0.006 80);
   --surface: #ffffff;
@@ -30,9 +50,10 @@
 
   --sidebar-bg: oklch(21% 0.02 260);
   --sidebar-item-active: oklch(32% 0.05 262);
+  --sidebar-item-hover: oklch(28% 0.03 262);
   --sidebar-text: oklch(80% 0.02 260);
   --sidebar-text-strong: oklch(85% 0.02 260);
-  --sidebar-text-dim: oklch(58% 0.02 260);
+  --sidebar-text-dim: oklch(62% 0.02 260);
   --sidebar-brand-sub: oklch(70% 0.02 260);
   --sidebar-border: oklch(38% 0.02 260);
   --sidebar-divider: oklch(30% 0.02 260);
@@ -45,7 +66,7 @@
   --text-muted: oklch(48% 0.014 80);
   --text-label: oklch(40% 0.014 80);
   --text-soft: oklch(52% 0.014 80);
-  --text-faint: oklch(55% 0.014 80);
+  --text-faint: oklch(53% 0.014 80);
 
   --border-card: oklch(91% 0.008 80);
   --border-input: oklch(88% 0.008 80);
@@ -88,6 +109,14 @@
   --shadow-knob: 0 1px 3px rgb(0 0 0 / 20%);
   --shadow-modal: var(--shadow-login);
   --backdrop: oklch(21% 0.02 260 / 45%);
+  --scrim: oklch(21% 0.02 260 / 58%);
+  --shadow-drawer: var(--shadow-sidebar);
+  --shadow-topbar: 0 1px 3px oklch(30% 0.02 80 / 8%);
+  --scroll-shadow-size: 26px;
+  --scroll-shadow-edge: oklch(30% 0.02 80 / 75%);
+  --scroll-shadow-fade: oklch(30% 0.02 80 / 0%);
+  --surface-fade: oklch(100% 0 0 / 0%);
+  --card-row-bg: var(--bg-app);
 
   --radius-sm: 8px;
   --radius-icon: 9px;
@@ -106,6 +135,17 @@
   --fs-pill: 12px;
   --fs-sm-btn: 12.5px;
   --fs-toast-msg: 13px;
+  --fs-input-mobile: 16px;
+  --fs-card-label: 11.5px;
+
+  --lh-body: 1.5;
+  --lh-title: 1.2;
+
+  --touch-target: 44px;
+  --touch-gap: 10px;
+  --col-actions: 200px;
+  --mobile-topbar-h: 56px;
+  --drawer-width: min(280px, calc(100vw - 48px));
 
   --chart-grid: var(--border-th);
   --chart-zero: var(--border-input);
@@ -132,6 +172,12 @@ body {
   color: var(--text);
   font-family: var(--font-sans);
   font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  overflow-wrap: anywhere;
+}
+
+body.drawer-open {
+  overflow: hidden;
 }
 
 button,
@@ -146,8 +192,10 @@ select {
 
 .page-title {
   margin: 0 0 22px;
+  min-width: 0;
   font-size: var(--fs-page-title);
   font-weight: 800;
+  line-height: var(--lh-title);
 }
 
 .panel {
@@ -164,11 +212,15 @@ select {
   align-items: center;
   gap: 12px;
   margin-bottom: 16px;
+  min-width: 0;
+  flex-wrap: wrap;
 
   h3 {
     margin: 0;
+    min-width: 0;
     font-size: var(--fs-panel-title);
     font-weight: 700;
+    line-height: var(--lh-title);
   }
 
   span {
@@ -182,11 +234,13 @@ select {
   display: grid;
   gap: 14px;
   align-content: start;
+  min-width: 0;
 }
 
 label {
   display: grid;
   gap: 6px;
+  min-width: 0;
   color: var(--text-label);
   font-size: 13px;
   font-weight: 600;
@@ -195,6 +249,7 @@ label {
 input,
 select {
   width: 100%;
+  max-width: 100%;
   border: 1px solid var(--border-input);
   border-radius: var(--radius-md);
   padding: 10px 12px;
@@ -203,8 +258,19 @@ select {
   font-size: var(--fs-body);
 }
 
+select {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
+}
+
 input:focus-visible,
-select:focus-visible {
+select:focus-visible,
+button:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
@@ -251,13 +317,10 @@ select.invalid:focus {
   color: var(--surface);
 }
 
-.primary-button:hover:not(:disabled) {
-  background: var(--accent-hover);
-}
-
-.primary-button:disabled {
-  opacity: 0.55;
-  cursor: wait;
+@media (hover: hover) {
+  .primary-button:hover:not(:disabled) {
+    background: var(--accent-hover);
+  }
 }
 
 .ghost-button {
@@ -271,14 +334,22 @@ select.invalid:focus {
   color: var(--expense-on-soft);
 }
 
+.primary-button:disabled,
+.ghost-button:disabled,
 .danger-button:disabled {
   opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.primary-button:disabled {
   cursor: wait;
 }
 
 .status-pill {
   display: inline-flex;
+  max-width: 100%;
   border-radius: var(--radius-pill);
+  white-space: nowrap;
   padding: 4px 10px;
   background: var(--neutral-soft);
   color: var(--neutral-on-soft);
@@ -309,6 +380,7 @@ select.invalid:focus {
 .compact-list {
   display: grid;
   gap: 12px;
+  min-width: 0;
 }
 
 .list-row {
@@ -316,11 +388,17 @@ select.invalid:focus {
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 12px;
   align-items: center;
+  min-width: 0;
   border-bottom: 1px solid var(--border-th);
   padding-bottom: 12px;
 
+  > div {
+    min-width: 0;
+  }
+
   strong {
     display: block;
+    min-width: 0;
     font-size: var(--fs-body);
     font-weight: 700;
   }
@@ -335,9 +413,35 @@ select.invalid:focus {
 
 .empty-state {
   margin: 14px 0 0;
+  min-width: 0;
   color: var(--text-muted);
   font-size: var(--fs-table);
 }
+
+@keyframes loadingSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-state {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 0 0;
+  min-height: 20px;
+}
+
+.loading-state::before {
+  content: '';
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--border-input);
+  border-top-color: var(--accent);
+  border-radius: var(--radius-pill);
+  animation: loadingSpin 0.7s linear infinite;
+}
+
 
 .sr-only {
   position: absolute;
@@ -369,7 +473,20 @@ select.invalid:focus {
 }
 
 .table-wrap {
+  position: relative;
   overflow-x: auto;
+  background-repeat: no-repeat;
+  background-position: left center, right center, left center, right center;
+  background-size: var(--scroll-shadow-size) 100%;
+  background-attachment: local, local, scroll, scroll;
+  background-image: linear-gradient(to right, var(--surface), var(--surface-fade)),
+    linear-gradient(to left, var(--surface), var(--surface-fade)),
+    linear-gradient(to right, var(--scroll-shadow-edge), var(--scroll-shadow-fade)),
+    linear-gradient(to left, var(--scroll-shadow-edge), var(--scroll-shadow-fade));
+}
+
+col.col-actions {
+  width: var(--col-actions);
 }
 
 table {
@@ -484,5 +601,144 @@ table.fixed-layout {
 
   .panel {
     padding: 18px;
+  }
+
+  .content-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  .list-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .table-wrap {
+    overflow-x: visible;
+    background-image: none;
+  }
+
+  table {
+    display: block;
+    min-width: 0;
+  }
+
+  thead {
+    display: none;
+  }
+
+  tbody {
+    display: block;
+  }
+
+  tbody tr {
+    display: block;
+    border: 1px solid var(--border-card);
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+    background: var(--card-row-bg);
+  }
+
+  tbody tr + tr {
+    margin-top: 10px;
+  }
+
+  td {
+    display: block;
+    border-bottom: 0;
+    padding: 6px 0;
+    text-align: left;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  td::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 4px;
+    color: var(--text-muted);
+    font-size: var(--fs-card-label);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+
+  td:not([data-label])::before {
+    content: none;
+  }
+
+  td.row-actions {
+    margin-top: 6px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-td);
+  }
+
+  html {
+    scroll-padding-block: calc(var(--mobile-topbar-h) + 12px) 96px;
+  }
+
+  .form-panel,
+  .table-panel {
+    height: auto;
+    max-height: none;
+    position: static;
+  }
+
+  .form-panel input,
+  .form-panel select,
+  .form-panel textarea,
+  tbody td input,
+  tbody td select {
+    scroll-margin-block: calc(var(--mobile-topbar-h) + 12px) 96px;
+  }
+
+  .modal-card {
+    width: min(340px, calc(100vw - 24px));
+  }
+}
+
+@media (max-width: 480px) {
+  input,
+  select,
+  textarea {
+    font-size: var(--fs-input-mobile);
+  }
+
+  table.fixed-layout td input,
+  table.fixed-layout td select,
+  td input,
+  td select {
+    font-size: var(--fs-input-mobile);
+  }
+
+  input:not([type='checkbox']):not([type='radio']),
+  select,
+  textarea {
+    min-height: var(--touch-target);
+  }
+
+  .row-actions {
+    gap: var(--touch-gap);
+  }
+
+  .row-actions .ghost-button,
+  .row-actions .primary-button,
+  .row-actions .danger-button {
+    min-height: var(--touch-target);
+    padding: 0 16px;
+  }
+
+  .modal-actions,
+  .form-actions,
+  .two-cols {
+    gap: var(--touch-gap);
+  }
+
+  .modal-actions .ghost-button,
+  .modal-actions .primary-button,
+  .modal-actions .danger-button,
+  .form-actions .ghost-button,
+  .form-actions .primary-button,
+  .form-actions .danger-button {
+    min-height: var(--touch-target);
   }
 }

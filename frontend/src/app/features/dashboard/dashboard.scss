@@ -41,6 +41,7 @@
 }
 
 .metric-card {
+  min-width: 0;
   border: 1px solid var(--border-card);
   border-radius: var(--radius-lg);
   padding: 20px;
@@ -49,6 +50,7 @@
 
   strong {
     display: block;
+    min-width: 0;
     font-size: 25px;
     font-weight: 800;
     line-height: 1;
@@ -60,9 +62,11 @@
   align-items: center;
   gap: 10px;
   margin-bottom: 16px;
+  min-width: 0;
 }
 
 .metric-label {
+  min-width: 0;
   color: var(--text-muted);
   font-size: 13px;
   font-weight: 700;
@@ -348,12 +352,29 @@
 @media (max-width: 680px) {
   .metric-grid {
     grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .metric-card {
+    padding: 16px;
+  }
+
+  .metric-head {
+    margin-bottom: 12px;
   }
 
   .topbar,
   .period-controls {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .topbar h2 {
+    font-size: 24px;
+  }
+
+  .period-controls input {
+    width: 100%;
   }
 
   .chart-panel,
@@ -364,5 +385,15 @@
   .chart-month,
   .chart-axis-label {
     font-size: 9px;
+  }
+
+  .chart-tooltip {
+    position: static;
+    width: auto;
+    margin-top: 8px;
+  }
+
+  .category-row-head {
+    flex-wrap: wrap;
   }
 }
