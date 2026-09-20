@@ -279,6 +279,7 @@ O que ela muda:
 | | Local | Producao |
 |---|---|---|
 | Portas no host | Postgres 5432, backend 8080, frontend 80 | so o Caddy, em 80/443 — nenhuma no modo `funnel` |
+| Projeto Compose | `financeos` | `financeos-prod`, com containers e volumes proprios |
 | HTTPS | nao ha | sim, automatico (Caddy + Let's Encrypt, ou Tailscale) |
 | Swagger UI (`/docs`) | disponivel | removido da imagem (`--build-arg SWAGGER_UI=false`) |
 | OpenAPI (`/openapi`) | disponivel | desligado (`QUARKUS_SMALLRYE_OPENAPI_ENABLE=false`) e bloqueado no Caddy |
@@ -398,7 +399,8 @@ O que vale saber deste modo:
 
 - **A URL e publica de verdade** — qualquer um que a tenha chega na tela de login. Ela nao e adivinhavel nem indexavel, mas isso nao e protecao: quem protege e a autenticacao do sistema, e por isso as travas de producao (admin do `.env`, contas semeadas desativadas, Swagger fora) continuam valendo integralmente.
 - O trafego do Funnel tem **limite de banda nao configuravel**, e ele so escuta em 443, 8443 ou 10000 — a stack usa 443, entao nao ha o que ajustar.
-- Rodando na **sua maquina de desenvolvimento**: a stack local e a de producao usam os mesmos `container_name`, entao **as duas nao sobem juntas**. Use um clone separado do repositorio (ex.: `C:\FinanceOS-prod`) e derrube a local antes (`docker compose down`). No Windows, o `deploy.sh` roda pelo Git Bash ou pelo WSL.
+- Rodando na **sua maquina de desenvolvimento**: as duas stacks **convivem no ar ao mesmo tempo**. A sobreposicao de producao tem projeto (`financeos-prod`), containers e volumes proprios, e no modo `funnel` nao publica porta nenhuma — entao nada colide com a stack local. Use um clone separado do repositorio (ex.: `C:\FinanceOS-prod`): e ele que fixa a versao publicada enquanto voce desenvolve na `main`. No Windows, o `deploy.sh` roda pelo Git Bash ou pelo WSL.
+- Conviver custa memoria: sao dois Postgres e dois backends Quarkus na mesma maquina. No modo `acme` elas **nao** convivem, porque o Caddy toma a porta 80 que a stack local tambem usa.
 
 ### Administrador e contas semeadas
 
