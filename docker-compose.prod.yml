@@ -1,0 +1,60 @@
+# Sobreposicao de producao. Nunca use sozinho — sempre junto do docker-compose.yml:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# (ou simplesmente `scripts/deploy.sh <versao>`, que ja faz isso.)
+#
+# O que ela muda em relacao ao ambiente local:
+#   - Postgres e backend deixam de publicar porta no host: so o Caddy fica exposto.
+#   - A imagem do backend e construida sem Swagger UI, e o endpoint /openapi fica desligado.
+#   - O backend sobe em modo `production`: exige chave RSA propria montada em ./secrets,
+#     exige um administrador vindo do ambiente e desativa as contas semeadas.
+#   - Caddy na frente, com HTTPS automatico (Let's Encrypt).
+#
+# Requer Docker Compose 2.24 ou superior (uso do `!reset`).
+
+services:
+  postgres:
+    ports: !reset null
+
+  backend:
+    build:
+      args:
+        SWAGGER_UI: "false"
+    ports: !reset null
+    environment:
+      FINANCEOS_DEPLOYMENT: production
+      QUARKUS_SMALLRYE_OPENAPI_ENABLE: "false"
+      FINANCEOS_ADMIN_EMAIL: ${FINANCEOS_ADMIN_EMAIL:?defina FINANCEOS_ADMIN_EMAIL no .env (copie de .env.prod.example)}
+      FINANCEOS_ADMIN_PASSWORD: ${FINANCEOS_ADMIN_PASSWORD:?defina FINANCEOS_ADMIN_PASSWORD no .env (copie de .env.prod.example)}
+      JWT_PRIVATE_KEY_LOCATION: /deployments/secrets/privateKey.pem
+      JWT_PUBLIC_KEY_LOCATION: /deployments/secrets/publicKey.pem
+      JWT_ISSUER: https://${FINANCEOS_DOMAIN:?defina FINANCEOS_DOMAIN no .env (copie de .env.prod.example)}/issuer
+      CORS_ORIGINS: https://${FINANCEOS_DOMAIN}
+    volumes:
+      - ./secrets:/deployments/secrets:ro
+
+  frontend:
+    ports: !reset null
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: financeos-caddy
+    restart: unless-stopped
+    depends_on:
+      - frontend
+    environment:
+      FINANCEOS_DOMAIN: ${FINANCEOS_DOMAIN:?defina FINANCEOS_DOMAIN no .env (copie de .env.prod.example)}
+      ACME_EMAIL: ${ACME_EMAIL:?defina ACME_EMAIL no .env (copie de .env.prod.example)}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - financeos_caddy_data:/data
+      - financeos_caddy_config:/config
+
+volumes:
+  financeos_caddy_data:
+  financeos_caddy_config:

@@ -12,7 +12,7 @@ Fontes: `backend/src/main/java/br/com/financeos/{auth,profiles,shared,users}`, m
 
 ## Login e JWT (`auth/AuthResource.java`)
 
-- `POST /auth/login` (`@PermitAll`): valida `active=true` + bcrypt, emite JWT (issuer `https://financeos.local/issuer`, `subject=user.id`, `upn=email`, TTL 12h). **Sem roles/claims de permissao no token** — permissao e sempre resolvida no servidor, a cada request.
+- `POST /auth/login` (`@PermitAll`): valida `active=true` + bcrypt, emite JWT (`subject=user.id`, `upn=email`, TTL 12h). O issuer **nao e mais constante no codigo**: sai de `mp.jwt.verify.issuer` (default `https://financeos.local/issuer`, sobrescrito por `JWT_ISSUER`), lido por `@ConfigProperty` no proprio `AuthResource` — assinatura e verificacao precisam do mesmo valor, entao ha um unico lugar para muda-lo. **Sem roles/claims de permissao no token** — permissao e sempre resolvida no servidor, a cada request.
 - Credencial errada continua respondendo **401**, agora com corpo (`{"message":"Credenciais inválidas."}`) e com `LoginRequest` validado em portugues acentuado. Na tela isso e um **Alerta**, nao uma Falha (decisao do usuario na issue #39: senha errada nao e bug do sistema, e erro que ele corrige redigitando) — ver a taxonomia em `knowledge/architecture.md`.
 - `GET /auth/me` retorna `MeResponse(name, email, superAdmin, permissions[])` — fonte de verdade do frontend para esconder/mostrar UI.
 
@@ -33,6 +33,18 @@ Chamado como `accessControl.require(Screen.X, Action.Y)` na primeira linha de pr
 - Semeado via SQL (`owner@financeos.internal`), `super_admin=true`, sem `profile_id`.
 - `AppUserRepository.listVisible()`/`findVisibleById()` filtram `superAdmin=false` -> esse usuario nunca aparece em `GET /users` nem pode ser editado pela tela de Usuarios, mas funciona normalmente para login e ignora todo `AccessControl`.
 - Diferente do perfil "Administrador" (visivel, com todas as permissoes true, atribuido ao usuario dev semeado) — nao confundir os dois.
+
+## Travas de ambiente de producao (`bootstrap/ProductionBootstrap.java`)
+
+O ambiente local e o de producao rodam o **mesmo perfil Quarkus (`prod`)** — o que separa os dois e a config `financeos.deployment` (`FINANCEOS_DEPLOYMENT`, default `local`). Com o valor `production`, um observer de `StartupEvent` roda **depois das migrations** e, antes de qualquer request:
+
+- **Exige chave RSA propria.** `JWT_PRIVATE_KEY_LOCATION`/`JWT_PUBLIC_KEY_LOCATION` precisam apontar para arquivos legiveis fora do classpath. Sem isso o backend **nao sobe**: a chave do classpath e a que foi gerada na maquina de quem desenvolve e pode ter sido copiada para a imagem durante o build — nao pode assinar token de producao.
+- **Exige um administrador vindo do ambiente.** `FINANCEOS_ADMIN_EMAIL` + `FINANCEOS_ADMIN_PASSWORD` (minimo 12 caracteres) sao obrigatorios; o e-mail e normalizado (`trim` + minusculas). O usuario e criado se nao existir e tem a senha reaplicada a cada subida, sempre com `superAdmin = true` e `active = true` — e por isso que trocar a variavel e reiniciar e a forma de recuperar acesso perdido.
+- **Desativa as contas cujo hash foi publicado.** O repositorio e publico, entao os hashes bcrypt semeados pelas migrations V3/V6/V10 sao de conhecimento geral e ficam sujeitos a ataque offline. Toda conta que ainda carregue um deles (`dev@financeos.local`, `owner@financeos.internal`) recebe `active = false` e um hash aleatorio. A comparacao e **por hash, nao por e-mail**: quem ja trocou a senha pelo `psql` nao e afetado, e o administrador definido no ambiente nunca e alcancado (ele e gravado antes da varredura).
+
+A operacao inteira e idempotente — na segunda subida nao ha nada a desativar e nenhum usuario a criar. Em `local` o observer retorna na primeira linha, entao a stack Docker de desenvolvimento e a esteira continuam com as contas semeadas intactas.
+
+**Regra cruzada**: migration nova que semeie usuario com hash fixo precisa ter esse hash acrescentado a `SEEDED_PASSWORD_HASHES` — senao a conta sobrevive ativa num ambiente exposto.
 
 ## Perfis (`profiles/ProfileResource.java`)
 

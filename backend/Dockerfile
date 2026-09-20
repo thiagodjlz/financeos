@@ -5,8 +5,13 @@ WORKDIR /build
 COPY pom.xml ./
 RUN mvn -B dependency:go-offline
 
+# Producao constroi com SWAGGER_UI=false: a inclusao do Swagger UI e decidida em tempo de
+# build no Quarkus, entao nao da para desligar por variavel de ambiente depois. Ja o endpoint
+# /openapi e runtime (QUARKUS_SMALLRYE_OPENAPI_ENABLE, no docker-compose.prod.yml).
+ARG SWAGGER_UI=true
+
 COPY src/ src/
-RUN mvn -B package -DskipTests
+RUN mvn -B package -DskipTests -Dquarkus.swagger-ui.always-include=${SWAGGER_UI}
 
 FROM registry.access.redhat.com/ubi9/openjdk-21-runtime:1.24
 
