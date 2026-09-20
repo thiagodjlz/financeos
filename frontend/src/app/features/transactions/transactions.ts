@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, ElementRef, OnInit, ViewChild, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ConfirmDialog } from '../../core/confirm-dialog/confirm-dialog';
 import { FieldErrorState, focusFirstInvalidField } from '../../core/field-errors';
 import { money, transactionStatusLabel } from '../../core/formatters';
 import { Category, Transaction, TransactionStatus, TransactionType } from '../../core/models';
@@ -27,7 +28,7 @@ function newTransactionForm() {
 
 @Component({
   selector: 'app-transactions',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ConfirmDialog],
   templateUrl: './transactions.html',
   styleUrl: './transactions.scss',
 })

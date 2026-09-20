@@ -1,7 +1,32 @@
 <main class="app-shell">
+  <header class="mobile-topbar">
+    <button
+      class="menu-button"
+      type="button"
+      #menuButton
+      aria-label="Abrir menu"
+      [attr.aria-expanded]="drawerOpen()"
+      aria-controls="app-drawer"
+      (click)="toggleDrawer()"
+    >
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+        <path d="M4 7h16M4 12h16M4 17h16"></path>
+      </svg>
+    </button>
+    <div class="topbar-brand">
+      <div class="mark">F</div>
+      <p>{{ appName }}</p>
+    </div>
+  </header>
+
+  <div class="drawer-scrim" *ngIf="drawerOpen()" (click)="closeDrawer(true)"></div>
+
   <aside
+    id="app-drawer"
     class="sidebar"
+    #drawer
     [class.expanded]="expanded()"
+    [class.open]="drawerOpen()"
     (mouseenter)="expand()"
     (mouseleave)="onMouseLeave($event)"
     (focusin)="expand()"
@@ -140,7 +165,7 @@
     </button>
 
     <footer class="sidebar-footer">
-      <p class="current-user" *ngIf="authService.me() as me">{{ me.name }}</p>
+      <p class="current-user" *ngIf="authService.me() as me" [attr.title]="me.name">{{ me.name }}</p>
       <p class="app-footer">{{ appName }} &middot; v{{ appVersion }}</p>
     </footer>
   </aside>

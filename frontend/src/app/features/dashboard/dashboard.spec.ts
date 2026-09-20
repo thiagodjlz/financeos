@@ -4,7 +4,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { API_BASE, DashboardSummary, MonthlySummary } from '../../core/models';
 import { ToastService } from '../../core/services/toast.service';
 import { NETWORK_ERROR_MESSAGE, UNEXPECTED_ERROR_MESSAGE } from '../../core/http-error';
-import { Dashboard } from './dashboard';
+import { Dashboard, monthAxisLabel } from './dashboard';
 
 const PLOT_TOP = 16;
 const PLOT_BOTTOM = 196;
@@ -633,5 +633,26 @@ describe('Dashboard', () => {
         'Sem dados no período',
       ]);
     });
+  });
+});
+
+describe('monthAxisLabel', () => {
+  const NARROW_GROUP_WIDTH = (308 - 44) / 12;
+
+  it('usa o rótulo de três letras na largura padrão do gráfico', () => {
+    expect(monthAxisLabel(1, GROUP_WIDTH)).toBe('Jan');
+    expect(monthAxisLabel(2, GROUP_WIDTH)).toBe('Fev');
+    expect(monthAxisLabel(12, GROUP_WIDTH)).toBe('Dez');
+  });
+
+  it('usa o rótulo de uma letra quando a faixa mensal fica estreita', () => {
+    expect(monthAxisLabel(1, NARROW_GROUP_WIDTH)).toBe('J');
+    expect(monthAxisLabel(2, NARROW_GROUP_WIDTH)).toBe('F');
+    expect(monthAxisLabel(12, NARROW_GROUP_WIDTH)).toBe('D');
+  });
+
+  it('não depende de DOM nem de ResizeObserver para decidir o rótulo', () => {
+    expect(monthAxisLabel(3, 0)).toHaveLength(1);
+    expect(monthAxisLabel(3, 1000)).toHaveLength(3);
   });
 });

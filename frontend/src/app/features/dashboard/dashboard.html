@@ -205,7 +205,7 @@
     <div class="panel-heading">
       <h3>Detalhamento</h3>
     </div>
-    <div class="category-section">
+    <div class="category-section" [attr.aria-busy]="loading()">
       <div class="category-section-header income">
         <span>Receitas</span>
         <strong>{{ categoriesByType('INCOME').length }}</strong>
@@ -220,10 +220,11 @@
             <div class="category-bar income" [style.width.%]="(item.totalAmount / maxAmount('INCOME')) * 100"></div>
           </div>
         </div>
-        <p class="empty-state" *ngIf="!categoriesByType('INCOME').length">Sem dados no período</p>
+        <p class="loading-state" *ngIf="loading()"></p>
+        <p class="empty-state" *ngIf="!loading() && !categoriesByType('INCOME').length">Sem dados no período</p>
       </div>
     </div>
-    <div class="category-section">
+    <div class="category-section" [attr.aria-busy]="loading()">
       <div class="category-section-header expense">
         <span>Despesas</span>
         <strong>{{ categoriesByType('EXPENSE').length }}</strong>
@@ -238,7 +239,8 @@
             <div class="category-bar expense" [style.width.%]="(item.totalAmount / maxAmount('EXPENSE')) * 100"></div>
           </div>
         </div>
-        <p class="empty-state" *ngIf="!categoriesByType('EXPENSE').length">Sem dados no período</p>
+        <p class="loading-state" *ngIf="loading()"></p>
+        <p class="empty-state" *ngIf="!loading() && !categoriesByType('EXPENSE').length">Sem dados no período</p>
       </div>
     </div>
     <div class="panel-footer">
