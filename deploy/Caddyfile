@@ -1,0 +1,23 @@
+{
+	email {$ACME_EMAIL}
+}
+
+{$FINANCEOS_DOMAIN} {
+	encode zstd gzip
+
+	# Rede de seguranca: a imagem de producao ja e construida sem Swagger/OpenAPI
+	# (ARG SWAGGER_UI=false), mas uma imagem antiga ou reconstruida na mao nao estaria.
+	# Os dois ficam na raiz, fora do `quarkus.http.root-path=/api`.
+	@docs path /docs /docs/* /openapi /openapi/*
+	respond @docs 404
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	reverse_proxy frontend:80
+}

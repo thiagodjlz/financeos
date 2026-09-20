@@ -6,7 +6,7 @@
 - **Migrations**: Flyway, `backend/src/main/resources/db/migration/V<n>__descricao.sql`. Nunca editar uma migration ja commitada — sempre criar uma nova `V<n+1>`. `check` constraints criados inline sem nome explicito (ex.: o de `profile_permissions.screen` na V5) recebem nome autogerado pelo Postgres por convencao (`<tabela>_<coluna>_check`), mas isso deve ser **confirmado no banco** (`select conname from pg_constraint where conrelid = '<tabela>'::regclass and contype = 'c';`) antes de escrever `DROP CONSTRAINT <nome>` numa migration nova — um nome errado quebra a migration e a aplicacao inteira nao sobe (ver issue #20, `V9__remove_accounts_and_cards.sql`).
 - **Frontend**: Angular standalone (sem NgModules), em `frontend/src/app`. `core/` = services/guards/interceptors/models compartilhados; `features/<nome>/` = tela (componente + `.html` + `.scss`); `layout/` = shell da aplicacao.
 - **Banco**: PostgreSQL via `docker compose up -d postgres`.
-- **Auth**: JWT (SmallRye JWT), chaves RSA em `backend/src/main/resources/{privateKey,publicKey}.pem` (gitignored). As senhas dos usuarios seed foram rotacionadas para fora do repositorio (`V10__rotate_seeded_user_passwords.sql`, issue #29): nenhuma etapa automatizada consegue autenticar via `POST /api/auth/login` na stack local sem a senha atual, que so o usuario tem — verificacoes de API autenticada devem prever esse limite e cair para validacao manual quando nao houver credencial (constatado na esteira da issue #31).
+- **Auth**: JWT (SmallRye JWT), chaves RSA em `backend/src/main/resources/{privateKey,publicKey}.pem` (gitignored) — caminho sobrescrevivel por `JWT_PRIVATE_KEY_LOCATION`/`JWT_PUBLIC_KEY_LOCATION`, que e como producao usa um par proprio. As senhas dos usuarios seed foram rotacionadas para fora do repositorio (`V10__rotate_seeded_user_passwords.sql`, issue #29): nenhuma etapa automatizada consegue autenticar via `POST /api/auth/login` na stack local sem a senha atual, que so o usuario tem — verificacoes de API autenticada devem prever esse limite e cair para validacao manual quando nao houver credencial (constatado na esteira da issue #31).
 
 ## Comandos
 
@@ -31,7 +31,21 @@ powershell -File scripts/docker-up.ps1
 
 Com a stack completa no ar: tela em `http://localhost` (nginx, `FRONTEND_PORT`) e API em `http://localhost:8080` (`BACKEND_PORT`), com health em `GET /api/health`. Esse e o ambiente onde a esteira pede validacao manual antes de commitar (ver [specs/README.md](../specs/README.md)).
 
-Swagger/OpenAPI em dev: `http://localhost:8080/docs` e `http://localhost:8080/openapi`.
+Swagger/OpenAPI no ambiente local: `http://localhost:8080/docs/` e `http://localhost:8080/openapi` — **na raiz, fora do `quarkus.http.root-path=/api`** (nao existe `/api/docs`; errar isso faz uma verificacao de "esta bloqueado?" passar sem ter testado nada). Em producao os dois somem, por dois mecanismos diferentes, porque as chaves de configuracao tem naturezas diferentes:
+
+- `quarkus.swagger-ui.always-include` e **build-time**: a imagem de producao e construida com `--build-arg SWAGGER_UI=false` (`ARG` no `backend/Dockerfile`). Passar essa chave em runtime nao tem efeito.
+- `quarkus.smallrye-openapi.enable` e **runtime**: vai como `QUARKUS_SMALLRYE_OPENAPI_ENABLE=false` no `docker-compose.prod.yml`. Passa-la ao `mvn package` e aceito sem aviso e **nao faz nada** — a pegadinha custou uma verificacao invalida.
+- O Caddy ainda devolve 404 para `/docs*` e `/openapi*`, como rede de seguranca para uma imagem reconstruida na mao.
+
+## Ambiente de producao externo
+
+Local e producao usam o **mesmo perfil Quarkus (`prod`)** e o mesmo `docker-compose.yml`; a diferenca inteira vive em `docker-compose.prod.yml`, uma **sobreposicao** aplicada por cima (`-f docker-compose.yml -f docker-compose.prod.yml`) e nunca sozinha. Ela remove as portas publicadas pelo arquivo base com `!reset` (exige Docker Compose >= 2.24), poe um **Caddy** na frente com HTTPS automatico (`deploy/Caddyfile`, dominio e e-mail por variavel) e liga o modo `production` do backend.
+
+- **`financeos.deployment=production` e o interruptor de tudo** — ver as travas em [auth-and-permissions.md](auth-and-permissions.md). Ele existe justamente porque o perfil Quarkus nao distingue os dois ambientes: amarrar as travas a `%prod` quebraria a stack Docker local, que a esteira usa para validacao manual.
+- Em producao **so o Caddy publica porta** (80/443). Postgres, backend e frontend ficam acessiveis apenas pela rede interna do Compose.
+- `scripts/deploy.sh <versao>` e `scripts/backup-db.sh` sao os equivalentes shell dos scripts PowerShell de ambiente — os `.ps1` nao rodam na VM Linux. O `deploy.sh` faz dump -> troca de branch -> rebuild -> health-check -> **rollback do codigo** se nao subir; o banco nao volta (Flyway nao tem down), por isso o dump vem antes.
+- O health-check do deploy consulta o backend **de dentro da rede**, via `wget` do container do frontend (`nginx:alpine` e busybox, tem `wget`; a imagem do backend nao tem `curl`).
+- `.env.prod.example` e o modelo do `.env` do servidor; `secrets/` (chaves RSA do ambiente) e `backups/` sao gitignored.
 
 ## Versionamento e branches
 

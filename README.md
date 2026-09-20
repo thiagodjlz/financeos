@@ -185,6 +185,8 @@ openssl genrsa -out privateKey.pem 2048
 openssl rsa -in privateKey.pem -pubout -out publicKey.pem
 ```
 
+As variaveis `JWT_PRIVATE_KEY_LOCATION`/`JWT_PUBLIC_KEY_LOCATION` trocam esse caminho por um arquivo fora do classpath — e assim que o ambiente de producao usa um par proprio, montado em `secrets/`, em vez do par que foi parar na imagem durante o build (ver [Producao](#producao-ambiente-externo)).
+
 ## Frontend Angular
 
 Pre-requisito:
@@ -260,6 +262,100 @@ Para desenvolvimento com hot-reload continua valendo o fluxo de sempre — só o
 
 ```bash
 docker compose up -d postgres
+```
+
+## Producao (ambiente externo)
+
+O `docker-compose.yml` da raiz descreve o **ambiente local**: ele publica Postgres, backend e frontend direto no host, sem HTTPS, e usa as chaves e contas semeadas do repositorio. Nada disso pode ir para uma maquina exposta na internet.
+
+Para producao existe uma sobreposicao, `docker-compose.prod.yml`, que se aplica **junto** com o arquivo base:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+```
+
+O que ela muda:
+
+| | Local | Producao |
+|---|---|---|
+| Portas no host | Postgres 5432, backend 8080, frontend 80 | so o Caddy, em 80/443 |
+| HTTPS | nao ha | Caddy + Let's Encrypt, renovacao automatica |
+| Swagger UI (`/docs`) | disponivel | removido da imagem (`--build-arg SWAGGER_UI=false`) |
+| OpenAPI (`/openapi`) | disponivel | desligado (`QUARKUS_SMALLRYE_OPENAPI_ENABLE=false`) e bloqueado no Caddy |
+| Chaves RSA | as do classpath, geradas na maquina de quem desenvolve | par proprio montado de `secrets/` |
+| Contas semeadas | ativas | desativadas na subida |
+| Administrador | `dev@financeos.local` | criado a partir do `.env` |
+
+> **Requer Docker Compose 2.24 ou superior** — a sobreposicao usa `!reset` para remover as portas publicadas pelo arquivo base.
+
+### Preparar a maquina
+
+Qualquer VM Linux com Docker serve. A recomendacao para custo zero e uma instancia **Always Free da Oracle Cloud** (ARM Ampere, hoje 2 OCPU / 12 GB, 200 GB de disco, 10 TB de trafego, sem prazo de validade): as imagens da stack toda tem `arm64`, entao o `docker compose` roda sem ajuste. Alternativas gratuitas com Postgres gerenciado (Neon, Supabase) tambem funcionam, bastando apontar `JDBC_URL` para fora e remover o servico `postgres`.
+
+Nos grupos de seguranca/firewall, abra **somente 80 e 443** — o Caddy precisa da 80 para o desafio do Let's Encrypt. E aponte um registro `A` (e `AAAA`, se houver IPv6) do seu dominio para o IP da maquina **antes** de publicar: sem DNS resolvendo, a emissao do certificado falha.
+
+### Primeira publicacao
+
+```bash
+git clone https://github.com/thiagodjlz/financeos.git /opt/financeos
+cd /opt/financeos
+git checkout v1.0.2          # sempre uma branch de versao, nunca a main
+```
+
+Gere um par de chaves RSA **exclusivo deste ambiente** (o par do repositorio e gitignored e existe so na maquina de quem desenvolve — o backend se recusa a subir em producao usando o do classpath):
+
+```bash
+mkdir -p secrets
+openssl genrsa -out secrets/privateKey.pem 2048
+openssl rsa -in secrets/privateKey.pem -pubout -out secrets/publicKey.pem
+chmod 600 secrets/privateKey.pem
+```
+
+Preencha o ambiente:
+
+```bash
+cp .env.prod.example .env
+nano .env
+```
+
+Publique:
+
+```bash
+./scripts/deploy.sh 1.0.2
+```
+
+O script confere os pre-requisitos, faz dump do banco, troca para a branch `v1.0.2`, reconstroi as imagens, espera o health-check e — se o backend nao subir — **devolve o codigo** para o estado anterior. Migracao Flyway nao volta atras: o rollback e do codigo, nao do banco, e por isso o dump vem primeiro.
+
+Atualizar depois e o mesmo comando com a versao nova.
+
+### Administrador e contas semeadas
+
+`FINANCEOS_ADMIN_EMAIL` e `FINANCEOS_ADMIN_PASSWORD` (minimo de 12 caracteres) sao **obrigatorios** em producao — sem eles o backend nao sobe. A cada subida o sistema:
+
+1. cria (ou atualiza a senha de) esse usuario, marcado como `super_admin`, com acesso total e independente de perfil;
+2. **desativa** qualquer conta que ainda carregue um dos hashes bcrypt semeados pelas migrations (`dev@financeos.local`, `owner@financeos.internal`). Este repositorio e publico: um hash publicado e uma senha sujeita a ataque offline, e nao pode continuar valendo num ambiente exposto.
+
+Se voce ja tinha trocado a senha dessas contas pelo `psql`, elas nao sao tocadas — a desativacao so alcanca o hash que esta no repositorio.
+
+Perdeu a senha do administrador? Troque `FINANCEOS_ADMIN_PASSWORD` no `.env` e reinicie o backend; ela e reaplicada na subida.
+
+### Backup
+
+O dump roda junto com cada publicacao, mas o banco tambem deve ter copia periodica. Na VM:
+
+```bash
+crontab -e
+# dump diario as 3h, mantendo 14 dias
+0 3 * * * cd /opt/financeos && ./scripts/backup-db.sh >> /var/log/financeos-backup.log 2>&1
+```
+
+Os arquivos ficam em `backups/` (gitignored). Leve-os para fora da maquina — um backup que so existe no servidor nao protege contra perder o servidor.
+
+Restaurar:
+
+```bash
+gunzip -c backups/financeos-AAAAMMDD-HHMMSS.sql.gz \
+  | docker compose -f docker-compose.yml -f docker-compose.prod.yml exec -T postgres psql -U financeos -d financeos
 ```
 
 ## Versionamento e branches
