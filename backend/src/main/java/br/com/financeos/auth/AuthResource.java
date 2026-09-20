@@ -2,6 +2,8 @@ package br.com.financeos.auth;
 
 import java.time.Duration;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+
 import br.com.financeos.shared.AccessControl;
 import br.com.financeos.shared.CurrentUser;
 import br.com.financeos.users.AppUser;
@@ -25,17 +27,19 @@ import jakarta.ws.rs.core.Response;
 @Consumes(MediaType.APPLICATION_JSON)
 public class AuthResource {
 
-    private static final String ISSUER = "https://financeos.local/issuer";
     private static final Duration TOKEN_TTL = Duration.ofHours(12);
 
     private final AppUserRepository repository;
     private final CurrentUser currentUser;
     private final AccessControl accessControl;
+    private final String issuer;
 
-    public AuthResource(AppUserRepository repository, CurrentUser currentUser, AccessControl accessControl) {
+    public AuthResource(AppUserRepository repository, CurrentUser currentUser, AccessControl accessControl,
+            @ConfigProperty(name = "mp.jwt.verify.issuer") String issuer) {
         this.repository = repository;
         this.currentUser = currentUser;
         this.accessControl = accessControl;
+        this.issuer = issuer;
     }
 
     @POST
@@ -49,7 +53,7 @@ public class AuthResource {
                 .filter(candidate -> BcryptUtil.matches(request.password(), candidate.passwordHash))
                 .orElseThrow(() -> new WebApplicationException("Credenciais inválidas.", Response.Status.UNAUTHORIZED));
 
-        String token = Jwt.issuer(ISSUER)
+        String token = Jwt.issuer(issuer)
                 .subject(user.id.toString())
                 .upn(user.email)
                 .expiresIn(TOKEN_TTL)

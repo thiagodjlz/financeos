@@ -26,6 +26,10 @@ Cada versao tem a sua branch; `main` e a versao em desenvolvimento e nunca vai p
 - Cortar versao nova: `powershell -File scripts/new-version.ps1 -Versao X.Y.Z`. Publicar/atualizar um ambiente: `powershell -File scripts/update-environment.ps1 -Versao X.Y.Z`.
 - Depois de mergear uma correcao em `vX.Y.Z`, leve-a para a `main` (merge ou cherry-pick) — senao ela some na proxima versao.
 
+## Ambiente de producao externo
+
+`docker-compose.yml` descreve o ambiente **local** e nao pode ir para uma maquina exposta. Producao e o arquivo base **mais** a sobreposicao `docker-compose.prod.yml` (`-f docker-compose.yml -f docker-compose.prod.yml`), que fecha as portas, poe HTTPS (Caddy), tira Swagger/OpenAPI e liga `FINANCEOS_DEPLOYMENT=production` — modo em que o backend exige chave RSA propria e um administrador vindo do `.env`, e desativa as contas cujo hash esta publicado neste repositorio (que e publico). Publicar/atualizar: `./scripts/deploy.sh <versao>` na VM. Detalhes em [README.md](README.md#producao-ambiente-externo) e [knowledge/architecture.md](knowledge/architecture.md).
+
 ## Esteira automatizada de features (issue -> PR)
 
 Para transformar uma issue do GitHub em Pull Request, ver [specs/README.md](specs/README.md). Basta rodar a primeira etapa — cada etapa invoca a proxima automaticamente:
