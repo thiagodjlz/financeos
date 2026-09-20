@@ -45,7 +45,9 @@ services:
       - frontend
     environment:
       FINANCEOS_DOMAIN: ${FINANCEOS_DOMAIN:?defina FINANCEOS_DOMAIN no .env (copie de .env.prod.example)}
-      ACME_EMAIL: ${ACME_EMAIL:?defina ACME_EMAIL no .env (copie de .env.prod.example)}
+      # Sem `:?` de proposito: no modo funnel nao ha Let's Encrypt e este campo nao
+      # existe. Quem cobra ele no modo padrao e o scripts/deploy.sh, que sabe o modo.
+      ACME_EMAIL: ${ACME_EMAIL:-}
     ports:
       - "80:80"
       - "443:443"
