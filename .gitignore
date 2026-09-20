@@ -12,3 +12,4 @@ wsl-setup.log
 *.log
 backend/src/main/resources/*.pem
 backups/
+secrets/
