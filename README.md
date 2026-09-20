@@ -278,8 +278,8 @@ O que ela muda:
 
 | | Local | Producao |
 |---|---|---|
-| Portas no host | Postgres 5432, backend 8080, frontend 80 | so o Caddy, em 80/443 |
-| HTTPS | nao ha | Caddy + Let's Encrypt, renovacao automatica |
+| Portas no host | Postgres 5432, backend 8080, frontend 80 | so o Caddy, em 80/443 — nenhuma no modo `funnel` |
+| HTTPS | nao ha | sim, automatico (Caddy + Let's Encrypt, ou Tailscale) |
 | Swagger UI (`/docs`) | disponivel | removido da imagem (`--build-arg SWAGGER_UI=false`) |
 | OpenAPI (`/openapi`) | disponivel | desligado (`QUARKUS_SMALLRYE_OPENAPI_ENABLE=false`) e bloqueado no Caddy |
 | Chaves RSA | as do classpath, geradas na maquina de quem desenvolve | par proprio montado de `secrets/` |
@@ -288,11 +288,33 @@ O que ela muda:
 
 > **Requer Docker Compose 2.24 ou superior** — a sobreposicao usa `!reset` para remover as portas publicadas pelo arquivo base.
 
+### Modos de exposicao
+
+Como a stack chega na internet e escolhido pelo `FINANCEOS_EXPOSICAO` no `.env`:
+
+| | `acme` (padrao) | `funnel` |
+|---|---|---|
+| Endereco | dominio seu (`app.seudominio.com`) | nome `.ts.net` do no (`financeos.tailXXXX.ts.net`) |
+| Certificado | Caddy + Let's Encrypt | emitido e renovado pela Tailscale |
+| Portas abertas no host | 80 e 443 | nenhuma |
+| Funciona atras de CGNAT | nao | sim |
+| IP da maquina exposto | sim | nao |
+| Custo | o dominio | zero |
+| Limite de banda | o do link | o do Funnel, nao configuravel |
+
+O `funnel` acrescenta uma terceira sobreposicao, aplicada **depois** da de producao — o `scripts/deploy.sh` monta isso sozinho a partir do `.env`:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.funnel.yml up -d --build
+```
+
+Nele o Caddy sai da borda: passa a escutar so na rede interna (`deploy/Caddyfile.tunnel`, sem ACME), e quem fala com a internet e o container do Tailscale, que termina o TLS e repassa. O Caddy continua no caminho pelos headers de seguranca e pelo 404 de `/docs` e `/openapi`. O passo a passo esta em [Modo funnel](#modo-funnel-sem-dominio-e-sem-abrir-portas).
+
 ### Preparar a maquina
 
 Qualquer VM Linux com Docker serve. A recomendacao para custo zero e uma instancia **Always Free da Oracle Cloud** (ARM Ampere, hoje 2 OCPU / 12 GB, 200 GB de disco, 10 TB de trafego, sem prazo de validade): as imagens da stack toda tem `arm64`, entao o `docker compose` roda sem ajuste. Alternativas gratuitas com Postgres gerenciado (Neon, Supabase) tambem funcionam, bastando apontar `JDBC_URL` para fora e remover o servico `postgres`.
 
-Nos grupos de seguranca/firewall, abra **somente 80 e 443** — o Caddy precisa da 80 para o desafio do Let's Encrypt. E aponte um registro `A` (e `AAAA`, se houver IPv6) do seu dominio para o IP da maquina **antes** de publicar: sem DNS resolvendo, a emissao do certificado falha.
+No modo `acme`, nos grupos de seguranca/firewall, abra **somente 80 e 443** — o Caddy precisa da 80 para o desafio do Let's Encrypt. E aponte um registro `A` (e `AAAA`, se houver IPv6) do seu dominio para o IP da maquina **antes** de publicar: sem DNS resolvendo, a emissao do certificado falha. No modo `funnel` nao ha nada disso: nenhuma porta de entrada e nenhum registro de DNS.
 
 ### Primeira publicacao
 
@@ -327,6 +349,56 @@ Publique:
 O script confere os pre-requisitos, faz dump do banco, troca para a branch `v1.0.2`, reconstroi as imagens, espera o health-check e — se o backend nao subir — **devolve o codigo** para o estado anterior. Migracao Flyway nao volta atras: o rollback e do codigo, nao do banco, e por isso o dump vem primeiro.
 
 Atualizar depois e o mesmo comando com a versao nova.
+
+### Modo funnel: sem dominio e sem abrir portas
+
+Publica pela [Tailscale Funnel](https://tailscale.com/docs/features/tailscale-funnel), inclusa no plano Personal (gratuito). E o caminho para rodar o FinanceOS na propria maquina, atras de CGNAT, sem tocar no roteador e sem expor o IP de casa.
+
+Antes de publicar, no [admin console](https://login.tailscale.com/admin) da sua tailnet:
+
+1. **DNS** -> ligue **HTTPS Certificates**. Sem isso o Funnel nao tem certificado para servir. Anote tambem o nome do tailnet (algo como `tailXXXX.ts.net`).
+2. **Access controls** -> libere o atributo `funnel` para os nos:
+
+   ```json
+   "nodeAttrs": [
+     { "target": ["autogroup:member"], "attr": ["funnel"] }
+   ]
+   ```
+
+3. **Settings -> Keys** -> gere uma **auth key**.
+
+No `.env` do servidor:
+
+```bash
+FINANCEOS_EXPOSICAO=funnel
+TS_HOSTNAME=financeos
+FINANCEOS_DOMAIN=financeos.tailXXXX.ts.net   # TS_HOSTNAME + nome do tailnet
+TS_AUTHKEY=tskey-auth-...
+# ACME_EMAIL nao e usado neste modo
+```
+
+Dai em diante a publicacao e a mesma de sempre — o `deploy.sh` le o modo do `.env` e acrescenta a sobreposicao sozinho:
+
+```bash
+./scripts/deploy.sh 1.0.2
+```
+
+Na primeira subida o no demora cerca de um minuto para autenticar e emitir o certificado. Para acompanhar:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.funnel.yml logs -f tailscale
+```
+
+Com o sistema no ar, duas coisas a fazer uma unica vez:
+
+- **Desligue a expiracao da chave do no** (admin console -> **Machines** -> no -> **Disable key expiry**). Sem isso o site sai do ar sozinho quando a chave vencer.
+- **Tire a `TS_AUTHKEY` do `.env`**: ela so serve para a primeira autenticacao, e a sessao passa a viver no volume `financeos_tailscale_state`.
+
+O que vale saber deste modo:
+
+- **A URL e publica de verdade** — qualquer um que a tenha chega na tela de login. Ela nao e adivinhavel nem indexavel, mas isso nao e protecao: quem protege e a autenticacao do sistema, e por isso as travas de producao (admin do `.env`, contas semeadas desativadas, Swagger fora) continuam valendo integralmente.
+- O trafego do Funnel tem **limite de banda nao configuravel**, e ele so escuta em 443, 8443 ou 10000 — a stack usa 443, entao nao ha o que ajustar.
+- Rodando na **sua maquina de desenvolvimento**: a stack local e a de producao usam os mesmos `container_name`, entao **as duas nao sobem juntas**. Use um clone separado do repositorio (ex.: `C:\FinanceOS-prod`) e derrube a local antes (`docker compose down`). No Windows, o `deploy.sh` roda pelo Git Bash ou pelo WSL.
 
 ### Administrador e contas semeadas
 

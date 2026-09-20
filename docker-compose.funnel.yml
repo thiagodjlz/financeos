@@ -1,0 +1,52 @@
+# Sobreposicao do modo funnel: publica a stack na internet pelo Tailscale Funnel,
+# sem dominio proprio, sem abrir porta no roteador e sem expor o IP da maquina.
+#
+# Nunca use sozinha — ela vem por cima do arquivo base E da sobreposicao de producao,
+# nesta ordem:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.funnel.yml up -d --build
+#
+# (ou `FINANCEOS_EXPOSICAO=funnel` no .env e `scripts/deploy.sh <versao>`, que ja faz isso.)
+#
+# O que ela muda em relacao ao modo padrao (dominio proprio + Let's Encrypt):
+#   - O Caddy para de publicar 80/443 no host e passa a escutar so na rede interna:
+#     nenhuma porta da stack fica aberta na maquina.
+#   - Quem termina o TLS e o container do Tailscale, com certificado emitido e
+#     renovado por ele; o Caddy continua no caminho pelos headers e pelo 404 de
+#     /docs e /openapi (ver deploy/Caddyfile.tunnel).
+#   - FINANCEOS_DOMAIN passa a ser o nome .ts.net do no (ex.: financeos.tailXXXX.ts.net),
+#     que e o endereco publico de verdade — JWT_ISSUER e CORS_ORIGINS seguem certos.
+#
+# Requer Docker Compose 2.24 ou superior (uso do `!reset`).
+
+services:
+  caddy:
+    ports: !reset null
+    environment: !reset null
+    volumes:
+      - ./deploy/Caddyfile.tunnel:/etc/caddy/Caddyfile:ro
+
+  tailscale:
+    image: tailscale/tailscale:stable
+    container_name: financeos-tailscale
+    restart: unless-stopped
+    depends_on:
+      - caddy
+    environment:
+      TS_HOSTNAME: ${TS_HOSTNAME:-financeos}
+      # So e lido na primeira subida: depois disso a sessao vive no volume de estado.
+      TS_AUTHKEY: ${TS_AUTHKEY:-}
+      TS_STATE_DIR: /var/lib/tailscale
+      TS_USERSPACE: "true"
+      TS_SERVE_CONFIG: /config/funnel.json
+      # Sem isto o MagicDNS reescreve o resolv.conf do container e ele deixa de
+      # resolver `caddy` pelo DNS interno do Compose — o funnel sobe e devolve 502.
+      TS_ACCEPT_DNS: "false"
+    volumes:
+      - financeos_tailscale_state:/var/lib/tailscale
+      # Precisa ser o diretorio, nao o arquivo: montado como arquivo, o Tailscale
+      # nao enxerga alteracoes na configuracao do funnel.
+      - ./deploy/tailscale:/config:ro
+
+volumes:
+  financeos_tailscale_state:

@@ -8,6 +8,10 @@
 # Sequencia: conferencias -> backup do banco -> troca para a branch da versao ->
 # rebuild das imagens -> health-check -> rollback do codigo se nao subir.
 #
+# O modo de exposicao vem do .env (FINANCEOS_EXPOSICAO): `acme` (padrao, dominio
+# proprio + Let's Encrypt) ou `funnel` (Tailscale Funnel, sem dominio e sem abrir
+# porta). O modo decide quais sobreposicoes do Compose entram e o que e obrigatorio.
+#
 # O rollback devolve o CODIGO, nao o banco: migracao Flyway nao volta atras — por
 # isso o dump acontece antes de qualquer coisa.
 set -euo pipefail
@@ -52,10 +56,35 @@ set -a
 source .env
 set +a
 
-for obrigatoria in POSTGRES_PASSWORD FINANCEOS_DOMAIN ACME_EMAIL FINANCEOS_ADMIN_EMAIL FINANCEOS_ADMIN_PASSWORD; do
+exposicao="${FINANCEOS_EXPOSICAO:-acme}"
+obrigatorias=(POSTGRES_PASSWORD FINANCEOS_DOMAIN FINANCEOS_ADMIN_EMAIL FINANCEOS_ADMIN_PASSWORD)
+
+case "$exposicao" in
+    acme)
+        obrigatorias+=(ACME_EMAIL)
+        ;;
+    funnel)
+        compose+=(-f docker-compose.funnel.yml)
+        ;;
+    *)
+        falhar "FINANCEOS_EXPOSICAO invalida: '$exposicao'. Use 'acme' ou 'funnel'."
+        ;;
+esac
+
+for obrigatoria in "${obrigatorias[@]}"; do
     [[ -n "${!obrigatoria:-}" ]] || falhar "$obrigatoria esta vazia no .env."
 done
 [[ ${#FINANCEOS_ADMIN_PASSWORD} -ge 12 ]] || falhar "FINANCEOS_ADMIN_PASSWORD precisa ter pelo menos 12 caracteres."
+
+if [[ "$exposicao" == funnel ]]; then
+    [[ "$FINANCEOS_DOMAIN" == *.ts.net ]] || falhar         "no modo funnel, FINANCEOS_DOMAIN e o nome .ts.net do no (ex.: financeos.tailXXXX.ts.net).
+    O nome do tailnet aparece em https://login.tailscale.com/admin/dns"
+    if [[ -z "${TS_AUTHKEY:-}" ]] && ! docker volume ls -q --filter name=financeos_tailscale_state | grep -q .; then
+        falhar "primeira publicacao no modo funnel e o no ainda nao foi autenticado.
+    Gere uma auth key em https://login.tailscale.com/admin/settings/keys e preencha TS_AUTHKEY no .env.
+    Depois da primeira subida ela pode sair do .env: a sessao fica no volume de estado."
+    fi
+fi
 
 ref_anterior="$(git rev-parse --abbrev-ref HEAD)"
 [[ "$ref_anterior" == "HEAD" ]] && ref_anterior="$(git rev-parse HEAD)"
@@ -105,6 +134,10 @@ if esperar_saude; then
     "${compose[@]}" exec -T frontend wget -qO- http://backend:8080/api/health
     echo
     echo "==> Publicado. Acesse https://$FINANCEOS_DOMAIN"
+    if [[ "$exposicao" == funnel ]]; then
+        echo "    (o funnel pode levar ~1 min para responder na primeira subida;"
+        echo "     acompanhe com: ${compose[*]} logs -f tailscale)"
+    fi
     exit 0
 fi
 
