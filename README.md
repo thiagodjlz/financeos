@@ -284,7 +284,7 @@ O que ela muda:
 | Swagger UI (`/docs`) | disponivel | removido da imagem (`--build-arg SWAGGER_UI=false`) |
 | OpenAPI (`/openapi`) | disponivel | desligado (`QUARKUS_SMALLRYE_OPENAPI_ENABLE=false`) e bloqueado no Caddy |
 | Chaves RSA | as do classpath, geradas na maquina de quem desenvolve | par proprio montado de `secrets/` |
-| Contas semeadas | ativas | desativadas na subida |
+| Contas semeadas | ativas | removidas na subida (desativadas, se tiverem dados) |
 | Administrador | `dev@financeos.local` | criado a partir do `.env`, com o nome `Administrator` |
 
 > **Requer Docker Compose 2.24 ou superior** — a sobreposicao usa `!reset` para remover as portas publicadas pelo arquivo base.
@@ -407,9 +407,11 @@ O que vale saber deste modo:
 `FINANCEOS_ADMIN_EMAIL` e `FINANCEOS_ADMIN_PASSWORD` (minimo de 12 caracteres) sao **obrigatorios** em producao — sem eles o backend nao sobe. A cada subida o sistema:
 
 1. cria (ou atualiza a senha de) esse usuario, marcado como `super_admin`, com acesso total, independente de perfil e sempre com o nome **Administrator**;
-2. **desativa** qualquer conta que ainda carregue um dos hashes bcrypt semeados pelas migrations (`dev@financeos.local`, `owner@financeos.internal`). Este repositorio e publico: um hash publicado e uma senha sujeita a ataque offline, e nao pode continuar valendo num ambiente exposto.
+2. **remove** qualquer conta que ainda carregue um dos hashes bcrypt semeados pelas migrations (`dev@financeos.local`, `owner@financeos.internal`). Este repositorio e publico: um hash publicado e uma senha sujeita a ataque offline, e nao pode continuar valendo num ambiente exposto. Numa base nova de producao isso significa que so o administrador do `.env` sobrevive a primeira subida — o usuario de desenvolvimento semeado nao fica nem inativo.
 
-Se voce ja tinha trocado a senha dessas contas pelo `psql`, elas nao sao tocadas — a desativacao so alcanca o hash que esta no repositorio.
+A conta so e **desativada** em vez de removida quando tem algo pendurado nela (categoria, lancamento, meta, item de planejamento ou importacao): as FKs para `app_users` sao `on delete cascade`, entao remove-la levaria os dados junto. Nesse caso ela fica com `active = false` e um hash aleatorio, e os dados continuam la.
+
+Se voce ja tinha trocado a senha dessas contas pelo `psql`, elas nao sao tocadas — a varredura so alcanca o hash que esta no repositorio.
 
 O `FINANCEOS_ADMIN_EMAIL` e so identificador de login — nenhuma mensagem e enviada para ele. O valor sugerido no `.env.prod.example` e `owner@financeos.internal`: alem de nao revelar quem administra a instancia, ele reaproveita a conta de bootstrap semeada pela V6, cuja senha publicada e substituida pela do `.env` antes da varredura do passo 2.
 
