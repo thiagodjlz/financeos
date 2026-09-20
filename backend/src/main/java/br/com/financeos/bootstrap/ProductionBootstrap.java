@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
@@ -34,6 +35,24 @@ public class ProductionBootstrap {
             "$2a$10$l5OKDGieP4jtCxl4.uzGiuM2UedliE9LLi0StnlJKOU3.4sUcrwyW",
             "$2a$10$XkNvynD0Tr39JcSNBBMwjOXy6DZJZOdQ4LBFpAAC9yCqwHFWmWtBm",
             "$2a$10$fYofAmJbbdFeFRyOt/mnJ.2zWy0v3JAdlB44SUZYz5rkqu8WrhOqO");
+
+    // Identificador simples do catalogo do Postgres: o unico formato que a checagem de
+    // dados vinculados aceita concatenar na query nativa.
+    private static final Pattern SQL_IDENTIFIER = Pattern.compile("[a-z_][a-z0-9_]*");
+
+    private static final String FOREIGN_KEYS_TO_USERS = """
+            select distinct kcu.table_name, kcu.column_name
+            from information_schema.table_constraints tc
+            join information_schema.key_column_usage kcu
+              on kcu.constraint_name = tc.constraint_name
+             and kcu.constraint_schema = tc.constraint_schema
+            join information_schema.constraint_column_usage ccu
+              on ccu.constraint_name = tc.constraint_name
+             and ccu.constraint_schema = tc.constraint_schema
+            where tc.constraint_type = 'FOREIGN KEY'
+              and ccu.table_name = 'app_users'
+              and tc.table_schema = current_schema()
+            """;
 
     private static final Logger LOG = Logger.getLogger(ProductionBootstrap.class);
 
@@ -71,7 +90,7 @@ public class ProductionBootstrap {
         String password = requiredAdminPassword();
 
         upsertAdmin(email, password);
-        lockSeededAccounts(email);
+        purgeSeededAccounts(email);
     }
 
     public boolean isProduction() {
@@ -137,14 +156,56 @@ public class ProductionBootstrap {
         }
     }
 
-    private void lockSeededAccounts(String adminEmail) {
+    private void purgeSeededAccounts(String adminEmail) {
         List<AppUser> exposed = repository.list("passwordHash in ?1 and email <> ?2",
                 SEEDED_PASSWORD_HASHES, adminEmail);
 
         for (AppUser user : exposed) {
-            user.passwordHash = BcryptUtil.bcryptHash(UUID.randomUUID().toString());
-            user.active = false;
-            LOG.warnf("Conta semeada desativada em produção (senha publicada no repositório): %s", user.email);
+            if (hasRelatedRows(user.id)) {
+                user.passwordHash = BcryptUtil.bcryptHash(UUID.randomUUID().toString());
+                user.active = false;
+                LOG.warnf("Conta semeada desativada em produção (senha publicada no repositório,"
+                        + " mantida porque tem dados vinculados): %s", user.email);
+            } else {
+                repository.delete(user);
+                LOG.warnf("Conta semeada removida em produção (senha publicada no repositório,"
+                        + " sem dados vinculados): %s", user.email);
+            }
         }
+    }
+
+    // Toda FK para app_users e `on delete cascade` ou `set null`, entao remover a conta
+    // levaria junto o que estivesse pendurado nela. As tabelas saem do catalogo, e nao de uma
+    // lista fixa aqui, para que uma migration futura nao abra esse buraco silenciosamente.
+    private boolean hasRelatedRows(UUID userId) {
+        for (Object[] foreignKey : foreignKeysToUsers()) {
+            String table = String.valueOf(foreignKey[0]);
+            String column = String.valueOf(foreignKey[1]);
+
+            if (!SQL_IDENTIFIER.matcher(table).matches() || !SQL_IDENTIFIER.matcher(column).matches()) {
+                LOG.warnf("Referência a app_users em formato inesperado (%s.%s):"
+                        + " a conta semeada será apenas desativada.", table, column);
+                return true;
+            }
+
+            boolean found = !repository.getEntityManager()
+                    .createNativeQuery("select 1 from " + table + " where " + column + " = ?1")
+                    .setParameter(1, userId)
+                    .setMaxResults(1)
+                    .getResultList()
+                    .isEmpty();
+
+            if (found) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Object[]> foreignKeysToUsers() {
+        return repository.getEntityManager()
+                .createNativeQuery(FOREIGN_KEYS_TO_USERS)
+                .getResultList();
     }
 }
