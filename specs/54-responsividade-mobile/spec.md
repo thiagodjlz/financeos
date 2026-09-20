@@ -5,7 +5,7 @@ title: "Ajuste de Responsividade e Melhoria de UX/UI — Mobile"
 slug: responsividade-mobile
 domains: [auth, users, categories, transactions, dashboard]
 target: main
-stage: validated
+stage: pr-open
 branch: feature/issue-54-responsividade-mobile
 created: 2026-09-19
 ---
