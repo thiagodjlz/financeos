@@ -1,2 +1,2 @@
 export const APP_NAME = 'FinanceOS';
-export const APP_VERSION = '1.0.1-03';
+export const APP_VERSION = '1.0.1-04';

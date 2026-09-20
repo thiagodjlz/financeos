@@ -28,7 +28,7 @@ services:
 
   tailscale:
     image: tailscale/tailscale:stable
-    container_name: financeos-tailscale
+    container_name: financeos-prod-tailscale
     restart: unless-stopped
     depends_on:
       - caddy
