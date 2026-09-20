@@ -89,3 +89,41 @@ th.perm-col,
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+@media (max-width: 680px) {
+  .permissions-table {
+    min-width: 0;
+  }
+
+  .screen-cell {
+    margin-bottom: 4px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-td);
+    font-size: var(--fs-body);
+    font-weight: 700;
+  }
+
+  .checkbox-cell {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: var(--touch-target);
+    text-align: left;
+  }
+
+  .checkbox-cell::before {
+    margin-bottom: 0;
+  }
+
+  .perm-switch {
+    min-width: var(--touch-target);
+    min-height: var(--touch-target);
+    justify-content: flex-end;
+  }
+
+  .name-field,
+  .form-actions {
+    max-width: none;
+  }
+}

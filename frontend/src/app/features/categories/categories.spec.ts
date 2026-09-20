@@ -245,7 +245,7 @@ describe('Categories', () => {
     httpMock.expectNone(() => true);
   });
 
-  it('abre o modal ao sair com alteração pendente e mantém a edição no Não', async () => {
+  it('abre o modal ao sair com alteração pendente e mantém a edição em Continuar editando', async () => {
     await render();
     await startEditing();
     await fillText('tbody input[name="editName"]', 'Alterado');
@@ -261,7 +261,7 @@ describe('Categories', () => {
     httpMock.expectNone(() => true);
   });
 
-  it('descarta e recarrega da API ao confirmar a saída com Sim', async () => {
+  it('descarta e recarrega da API ao confirmar a saída em Sair sem salvar', async () => {
     await render();
     await startEditing();
     await fillText('tbody input[name="editName"]', 'Alterado');

@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, ElementRef, OnInit, ViewChild, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ConfirmDialog } from '../../core/confirm-dialog/confirm-dialog';
 import { collectFieldErrors } from '../../core/field-errors';
 import { AppUserSummary } from '../../core/models';
 import { AuthService } from '../../core/services/auth.service';
@@ -22,7 +23,7 @@ const SAVE_FALLBACK = 'Não foi possível salvar o usuário. Revise os campos e 
 
 @Component({
   selector: 'app-users',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ConfirmDialog],
   templateUrl: './users.html',
   styleUrl: './users.scss',
 })

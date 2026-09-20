@@ -108,6 +108,32 @@
   cursor: pointer;
 }
 
+@media (max-width: 680px) {
+  .toast-stack {
+    top: calc(var(--mobile-topbar-h) + env(safe-area-inset-top) + 10px);
+    right: calc(12px + env(safe-area-inset-right));
+    left: calc(12px + env(safe-area-inset-left));
+    width: auto;
+    max-width: none;
+  }
+
+  .toast-card {
+    padding: 14px 14px 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .toast-close {
+    display: grid;
+    place-items: center;
+    width: var(--touch-target);
+    height: var(--touch-target);
+    margin-top: -8px;
+    margin-right: -8px;
+    padding: 0;
+  }
+}
+
 .toast-progress {
   position: absolute;
   left: 0;

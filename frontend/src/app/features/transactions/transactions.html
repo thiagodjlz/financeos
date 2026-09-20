@@ -97,7 +97,7 @@
         {{ fieldErrors.message('categoryId') }}
       </small>
     </label>
-    <div class="two-cols">
+    <div class="two-cols form-actions">
       <button class="primary-button" type="submit" [disabled]="saving()">Salvar</button>
       <button class="ghost-button" type="button" (click)="clearTransactionForm()">Cancelar</button>
     </div>
@@ -108,7 +108,7 @@
       <h3>Últimos lançamentos</h3>
       <span>{{ transactions().length }}</span>
     </div>
-    <div class="table-wrap">
+    <div class="table-wrap" [attr.aria-busy]="loading()">
       <table class="fixed-layout">
         <colgroup>
           <col class="col-date" />
@@ -125,17 +125,18 @@
             <th>Categoria</th>
             <th>Status</th>
             <th class="amount-cell">Valor</th>
-            <th></th>
+            <th><span class="sr-only">Ações</span></th>
           </tr>
         </thead>
         <tbody>
           <ng-container *ngFor="let transaction of transactions()">
             <tr *ngIf="editingId() !== transaction.id">
-              <td>{{ transaction.transactionDate }}</td>
-              <td>{{ transaction.description }}</td>
-              <td>{{ categoryName(transaction.categoryId) }}</td>
-              <td><span [class]="statusPillClass(transaction.status)">{{ statusLabel(transaction.status) }}</span></td>
+              <td data-label="Data">{{ transaction.transactionDate }}</td>
+              <td data-label="Descrição">{{ transaction.description }}</td>
+              <td data-label="Categoria">{{ categoryName(transaction.categoryId) }}</td>
+              <td data-label="Status"><span [class]="statusPillClass(transaction.status)">{{ statusLabel(transaction.status) }}</span></td>
               <td
+                data-label="Valor"
                 class="amount-cell"
                 [class.income]="transaction.type === 'INCOME'"
                 [class.expense]="transaction.type === 'EXPENSE'"
@@ -163,7 +164,7 @@
               </td>
             </tr>
             <tr *ngIf="editingId() === transaction.id">
-              <td>
+              <td data-label="Data">
                 <input
                   type="date"
                   name="editDate"
@@ -175,7 +176,7 @@
                   {{ editFieldErrors.message('transactionDate') }}
                 </small>
               </td>
-              <td>
+              <td data-label="Descrição">
                 <input
                   name="editDescription"
                   [(ngModel)]="editForm.description"
@@ -187,7 +188,7 @@
                   {{ editFieldErrors.message('description') }}
                 </small>
               </td>
-              <td>
+              <td data-label="Categoria">
                 <select
                   name="editCategoryId"
                   [(ngModel)]="editForm.categoryId"
@@ -206,7 +207,7 @@
                   {{ editFieldErrors.message('categoryId') }}
                 </small>
               </td>
-              <td>
+              <td data-label="Status">
                 <div class="two-cols">
                   <select
                     name="editType"
@@ -236,7 +237,7 @@
                   {{ editFieldErrors.message('status') }}
                 </small>
               </td>
-              <td>
+              <td data-label="Valor">
                 <input
                   type="number"
                   name="editAmount"
@@ -260,17 +261,17 @@
           </ng-container>
         </tbody>
       </table>
-      <p class="empty-state" *ngIf="!transactions().length">Sem lançamentos cadastrados</p>
+      <p class="loading-state" *ngIf="loading()"></p>
+      <p class="empty-state" *ngIf="!loading() && !transactions().length">Sem lançamentos cadastrados</p>
     </div>
   </section>
 </section>
 
-<div class="modal-backdrop" *ngIf="confirmingExit()" (click)="confirmExitNo()">
-  <div class="modal-card" (click)="$event.stopPropagation()">
-    <p>Deseja sair sem salvar?</p>
-    <div class="modal-actions">
-      <button type="button" class="ghost-button" (click)="confirmExitNo()">Não</button>
-      <button type="button" class="primary-button" (click)="confirmExitYes()">Sim</button>
-    </div>
-  </div>
-</div>
+<app-confirm-dialog
+  *ngIf="confirmingExit()"
+  message="Deseja sair sem salvar?"
+  cancelLabel="Continuar editando"
+  confirmLabel="Sair sem salvar"
+  (cancel)="confirmExitNo()"
+  (confirm)="confirmExitYes()"
+/>

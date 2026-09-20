@@ -11,10 +11,6 @@ col.col-situation {
   width: 150px;
 }
 
-col.col-actions {
-  width: 200px;
-}
-
 .category-name {
   display: flex;
   align-items: center;
@@ -37,5 +33,22 @@ col.col-actions {
   input[type='color'] {
     height: 34px;
     padding: 2px;
+  }
+}
+
+@media (max-width: 680px) {
+  .inline-name-fields {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .inline-name-fields {
+    grid-template-columns: minmax(0, 1fr) var(--touch-target);
+
+    input[type='color'] {
+      height: var(--touch-target);
+      padding: 3px;
+    }
   }
 }

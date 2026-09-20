@@ -53,7 +53,7 @@
       </select>
       <small class="field-error" *ngIf="fieldErrors.invalid('active')">{{ fieldErrors.message('active') }}</small>
     </label>
-    <div class="two-cols">
+    <div class="two-cols form-actions">
       <button class="primary-button" type="submit" [disabled]="saving()">Salvar</button>
       <button class="ghost-button" type="button" (click)="cancel()">Cancelar</button>
     </div>
@@ -64,7 +64,7 @@
       <h3>Últimos registros</h3>
       <span>{{ categories().length }}</span>
     </div>
-    <div class="table-wrap">
+    <div class="table-wrap" [attr.aria-busy]="loading()">
       <table class="fixed-layout">
         <colgroup>
           <col />
@@ -77,20 +77,20 @@
             <th>Nome</th>
             <th>Tipo</th>
             <th>Situação</th>
-            <th></th>
+            <th><span class="sr-only">Ações</span></th>
           </tr>
         </thead>
         <tbody>
           <ng-container *ngFor="let category of categories()">
             <tr *ngIf="editingId() !== category.id">
-              <td>
+              <td data-label="Nome">
                 <div class="category-name">
                   <span class="category-dot" *ngIf="category.color" [style.background]="category.color"></span>
                   {{ category.name }}
                 </div>
               </td>
-              <td>{{ category.type === 'EXPENSE' ? 'Despesa' : 'Receita' }}</td>
-              <td>
+              <td data-label="Tipo">{{ category.type === 'EXPENSE' ? 'Despesa' : 'Receita' }}</td>
+              <td data-label="Situação">
                 <span class="status-pill" [class.pill-income]="category.active" [class.pill-neutral]="!category.active">
                   {{ category.active ? 'Ativo' : 'Inativo' }}
                 </span>
@@ -108,7 +108,7 @@
               </td>
             </tr>
             <tr *ngIf="editingId() === category.id">
-              <td>
+              <td data-label="Nome">
                 <div class="inline-name-fields">
                   <input
                     name="editName"
@@ -133,7 +133,7 @@
                   {{ editFieldErrors.message('color') }}
                 </small>
               </td>
-              <td>
+              <td data-label="Tipo">
                 <select
                   name="editType"
                   [(ngModel)]="editForm.type"
@@ -147,7 +147,7 @@
                   {{ editFieldErrors.message('type') }}
                 </small>
               </td>
-              <td>
+              <td data-label="Situação">
                 <select
                   name="editActive"
                   [(ngModel)]="editForm.active"
@@ -171,17 +171,17 @@
           </ng-container>
         </tbody>
       </table>
-      <p class="empty-state" *ngIf="!categories().length">Nenhuma categoria cadastrada</p>
+      <p class="loading-state" *ngIf="loading()"></p>
+      <p class="empty-state" *ngIf="!loading() && !categories().length">Nenhuma categoria cadastrada</p>
     </div>
   </section>
 </section>
 
-<div class="modal-backdrop" *ngIf="confirmingExit()" (click)="confirmExitNo()">
-  <div class="modal-card" (click)="$event.stopPropagation()">
-    <p>Deseja sair sem salvar?</p>
-    <div class="modal-actions">
-      <button type="button" class="ghost-button" (click)="confirmExitNo()">Não</button>
-      <button type="button" class="primary-button" (click)="confirmExitYes()">Sim</button>
-    </div>
-  </div>
-</div>
+<app-confirm-dialog
+  *ngIf="confirmingExit()"
+  message="Deseja sair sem salvar?"
+  cancelLabel="Continuar editando"
+  confirmLabel="Sair sem salvar"
+  (cancel)="confirmExitNo()"
+  (confirm)="confirmExitYes()"
+/>
