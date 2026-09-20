@@ -10,14 +10,22 @@
 #   - O backend sobe em modo `production`: exige chave RSA propria montada em ./secrets,
 #     exige um administrador vindo do ambiente e desativa as contas semeadas.
 #   - Caddy na frente, com HTTPS automatico (Let's Encrypt).
+#   - Projeto e containers com nome proprio, para conviver com a stack local na
+#     mesma maquina: volumes, rede e containers ficam separados dos de dev. No modo
+#     funnel a producao nao publica porta nenhuma, entao as duas rodam ao mesmo
+#     tempo; no modo acme ela toma a 80, que a stack local tambem usa.
 #
 # Requer Docker Compose 2.24 ou superior (uso do `!reset`).
 
+name: financeos-prod
+
 services:
   postgres:
+    container_name: financeos-prod-postgres
     ports: !reset null
 
   backend:
+    container_name: financeos-prod-backend
     build:
       args:
         SWAGGER_UI: "false"
@@ -35,17 +43,20 @@ services:
       - ./secrets:/deployments/secrets:ro
 
   frontend:
+    container_name: financeos-prod-frontend
     ports: !reset null
 
   caddy:
     image: caddy:2-alpine
-    container_name: financeos-caddy
+    container_name: financeos-prod-caddy
     restart: unless-stopped
     depends_on:
       - frontend
     environment:
       FINANCEOS_DOMAIN: ${FINANCEOS_DOMAIN:?defina FINANCEOS_DOMAIN no .env (copie de .env.prod.example)}
-      ACME_EMAIL: ${ACME_EMAIL:?defina ACME_EMAIL no .env (copie de .env.prod.example)}
+      # Sem `:?` de proposito: no modo funnel nao ha Let's Encrypt e este campo nao
+      # existe. Quem cobra ele no modo padrao e o scripts/deploy.sh, que sabe o modo.
+      ACME_EMAIL: ${ACME_EMAIL:-}
     ports:
       - "80:80"
       - "443:443"

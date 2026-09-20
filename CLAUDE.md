@@ -28,7 +28,7 @@ Cada versao tem a sua branch; `main` e a versao em desenvolvimento e nunca vai p
 
 ## Ambiente de producao externo
 
-`docker-compose.yml` descreve o ambiente **local** e nao pode ir para uma maquina exposta. Producao e o arquivo base **mais** a sobreposicao `docker-compose.prod.yml` (`-f docker-compose.yml -f docker-compose.prod.yml`), que fecha as portas, poe HTTPS (Caddy), tira Swagger/OpenAPI e liga `FINANCEOS_DEPLOYMENT=production` — modo em que o backend exige chave RSA propria e um administrador vindo do `.env`, e desativa as contas cujo hash esta publicado neste repositorio (que e publico). Publicar/atualizar: `./scripts/deploy.sh <versao>` na VM. Detalhes em [README.md](README.md#producao-ambiente-externo) e [knowledge/architecture.md](knowledge/architecture.md).
+`docker-compose.yml` descreve o ambiente **local** e nao pode ir para uma maquina exposta. Producao e o arquivo base **mais** a sobreposicao `docker-compose.prod.yml` (`-f docker-compose.yml -f docker-compose.prod.yml`), que fecha as portas, poe HTTPS (Caddy), tira Swagger/OpenAPI e liga `FINANCEOS_DEPLOYMENT=production` — modo em que o backend exige chave RSA propria e um administrador vindo do `.env`, e desativa as contas cujo hash esta publicado neste repositorio (que e publico). Publicar/atualizar: `./scripts/deploy.sh <versao>` na VM. Como a stack chega na internet e escolhido pelo `FINANCEOS_EXPOSICAO` no `.env`: `acme` (dominio proprio + Let's Encrypt) ou `funnel` (Tailscale Funnel, que acrescenta uma terceira sobreposicao, `docker-compose.funnel.yml`, dispensa dominio e nao abre porta nenhuma). Detalhes em [README.md](README.md#producao-ambiente-externo) e [knowledge/architecture.md](knowledge/architecture.md).
 
 ## Esteira automatizada de features (issue -> PR)
 
