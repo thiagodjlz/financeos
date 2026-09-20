@@ -285,7 +285,7 @@ O que ela muda:
 | OpenAPI (`/openapi`) | disponivel | desligado (`QUARKUS_SMALLRYE_OPENAPI_ENABLE=false`) e bloqueado no Caddy |
 | Chaves RSA | as do classpath, geradas na maquina de quem desenvolve | par proprio montado de `secrets/` |
 | Contas semeadas | ativas | desativadas na subida |
-| Administrador | `dev@financeos.local` | criado a partir do `.env` |
+| Administrador | `dev@financeos.local` | criado a partir do `.env`, com o nome `Administrator` |
 
 > **Requer Docker Compose 2.24 ou superior** — a sobreposicao usa `!reset` para remover as portas publicadas pelo arquivo base.
 
@@ -406,12 +406,14 @@ O que vale saber deste modo:
 
 `FINANCEOS_ADMIN_EMAIL` e `FINANCEOS_ADMIN_PASSWORD` (minimo de 12 caracteres) sao **obrigatorios** em producao — sem eles o backend nao sobe. A cada subida o sistema:
 
-1. cria (ou atualiza a senha de) esse usuario, marcado como `super_admin`, com acesso total e independente de perfil;
+1. cria (ou atualiza a senha de) esse usuario, marcado como `super_admin`, com acesso total, independente de perfil e sempre com o nome **Administrator**;
 2. **desativa** qualquer conta que ainda carregue um dos hashes bcrypt semeados pelas migrations (`dev@financeos.local`, `owner@financeos.internal`). Este repositorio e publico: um hash publicado e uma senha sujeita a ataque offline, e nao pode continuar valendo num ambiente exposto.
 
 Se voce ja tinha trocado a senha dessas contas pelo `psql`, elas nao sao tocadas — a desativacao so alcanca o hash que esta no repositorio.
 
-Perdeu a senha do administrador? Troque `FINANCEOS_ADMIN_PASSWORD` no `.env` e reinicie o backend; ela e reaplicada na subida.
+O `FINANCEOS_ADMIN_EMAIL` e so identificador de login — nenhuma mensagem e enviada para ele. O valor sugerido no `.env.prod.example` e `owner@financeos.internal`: alem de nao revelar quem administra a instancia, ele reaproveita a conta de bootstrap semeada pela V6, cuja senha publicada e substituida pela do `.env` antes da varredura do passo 2.
+
+Perdeu a senha do administrador? Troque `FINANCEOS_ADMIN_PASSWORD` no `.env` e reinicie o backend; ela e reaplicada na subida. O e-mail tambem pode ser trocado, mas a conta antiga continua existindo: o sistema cria/atualiza a do e-mail novo e nao mexe na anterior.
 
 ### Backup
 

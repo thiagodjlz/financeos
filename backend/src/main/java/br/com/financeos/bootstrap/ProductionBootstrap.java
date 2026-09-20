@@ -24,6 +24,7 @@ public class ProductionBootstrap {
     public static final String PRODUCTION = "production";
 
     private static final int MIN_ADMIN_PASSWORD_LENGTH = 12;
+    private static final String ADMIN_NAME = "Administrator";
     private static final String DEFAULT_PRIVATE_KEY_LOCATION = "privateKey.pem";
     private static final String DEFAULT_PUBLIC_KEY_LOCATION = "publicKey.pem";
 
@@ -124,7 +125,7 @@ public class ProductionBootstrap {
         Optional<AppUser> existing = repository.findByEmail(email);
         AppUser admin = existing.orElseGet(AppUser::new);
 
-        admin.name = existing.isPresent() ? admin.name : "Administrador";
+        admin.name = ADMIN_NAME;
         admin.email = email;
         admin.passwordHash = BcryptUtil.bcryptHash(password);
         admin.superAdmin = true;
