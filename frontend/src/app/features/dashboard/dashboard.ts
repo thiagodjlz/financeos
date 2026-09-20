@@ -14,8 +14,16 @@ import {
 import { FormsModule } from '@angular/forms';
 import { longMonthName, money, monthName, shortMoney } from '../../core/formatters';
 import { CategoryBreakdown, MonthlySummary, TransactionType } from '../../core/models';
+import { AuthService } from '../../core/services/auth.service';
 import { DashboardService } from '../../core/services/dashboard.service';
 import { ToastService } from '../../core/services/toast.service';
+import {
+  DayPeriod,
+  GREETING_TICK_MS,
+  buildGreeting,
+  dayPeriod,
+  greetingDisplayName,
+} from './greeting';
 
 const MONTHS_IN_YEAR = 12;
 const CHART_HEIGHT = 240;
@@ -107,10 +115,23 @@ interface MonthTooltip {
 export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
   private readonly dashboardService = inject(DashboardService);
   private readonly toast = inject(ToastService);
+  private readonly auth = inject(AuthService);
 
   @ViewChild('chartViewport') private chartViewport?: ElementRef<HTMLElement>;
 
   private resizeObserver?: ResizeObserver;
+  private greetingTimer?: ReturnType<typeof setInterval>;
+
+  private readonly greetingPeriod = signal<DayPeriod>(dayPeriod(new Date().getHours()));
+  private readonly greetingSeed = signal(Math.random());
+
+  protected readonly greeting = computed(() =>
+    buildGreeting(
+      this.greetingPeriod(),
+      greetingDisplayName(this.auth.me()?.name),
+      this.greetingSeed(),
+    ),
+  );
 
   protected readonly loading = signal(false);
   protected readonly summary = this.dashboardService.summary;
@@ -261,6 +282,7 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
   });
 
   ngOnInit(): void {
+    this.greetingTimer = setInterval(() => this.syncGreetingPeriod(), GREETING_TICK_MS);
     void this.load();
   }
 
@@ -282,6 +304,7 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.resizeObserver?.disconnect();
+    clearInterval(this.greetingTimer);
   }
 
   protected async load(): Promise<void> {
@@ -386,6 +409,17 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
 
   protected maxAmount(type: TransactionType): number {
     return this.categoriesByType(type).reduce((max, item) => Math.max(max, item.totalAmount), 0) || 1;
+  }
+
+  private syncGreetingPeriod(): void {
+    const current = dayPeriod(new Date().getHours());
+
+    if (current === this.greetingPeriod()) {
+      return;
+    }
+
+    this.greetingPeriod.set(current);
+    this.greetingSeed.set(Math.random());
   }
 
   private openTooltip(index: number, source: Exclude<ActiveSource, null>): void {

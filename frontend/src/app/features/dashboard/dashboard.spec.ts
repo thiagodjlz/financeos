@@ -4,7 +4,9 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { API_BASE, DashboardSummary, MonthlySummary } from '../../core/models';
 import { ToastService } from '../../core/services/toast.service';
 import { NETWORK_ERROR_MESSAGE, UNEXPECTED_ERROR_MESSAGE } from '../../core/http-error';
+import { AuthService } from '../../core/services/auth.service';
 import { Dashboard, monthAxisLabel } from './dashboard';
+import { DayPeriod, GREETING_CATALOG, GREETING_TICK_MS } from './greeting';
 
 const PLOT_TOP = 16;
 const PLOT_BOTTOM = 196;
@@ -632,6 +634,194 @@ describe('Dashboard', () => {
         'Sem dados no período',
         'Sem dados no período',
       ]);
+    });
+  });
+
+  describe('saudação do operador', () => {
+    const FULL_NAME = 'Thiago Dos Santos';
+    const FIRST_NAME = 'Thiago';
+
+    let greetingFixture: ComponentFixture<Dashboard>;
+
+    beforeEach(() => {
+      fixture.destroy();
+      httpMock.match(() => true).forEach((request) => request.flush(payload(evolution())));
+      vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'Date'] });
+    });
+
+    afterEach(() => {
+      greetingFixture?.destroy();
+      vi.useRealTimers();
+    });
+
+    function pick<T extends Element>(selector: string): T {
+      return (greetingFixture.nativeElement as HTMLElement).querySelector<T>(selector)!;
+    }
+
+    function lines(): { headline: string; subline: string } {
+      return {
+        headline: (pick('.greeting-headline')?.textContent ?? '').trim(),
+        subline: (pick('.greeting-subline')?.textContent ?? '').trim(),
+      };
+    }
+
+    function headlinesOf(period: DayPeriod, name: string | null): string[] {
+      return GREETING_CATALOG[period].map((message) =>
+        name ? message.withName.split('{nome}').join(name) : message.withoutName,
+      );
+    }
+
+    async function settleGreeting(): Promise<void> {
+      await greetingFixture.whenStable();
+      greetingFixture.detectChanges();
+      await greetingFixture.whenStable();
+      greetingFixture.detectChanges();
+    }
+
+    function flushSummary(): void {
+      httpMock
+        .expectOne((request) => request.url.startsWith(`${API_BASE}/dashboard/summary`))
+        .flush(payload(evolution({ 1: [1000, 400, 600] })));
+    }
+
+    async function renderAt(hour: number, minute: number, name: string | null = FULL_NAME) {
+      vi.setSystemTime(new Date(2026, 8, 15, hour, minute, 0));
+      TestBed.inject(AuthService).me.set(
+        name === null
+          ? null
+          : { name, email: 'operador@financeos.dev', superAdmin: false, permissions: [] },
+      );
+
+      greetingFixture = TestBed.createComponent(Dashboard);
+      greetingFixture.detectChanges();
+      flushSummary();
+      await settleGreeting();
+    }
+
+    it('posiciona a saudação entre o rótulo do painel e o título de mês e ano', async () => {
+      await renderAt(10, 0);
+
+      const header = pick('.topbar > div');
+      const order = Array.from(header.children).map(
+        (child) => child.className || child.tagName.toLowerCase(),
+      );
+
+      expect(order).toEqual(['eyebrow', 'greeting', 'h2']);
+      expect(lines().headline).toContain(FIRST_NAME);
+      expect(lines().headline).not.toContain('Dos Santos');
+      expect(lines().subline.length).toBeGreaterThan(0);
+    });
+
+    it('renderiza a saudação sem nome quando o perfil não traz nome', async () => {
+      await renderAt(10, 0, null);
+
+      const { headline, subline } = lines();
+
+      expect(headlinesOf('morning', null)).toContain(headline);
+
+      for (const line of [headline, subline]) {
+        expect(line).not.toContain('undefined');
+        expect(line).not.toContain('null');
+        expect(line).not.toContain('{nome}');
+        expect(line).not.toMatch(/,\s*[!?.]/);
+      }
+    });
+
+    it('não dispara nenhuma requisição além do resumo para exibir a saudação', async () => {
+      await renderAt(10, 0);
+
+      expect(lines().headline).toContain(FIRST_NAME);
+      httpMock.expectNone(() => true);
+    });
+
+    it('mantém a mesma frase ao trocar o ano, o mês e ao abrir o informativo', async () => {
+      await renderAt(14, 0);
+      const original = lines();
+
+      const year = pick<HTMLInputElement>('input');
+      year.value = '2025';
+      year.dispatchEvent(new Event('input'));
+      year.dispatchEvent(new Event('change'));
+      greetingFixture.detectChanges();
+      flushSummary();
+      await settleGreeting();
+
+      expect(lines()).toEqual(original);
+
+      const month = pick<HTMLSelectElement>('select');
+      month.selectedIndex = 2;
+      month.dispatchEvent(new Event('change'));
+      greetingFixture.detectChanges();
+      flushSummary();
+      await settleGreeting();
+
+      expect(lines()).toEqual(original);
+
+      const hit = (greetingFixture.nativeElement as HTMLElement).querySelectorAll(
+        'rect.month-hit',
+      )[0];
+      hit.dispatchEvent(new MouseEvent('mouseenter', { bubbles: false }));
+      await settleGreeting();
+
+      expect(lines()).toEqual(original);
+
+      hit.dispatchEvent(new MouseEvent('mouseleave', { bubbles: false }));
+      await settleGreeting();
+
+      expect(lines()).toEqual(original);
+    });
+
+    it('não reescreve a saudação em tique dentro da mesma faixa', async () => {
+      await renderAt(17, 30);
+
+      const component = greetingFixture.componentInstance;
+      const before = component['greeting']();
+      const rendered = lines();
+
+      vi.advanceTimersByTime(GREETING_TICK_MS);
+      greetingFixture.detectChanges();
+
+      expect(component['greeting']()).toBe(before);
+      expect(lines()).toEqual(rendered);
+      httpMock.expectNone(() => true);
+    });
+
+    it('atualiza a saudação na virada da faixa, sem recarregar a página', async () => {
+      await renderAt(17, 59);
+
+      const afternoon = lines();
+      expect(headlinesOf('afternoon', FIRST_NAME)).toContain(afternoon.headline);
+
+      vi.advanceTimersByTime(GREETING_TICK_MS);
+      greetingFixture.detectChanges();
+
+      const night = lines();
+
+      expect(headlinesOf('night', FIRST_NAME)).toContain(night.headline);
+      expect(night.headline).not.toBe(afternoon.headline);
+      httpMock.expectNone(() => true);
+    });
+
+    it('encerra o relógio da saudação ao destruir a tela', async () => {
+      await renderAt(17, 59);
+
+      const component = greetingFixture.componentInstance;
+      const before = component['greeting']();
+      const timerId = component['greetingTimer'];
+      const clearSpy = vi.spyOn(globalThis, 'clearInterval');
+
+      expect(timerId).toBeDefined();
+
+      greetingFixture.destroy();
+
+      expect(clearSpy).toHaveBeenCalledWith(timerId);
+      clearSpy.mockRestore();
+
+      vi.setSystemTime(new Date(2026, 8, 16, 9, 0, 0));
+
+      expect(() => vi.advanceTimersByTime(GREETING_TICK_MS * 10)).not.toThrow();
+      expect(component['greeting']()).toBe(before);
+      httpMock.expectNone(() => true);
     });
   });
 });
