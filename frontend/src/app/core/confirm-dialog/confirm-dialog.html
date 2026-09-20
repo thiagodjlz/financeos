@@ -1,0 +1,16 @@
+<div class="modal-backdrop" (click)="onBackdrop()">
+  <div
+    class="modal-card"
+    #dialog
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-labelledby]="messageId"
+    (click)="$event.stopPropagation()"
+  >
+    <p [id]="messageId">{{ message() }}</p>
+    <div class="modal-actions">
+      <button type="button" class="ghost-button" (click)="onCancel()">{{ cancelLabel() }}</button>
+      <button type="button" class="primary-button" (click)="onConfirm()">{{ confirmLabel() }}</button>
+    </div>
+  </div>
+</div>

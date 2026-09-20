@@ -31,6 +31,20 @@ function sidebar(fixture: ComponentFixture<MainLayout>): HTMLElement {
   return (fixture.nativeElement as HTMLElement).querySelector('aside.sidebar') as HTMLElement;
 }
 
+function menuButton(fixture: ComponentFixture<MainLayout>): HTMLButtonElement {
+  return (fixture.nativeElement as HTMLElement).querySelector('.menu-button') as HTMLButtonElement;
+}
+
+function scrim(fixture: ComponentFixture<MainLayout>): HTMLElement | null {
+  return (fixture.nativeElement as HTMLElement).querySelector('.drawer-scrim');
+}
+
+function pressKey(key: string, shiftKey = false): KeyboardEvent {
+  const event = new KeyboardEvent('keydown', { key, shiftKey, bubbles: true, cancelable: true });
+  document.dispatchEvent(event);
+  return event;
+}
+
 describe('MainLayout', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -280,5 +294,144 @@ describe('MainLayout', () => {
     const workspace = compiled.querySelector('.workspace') as HTMLElement;
     expect(aside.contains(document.activeElement)).toBe(false);
     expect(workspace.contains(document.activeElement)).toBe(true);
+  });
+
+  describe('gaveta de navegação no mobile', () => {
+    afterEach(() => {
+      document.body.classList.remove('drawer-open');
+    });
+
+    it('abre a gaveta pelo botão Menu, reflete aria-expanded e renderiza o scrim', () => {
+      const authService = TestBed.inject(AuthService);
+      authService.superAdmin.set(true);
+      const fixture = createFixture();
+
+      const button = menuButton(fixture);
+      expect(button.getAttribute('aria-label')).toBe('Abrir menu');
+      expect(button.getAttribute('aria-controls')).toBe('app-drawer');
+      expect(button.getAttribute('aria-expanded')).toBe('false');
+      expect(scrim(fixture)).toBeNull();
+      expect(sidebar(fixture).classList.contains('open')).toBe(false);
+
+      button.click();
+      fixture.detectChanges();
+
+      expect(button.getAttribute('aria-expanded')).toBe('true');
+      expect(scrim(fixture)).not.toBeNull();
+      expect(sidebar(fixture).id).toBe('app-drawer');
+      expect(sidebar(fixture).classList.contains('open')).toBe(true);
+      expect(document.body.classList.contains('drawer-open')).toBe(true);
+    });
+
+    it('move o foco para o primeiro item so depois de a gaveta ser renderizada aberta e devolve ao botão Menu ao fechar pelo scrim', async () => {
+      const authService = TestBed.inject(AuthService);
+      authService.superAdmin.set(true);
+      const fixture = createFixture();
+
+      const aside = sidebar(fixture);
+      const first = navButtons(fixture)[0];
+      const nativeFocus = first.focus.bind(first);
+      let drawerRenderedOpenWhenFocused: boolean | null = null;
+      first.focus = () => {
+        drawerRenderedOpenWhenFocused = aside.classList.contains('open');
+        nativeFocus();
+      };
+
+      menuButton(fixture).click();
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(drawerRenderedOpenWhenFocused).toBe(true);
+      expect(document.activeElement).toBe(navButtons(fixture)[0]);
+
+      scrim(fixture)?.click();
+      fixture.detectChanges();
+
+      expect(scrim(fixture)).toBeNull();
+      expect(document.activeElement).toBe(menuButton(fixture));
+      expect(document.body.classList.contains('drawer-open')).toBe(false);
+    });
+
+    it('fecha a gaveta no Esc e devolve o foco ao botão Menu', () => {
+      const authService = TestBed.inject(AuthService);
+      authService.superAdmin.set(true);
+      const fixture = createFixture();
+
+      menuButton(fixture).click();
+      fixture.detectChanges();
+      expect(scrim(fixture)).not.toBeNull();
+
+      pressKey('Escape');
+      fixture.detectChanges();
+
+      expect(scrim(fixture)).toBeNull();
+      expect(menuButton(fixture).getAttribute('aria-expanded')).toBe('false');
+      expect(document.activeElement).toBe(menuButton(fixture));
+      expect(document.body.classList.contains('drawer-open')).toBe(false);
+    });
+
+    it('fecha a gaveta ao acionar um item de navegação e move o foco para o conteúdo', async () => {
+      const authService = TestBed.inject(AuthService);
+      authService.superAdmin.set(true);
+      const fixture = createFixture();
+      const compiled = fixture.nativeElement as HTMLElement;
+
+      menuButton(fixture).click();
+      fixture.detectChanges();
+      expect(scrim(fixture)).not.toBeNull();
+
+      findButton(fixture, 'Lançamentos')?.click();
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(scrim(fixture)).toBeNull();
+      expect(document.body.classList.contains('drawer-open')).toBe(false);
+      const workspace = compiled.querySelector('.workspace') as HTMLElement;
+      expect(workspace.contains(document.activeElement)).toBe(true);
+    });
+
+    it('não deixa o Tab alcançar o conteúdo atrás enquanto a gaveta está aberta', () => {
+      const authService = TestBed.inject(AuthService);
+      authService.superAdmin.set(true);
+      const fixture = createFixture();
+      const compiled = fixture.nativeElement as HTMLElement;
+
+      menuButton(fixture).click();
+      fixture.detectChanges();
+
+      const aside = sidebar(fixture);
+      const focusables = Array.from(aside.querySelectorAll<HTMLElement>('button'));
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+
+      last.focus();
+      pressKey('Tab');
+      expect(document.activeElement).toBe(first);
+
+      first.focus();
+      pressKey('Tab', true);
+      expect(document.activeElement).toBe(last);
+
+      const workspace = compiled.querySelector('.workspace') as HTMLElement;
+      workspace.focus();
+      pressKey('Tab');
+      expect(aside.contains(document.activeElement)).toBe(true);
+    });
+
+    it('não retém o foco nem trava a rolagem quando a gaveta está fechada', () => {
+      const authService = TestBed.inject(AuthService);
+      authService.superAdmin.set(true);
+      const fixture = createFixture();
+      const compiled = fixture.nativeElement as HTMLElement;
+      const workspace = compiled.querySelector('.workspace') as HTMLElement;
+
+      workspace.focus();
+      pressKey('Tab');
+
+      expect(document.activeElement).toBe(workspace);
+      expect(document.body.classList.contains('drawer-open')).toBe(false);
+    });
   });
 });

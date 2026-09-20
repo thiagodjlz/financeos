@@ -18,10 +18,6 @@ col.col-amount {
   width: 130px;
 }
 
-col.col-actions {
-  width: 200px;
-}
-
 .amount-cell {
   text-align: right;
   font-weight: 700;
@@ -38,4 +34,15 @@ col.col-actions {
 td .two-cols {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 6px;
+}
+
+@media (max-width: 680px) {
+  table {
+    min-width: 0;
+  }
+
+  .amount-cell {
+    text-align: left;
+    font-size: var(--fs-body);
+  }
 }

@@ -38,6 +38,7 @@ const MIN_AXIS_TICKS = 4;
 const EMPTY_DOMAIN_MAX = 100;
 const STEP_MANTISSAS = [1, 2, 2.5, 5];
 const TOOLTIP_WIDTH = 196;
+const COMPACT_MONTH_LABEL_WIDTH = 30;
 
 type ActiveSource = 'mouse' | 'touch' | 'keyboard' | null;
 
@@ -170,7 +171,7 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
       return {
         index,
         month: item.month,
-        label: this.shortMonthLabel(item.month),
+        label: monthAxisLabel(item.month, groupWidth),
         left,
         width: groupWidth,
         center,
@@ -397,10 +398,13 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
     this.activeSource.set(null);
   }
 
-  private shortMonthLabel(month: number): string {
-    const label = monthName(month).replace('.', '');
-    return label.charAt(0).toUpperCase() + label.slice(1);
-  }
+}
+
+export function monthAxisLabel(month: number, groupWidth: number): string {
+  const label = monthName(month).replace('.', '');
+  const short = label.charAt(0).toUpperCase() + label.slice(1);
+
+  return groupWidth < COMPACT_MONTH_LABEL_WIDTH ? short.charAt(0) : short;
 }
 
 function measureWidth(host: HTMLElement): number {
