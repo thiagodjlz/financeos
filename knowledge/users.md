@@ -12,6 +12,7 @@ Fonte: `backend/src/main/java/br/com/financeos/users/`. Ver tambem [auth-and-per
 - **Um usuario nao pode desativar a si mesmo via `DELETE /users/{id}`** (`currentUser.id().equals(id)` -> 409 "Você não pode desativar a própria conta."). A checagem existe **apenas no DELETE**: o `PUT /users/{id}` com `active: false` no proprio usuario e aceito hoje (constatado na issue #31 — comportamento preexistente; fechar essa brecha e decisao de produto, nao correcao obvia). Consequencia pratica: o unico 409 possivel no PUT e o de e-mail duplicado.
 - Todas as operacoes de listagem/busca passam por `listVisible()`/`findVisibleById()`, que excluem o `super_admin` oculto.
 - **Sem hard delete** — "excluir" so seta `active=false`.
+- O `name` cadastrado e **texto exibido ao proprio operador**: aparece integral no rodape do menu lateral e reduzido ao **primeiro token** na saudacao do Resumo (issue #65) — um cadastro como "FinanceOS Dev" e saudado como "FinanceOS", e "Usuario Limitado" como "Usuario". Nao existe campo separado de apelido/nome de exibicao, entao mudar a forma de cadastrar o nome muda as duas telas.
 
 ## Validacao e mensagens de erro
 
