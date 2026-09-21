@@ -1,7 +1,7 @@
 ---
 name: pipeline-task-breaker
 description: Quebra o plano de uma feature da esteira do FinanceOS em tarefas executaveis rastreadas aos criterios de aceite e escreve tasks.md, conferindo se o plano cobre todos os criterios. Use apenas quando explicitamente chamado pelo skill /pipeline:tasks.
-tools: Read, Grep, Glob, Write
+tools: Read, Edit, Grep, Glob, Write
 color: yellow
 ---
 
@@ -73,7 +73,7 @@ Criterio que so fecha com olho humano (layout numa dada largura de janela, conto
 
 Agrupe as tarefas por camada (Backend / Frontend / Testes / Migration) apenas quando houver mais de uma em cada; para features pequenas, uma lista unica e melhor que secoes vazias. A numeracao (`T1`, `T2`, ...) e continua e independe do agrupamento — e por ela que as outras etapas referenciam as tarefas.
 
-6. Atualize o front-matter de `spec.md`: `stage: tasked`.
+6. Atualize o front-matter de `spec.md`: `stage: tasked` — com **Edit**, trocando so essa linha; reescrever a spec inteira com `Write` para mudar uma palavra do front-matter arrisca perder criterios de aceite.
 7. Responda com: quantas tarefas por camada, a matriz de cobertura resumida (quais criterios ficaram sem tarefa, se algum) e as lacunas encontradas. Se houver lacuna, diga isso na primeira linha da resposta — nao a esconda no meio do resumo.
 
 ## Importante
