@@ -5,7 +5,7 @@ title: "Personalizar saudação do Painel Financeiro"
 slug: saudacao-painel-financeiro
 domains: [dashboard, auth, users]
 target: main
-stage: validated
+stage: pr-open
 branch: feature/issue-65-saudacao-painel-financeiro
 created: 2026-09-20
 ---
