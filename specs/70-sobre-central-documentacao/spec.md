@@ -5,7 +5,7 @@ title: "Criar menu \"Sobre\" e Central de Documentação do Sistema"
 slug: sobre-central-documentacao
 domains: [auth, dashboard, transactions, categories, users]
 target: main
-stage: validated
+stage: pr-open
 branch: feature/issue-70-sobre-central-documentacao
 created: 2026-09-20
 ---
