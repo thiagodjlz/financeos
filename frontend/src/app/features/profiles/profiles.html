@@ -42,24 +42,29 @@
                 <span class="perm-switch-label">Ver {{ screenLabel(permission.screen) }}</span>
               </label>
             </td>
-            <td class="checkbox-cell" data-label="Incluir">
+            <td class="checkbox-cell" *ngIf="!isViewOnly(permission.screen)" data-label="Incluir">
               <label class="perm-switch">
                 <input type="checkbox" [(ngModel)]="permission.canCreate" [name]="permission.screen + '-create'" />
                 <span class="perm-switch-label">Incluir em {{ screenLabel(permission.screen) }}</span>
               </label>
             </td>
-            <td class="checkbox-cell" data-label="Alterar">
+            <td class="checkbox-cell" *ngIf="!isViewOnly(permission.screen)" data-label="Alterar">
               <label class="perm-switch">
                 <input type="checkbox" [(ngModel)]="permission.canEdit" [name]="permission.screen + '-edit'" />
                 <span class="perm-switch-label">Alterar em {{ screenLabel(permission.screen) }}</span>
               </label>
             </td>
-            <td class="checkbox-cell" data-label="Excluir">
+            <td class="checkbox-cell" *ngIf="!isViewOnly(permission.screen)" data-label="Excluir">
               <label class="perm-switch">
                 <input type="checkbox" [(ngModel)]="permission.canDelete" [name]="permission.screen + '-delete'" />
                 <span class="perm-switch-label">Excluir em {{ screenLabel(permission.screen) }}</span>
               </label>
             </td>
+            <!-- Células vazias sem data-label de propósito: no modo cartão de 680px o rótulo global
+                 viria de attr(data-label) e anunciaria ações que esta linha não oferece. -->
+            <td class="checkbox-cell" *ngIf="isViewOnly(permission.screen)"></td>
+            <td class="checkbox-cell" *ngIf="isViewOnly(permission.screen)"></td>
+            <td class="checkbox-cell" *ngIf="isViewOnly(permission.screen)"></td>
           </tr>
         </tbody>
       </table>

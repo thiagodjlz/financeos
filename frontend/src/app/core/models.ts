@@ -57,7 +57,7 @@ export interface AuthResponse {
   expiresIn: number;
 }
 
-export type Screen = 'DASHBOARD' | 'TRANSACTIONS' | 'CATEGORIES' | 'USERS' | 'PROFILES';
+export type Screen = 'DASHBOARD' | 'TRANSACTIONS' | 'CATEGORIES' | 'USERS' | 'PROFILES' | 'DOCUMENTATION';
 export type Action = 'VIEW' | 'CREATE' | 'EDIT' | 'DELETE';
 
 export interface PermissionEntry {
@@ -99,4 +99,36 @@ export interface Transaction {
   type: TransactionType;
   status: TransactionStatus | null;
   source: string;
+}
+
+export type DocumentationBlockKind = 'PARAGRAPH' | 'LIST' | 'TABLE' | 'HIGHLIGHT';
+
+export interface DocumentationTable {
+  columns: string[];
+  rows: string[][];
+}
+
+export interface DocumentationBlock {
+  kind: DocumentationBlockKind;
+  text: string | null;
+  items: string[];
+  table: DocumentationTable | null;
+}
+
+export interface DocumentationSection {
+  title: string;
+  blocks: DocumentationBlock[];
+}
+
+export interface DocumentationArea {
+  id: string;
+  title: string;
+  summary: string;
+  sections: DocumentationSection[];
+}
+
+export interface DocumentationContent {
+  title: string;
+  introduction: DocumentationArea;
+  areas: DocumentationArea[];
 }

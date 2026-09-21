@@ -1,0 +1,76 @@
+<h2 class="page-title">Documentação</h2>
+
+<section class="content-grid" [attr.aria-busy]="loading()">
+  <aside class="panel doc-index">
+    <label class="doc-search">
+      Buscar na documentação
+      <input
+        type="search"
+        name="documentationSearch"
+        placeholder="Procure por uma tela, campo ou regra"
+        [ngModel]="search()"
+        (ngModelChange)="onSearchChange($event)"
+      />
+    </label>
+
+    <nav class="doc-areas" aria-label="Áreas da documentação">
+      <button
+        *ngFor="let area of visibleAreas(); trackBy: trackById"
+        type="button"
+        class="doc-area-link"
+        [class.active]="activeArea()?.id === area.id"
+        (click)="selectArea(area.id)"
+      >
+        {{ area.title }}
+      </button>
+    </nav>
+
+    <p class="empty-state" *ngIf="!loading() && content() && !visibleAreas().length">
+      Nenhuma área corresponde à busca.
+    </p>
+  </aside>
+
+  <section class="panel doc-content">
+    <p class="loading-state" *ngIf="loading()"></p>
+
+    <ng-container *ngIf="!loading() && activeArea() as area">
+      <h3 class="doc-area-title">{{ area.title }}</h3>
+      <p class="doc-area-summary">{{ area.summary }}</p>
+
+      <section class="doc-section" *ngFor="let section of area.sections">
+        <h4 class="doc-section-title">{{ section.title }}</h4>
+
+        <ng-container *ngFor="let block of section.blocks" [ngSwitch]="block.kind">
+          <p class="doc-paragraph" *ngSwitchCase="'PARAGRAPH'">{{ block.text }}</p>
+
+          <p class="doc-highlight" *ngSwitchCase="'HIGHLIGHT'">{{ block.text }}</p>
+
+          <ul class="doc-list" *ngSwitchCase="'LIST'">
+            <li *ngFor="let item of block.items">{{ item }}</li>
+          </ul>
+
+          <div class="table-wrap" *ngSwitchCase="'TABLE'">
+            <table *ngIf="block.table as table">
+              <thead>
+                <tr>
+                  <th *ngFor="let column of table.columns">{{ column }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let row of table.rows">
+                  <td *ngFor="let cell of row; let index = index" [attr.data-label]="table.columns[index]">
+                    {{ cell }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </ng-container>
+      </section>
+    </ng-container>
+
+    <p class="empty-state" *ngIf="!loading() && !activeArea()">
+      Nenhum conteúdo encontrado para a sua busca.
+    </p>
+  </section>
+</section>
