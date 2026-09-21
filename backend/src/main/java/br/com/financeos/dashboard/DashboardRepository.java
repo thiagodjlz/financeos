@@ -135,6 +135,61 @@ public class DashboardRepository {
         return List.copyOf(months.values());
     }
 
+    public List<AvailablePeriodResponse> availablePeriods(UUID userId) throws Exception {
+        String sql = """
+                select
+                    extract(year from transaction_date)::int as year,
+                    extract(month from transaction_date)::int as month
+                from transactions
+                where user_id = ?
+                group by 1, 2
+                order by 1 desc, 2
+                """;
+
+        Map<Integer, List<Integer>> periods = new LinkedHashMap<>();
+
+        try (Connection connection = dataSource.getConnection();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setObject(1, userId);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    periods.computeIfAbsent(resultSet.getInt("year"), year -> new ArrayList<>())
+                            .add(resultSet.getInt("month"));
+                }
+            }
+        }
+
+        return periods.entrySet().stream()
+                .map(entry -> new AvailablePeriodResponse(entry.getKey(), List.copyOf(entry.getValue())))
+                .toList();
+    }
+
+    // Mesmo criterio de availablePeriods (mesmo user_id, sem filtro de status): se divergirem, a tela
+    // ofereceria um ano que a validacao do resumo recusa.
+    public boolean hasTransactionsInYear(UUID userId, int year) throws Exception {
+        String sql = """
+                select exists (
+                    select 1
+                    from transactions
+                    where user_id = ?
+                      and transaction_date between ? and ?
+                ) as has_transactions
+                """;
+
+        try (Connection connection = dataSource.getConnection();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setObject(1, userId);
+            statement.setDate(2, Date.valueOf(LocalDate.of(year, 1, 1)));
+            statement.setDate(3, Date.valueOf(LocalDate.of(year, 12, 31)));
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                resultSet.next();
+                return resultSet.getBoolean("has_transactions");
+            }
+        }
+    }
+
     public record DashboardTotals(
             BigDecimal totalIncome,
             BigDecimal totalExpense,

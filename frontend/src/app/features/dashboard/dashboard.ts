@@ -26,6 +26,7 @@ import {
 } from './greeting';
 
 const MONTHS_IN_YEAR = 12;
+const ALL_MONTHS = Array.from({ length: MONTHS_IN_YEAR }, (_, index) => index + 1);
 const CHART_HEIGHT = 240;
 const PLOT_TOP = 16;
 const PLOT_BOTTOM = 196;
@@ -284,6 +285,7 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
   ngOnInit(): void {
     this.greetingTimer = setInterval(() => this.syncGreetingPeriod(), GREETING_TICK_MS);
     void this.load();
+    void this.loadPeriods();
   }
 
   ngAfterViewInit(): void {
@@ -317,6 +319,14 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
       this.toast.fromHttpError(err, 'Não foi possível carregar o resumo.');
     } finally {
       this.loading.set(false);
+    }
+  }
+
+  private async loadPeriods(): Promise<void> {
+    try {
+      await this.dashboardService.loadPeriods();
+    } catch (err) {
+      this.toast.fromHttpError(err, 'Não foi possível carregar os períodos disponíveis.');
     }
   }
 
@@ -400,7 +410,44 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
   }
 
   protected formatMonthName(month: number): string {
-    return monthName(month);
+    return longMonthName(month);
+  }
+
+  protected availableYears(): number[] {
+    const years = this.dashboardService.periods().map((period) => period.year);
+
+    if (!years.includes(this.period.year)) {
+      return [...years, this.period.year].sort((first, second) => second - first);
+    }
+
+    return years;
+  }
+
+  protected availableMonths(): number[] {
+    const months = this.dashboardService.periods().find(
+      (period) => period.year === this.period.year,
+    )?.months;
+
+    if (!months?.length) {
+      return ALL_MONTHS;
+    }
+
+    const now = new Date();
+    if (this.period.year !== now.getFullYear() || months.includes(now.getMonth() + 1)) {
+      return months;
+    }
+
+    return [...months, now.getMonth() + 1].sort((first, second) => first - second);
+  }
+
+  protected async onYearChange(): Promise<void> {
+    const months = this.availableMonths();
+
+    if (!months.includes(this.period.month)) {
+      this.period.month = Math.max(...months);
+    }
+
+    await this.load();
   }
 
   protected categoriesByType(type: TransactionType): CategoryBreakdown[] {

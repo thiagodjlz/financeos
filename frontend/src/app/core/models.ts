@@ -22,6 +22,11 @@ export interface DashboardSummary {
   monthlyEvolution: MonthlySummary[];
 }
 
+export interface AvailablePeriod {
+  year: number;
+  months: number[];
+}
+
 export interface CategoryBreakdown {
   categoryId: string | null;
   categoryName: string;
