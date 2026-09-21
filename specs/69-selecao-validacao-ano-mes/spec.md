@@ -5,7 +5,7 @@ title: "Ajustar seleção e validação dos campos Ano e Mês"
 slug: selecao-validacao-ano-mes
 domains: [dashboard, transactions, auth]
 target: main
-stage: validated
+stage: pr-open
 branch: feature/issue-69-selecao-validacao-ano-mes
 created: 2026-09-20
 ---
