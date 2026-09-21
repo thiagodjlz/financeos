@@ -23,6 +23,29 @@
   text-transform: uppercase;
 }
 
+.greeting {
+  display: grid;
+  gap: 2px;
+  margin: 0 0 10px;
+}
+
+.greeting-headline {
+  margin: 0;
+  font-size: var(--fs-greeting-headline);
+  font-weight: 700;
+  line-height: var(--lh-title);
+  overflow-wrap: anywhere;
+}
+
+.greeting-subline {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--fs-greeting-subline);
+  font-weight: 500;
+  line-height: var(--lh-body);
+  overflow-wrap: anywhere;
+}
+
 .period-controls {
   display: flex;
   gap: 10px;
@@ -371,6 +394,14 @@
 
   .topbar h2 {
     font-size: 24px;
+  }
+
+  .greeting {
+    margin-bottom: 8px;
+  }
+
+  .greeting-headline {
+    font-size: 16px;
   }
 
   .period-controls input {

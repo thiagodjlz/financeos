@@ -1,6 +1,10 @@
 <header class="topbar">
   <div>
     <p class="eyebrow">Painel financeiro</p>
+    <div class="greeting">
+      <p class="greeting-headline">{{ greeting().headline }}</p>
+      <p class="greeting-subline">{{ greeting().subline }}</p>
+    </div>
     <h2>{{ formatMonthName(period.month) | titlecase }} {{ period.year }}</h2>
   </div>
 
