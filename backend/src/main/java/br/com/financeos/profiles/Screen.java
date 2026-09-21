@@ -5,5 +5,6 @@ public enum Screen {
     TRANSACTIONS,
     CATEGORIES,
     USERS,
-    PROFILES
+    PROFILES,
+    DOCUMENTATION
 }

@@ -7,12 +7,13 @@ import { AuthService } from '../../core/services/auth.service';
 import { ProfileService } from '../../core/services/profile.service';
 import { ToastService } from '../../core/services/toast.service';
 
-const SCREENS: { code: Screen; label: string }[] = [
+const SCREENS: { code: Screen; label: string; viewOnly?: boolean }[] = [
   { code: 'DASHBOARD', label: 'Resumo' },
   { code: 'TRANSACTIONS', label: 'Lançamentos' },
   { code: 'CATEGORIES', label: 'Categorias' },
   { code: 'USERS', label: 'Usuários' },
   { code: 'PROFILES', label: 'Perfis' },
+  { code: 'DOCUMENTATION', label: 'Documentação', viewOnly: true },
 ];
 
 function blankPermissions(): PermissionEntry[] {
@@ -156,6 +157,10 @@ export class Profiles implements OnInit {
 
   protected screenLabel(screen: Screen): string {
     return this.screens.find((item) => item.code === screen)?.label ?? screen;
+  }
+
+  protected isViewOnly(screen: Screen): boolean {
+    return this.screens.find((item) => item.code === screen)?.viewOnly === true;
   }
 
   private resetForm(): void {

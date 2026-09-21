@@ -1,5 +1,6 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
+import { resolveEntryRoute } from '../entry-route';
 import { Action, Screen } from '../models';
 import { AuthService } from '../services/auth.service';
 import { ToastService } from '../services/toast.service';
@@ -22,7 +23,7 @@ export function permissionGuard(screen: Screen, action: Action): CanActivateFn {
     }
 
     toast.warning('Você não tem permissão para acessar esta tela.');
-    router.navigate(['/dashboard']);
+    router.navigate([resolveEntryRoute(authService)]);
     return false;
   };
 }

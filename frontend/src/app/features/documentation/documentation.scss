@@ -1,0 +1,125 @@
+.doc-index {
+  min-width: 0;
+}
+
+@media (min-width: 1081px) {
+  .doc-index {
+    position: sticky;
+    top: 20px;
+  }
+}
+
+.doc-search {
+  display: block;
+  margin-bottom: 16px;
+  color: var(--text-label);
+  font-size: var(--fs-sm-btn);
+  font-weight: 700;
+}
+
+.doc-areas {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.doc-area-link {
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-soft);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--fs-body);
+  font-weight: 600;
+  min-height: 38px;
+  padding: 8px 12px;
+  text-align: left;
+
+  &.active {
+    background: var(--neutral-soft);
+    color: var(--neutral-on-soft);
+  }
+}
+
+@media (hover: hover) {
+  .doc-area-link:hover {
+    background: var(--neutral-soft);
+  }
+}
+
+.doc-content {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.doc-area-title {
+  margin: 0 0 6px;
+  color: var(--text-label);
+  font-size: var(--fs-doc-area-title);
+  font-weight: 800;
+  line-height: var(--lh-title);
+}
+
+.doc-area-summary {
+  margin: 0 0 22px;
+  color: var(--text-muted);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+}
+
+.doc-section {
+  margin-bottom: 26px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.doc-section-title {
+  margin: 0 0 10px;
+  color: var(--text-label);
+  font-size: var(--fs-panel-title);
+  font-weight: 700;
+  line-height: var(--lh-title);
+}
+
+.doc-paragraph {
+  margin: 0 0 12px;
+  color: var(--text-soft);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+}
+
+.doc-list {
+  margin: 0 0 12px;
+  padding-left: 20px;
+  color: var(--text-soft);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+
+  li {
+    margin-bottom: 6px;
+  }
+}
+
+.doc-highlight {
+  margin: 0 0 12px;
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: var(--neutral-soft);
+  color: var(--neutral-on-soft);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  padding: 12px 14px;
+}
+
+.doc-content .table-wrap {
+  margin-bottom: 12px;
+}
+
+@media (max-width: 480px) {
+  .doc-area-link {
+    min-height: var(--touch-target);
+  }
+}

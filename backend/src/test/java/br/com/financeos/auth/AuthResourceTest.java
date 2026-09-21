@@ -4,10 +4,15 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasSize;
 
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.security.TestSecurity;
+import io.quarkus.test.security.jwt.Claim;
+import io.quarkus.test.security.jwt.JwtSecurity;
 import io.restassured.http.ContentType;
 
 @QuarkusTest
@@ -51,5 +56,19 @@ class AuthResourceTest {
                 .when().get("/users")
                 .then()
                 .statusCode(401);
+    }
+
+    @Test
+    @TestSecurity(user = "dev@financeos.local")
+    @JwtSecurity(claims = {
+            @Claim(key = "sub", value = "00000000-0000-0000-0000-000000000001")
+    })
+    void shouldListEveryScreenInEffectivePermissions() {
+        given()
+                .when().get("/auth/me")
+                .then()
+                .statusCode(200)
+                .body("permissions", hasSize(6))
+                .body("permissions.screen", hasItem("DOCUMENTATION"));
     }
 }

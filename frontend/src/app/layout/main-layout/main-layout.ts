@@ -14,7 +14,7 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
 import { AuthService } from '../../core/services/auth.service';
 import { APP_NAME, APP_VERSION } from '../../core/version';
 
-type NavGroup = 'registers' | 'settings';
+type NavGroup = 'registers' | 'settings' | 'about';
 
 const DRAWER_OPEN_CLASS = 'drawer-open';
 const FOCUSABLE_SELECTOR = 'button:not([disabled]), a[href], input, select, [tabindex]:not([tabindex="-1"])';
@@ -180,6 +180,14 @@ export class MainLayout implements OnDestroy {
 
   protected canSeeSettings(): boolean {
     return this.authService.can('USERS', 'VIEW') || this.authService.can('PROFILES', 'VIEW');
+  }
+
+  protected isAboutActive(): boolean {
+    return this.router.url.startsWith('/documentation');
+  }
+
+  protected canSeeAbout(): boolean {
+    return this.authService.can('DOCUMENTATION', 'VIEW');
   }
 
   protected logout(): void {

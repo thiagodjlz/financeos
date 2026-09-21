@@ -38,6 +38,17 @@ export const routes: Routes = [
         canActivate: [permissionGuard('PROFILES', 'VIEW')],
         loadComponent: () => import('./features/profiles/profiles').then((m) => m.Profiles),
       },
+      {
+        path: 'documentation',
+        canActivate: [permissionGuard('DOCUMENTATION', 'VIEW')],
+        loadComponent: () => import('./features/documentation/documentation').then((m) => m.Documentation),
+      },
+      // Sem permissionGuard de propósito: é o destino de quem não tem nenhuma tela permitida, então
+      // um guard de permissão aqui criaria o laço que esta rota existe justamente para evitar.
+      {
+        path: 'no-access',
+        loadComponent: () => import('./features/no-access/no-access').then((m) => m.NoAccess),
+      },
     ],
   },
   { path: '**', redirectTo: 'dashboard' },

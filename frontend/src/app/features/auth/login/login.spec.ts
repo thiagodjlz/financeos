@@ -1,8 +1,8 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
-import { API_BASE } from '../../../core/models';
+import { Router, provideRouter } from '@angular/router';
+import { API_BASE, PermissionEntry, Screen } from '../../../core/models';
 import { UNEXPECTED_ERROR_MESSAGE } from '../../../core/http-error';
 import { ToastService } from '../../../core/services/toast.service';
 import { Login } from './login';
@@ -88,5 +88,58 @@ describe('Login', () => {
     expect(toasts()).toHaveLength(1);
     expect(toasts()[0].title).toBe('Falha');
     expect(toasts()[0].message).toBe(UNEXPECTED_ERROR_MESSAGE);
+  });
+
+  describe('destino após o login', () => {
+    function viewOnly(screen: Screen): PermissionEntry {
+      return { screen, canView: true, canCreate: false, canEdit: false, canDelete: false };
+    }
+
+    async function loginWith(permissions: PermissionEntry[]): Promise<Router> {
+      const router = TestBed.inject(Router);
+      vi.spyOn(router, 'navigate').mockResolvedValue(true);
+
+      await submit();
+
+      httpMock.expectOne(`${API_BASE}/auth/login`).flush({ token: 'token-de-teste', expiresIn: 3600 });
+      await settle();
+      httpMock.expectOne(`${API_BASE}/auth/me`).flush({
+        name: 'Dev',
+        email: 'dev@financeos.local',
+        superAdmin: false,
+        permissions,
+      });
+      await settle();
+
+      return router;
+    }
+
+    it('leva ao Resumo quando há permissão de Resumo', async () => {
+      const router = await loginWith([viewOnly('DASHBOARD'), viewOnly('USERS')]);
+
+      expect(router.navigate).toHaveBeenCalledWith(['/dashboard']);
+      expect(toasts()).toEqual([]);
+    });
+
+    it('entra na primeira tela permitida quando não há Resumo', async () => {
+      const router = await loginWith([viewOnly('USERS')]);
+
+      expect(router.navigate).toHaveBeenCalledWith(['/users']);
+      expect(toasts()).toEqual([]);
+    });
+
+    it('entra na Central quando só há Documentação', async () => {
+      const router = await loginWith([viewOnly('DOCUMENTATION')]);
+
+      expect(router.navigate).toHaveBeenCalledWith(['/documentation']);
+      expect(toasts()).toEqual([]);
+    });
+
+    it('entra em /no-access quando nenhuma tela é permitida', async () => {
+      const router = await loginWith([]);
+
+      expect(router.navigate).toHaveBeenCalledWith(['/no-access']);
+      expect(toasts()).toEqual([]);
+    });
   });
 });

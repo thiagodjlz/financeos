@@ -147,6 +147,38 @@
           </button>
         </div>
       </div>
+      <div class="nav-group" *ngIf="canSeeAbout()">
+        <button
+          type="button"
+          class="nav-parent"
+          [class.active]="isAboutActive()"
+          (click)="toggleGroup('about')"
+          [attr.title]="expanded() ? null : 'Sobre'"
+          [attr.aria-label]="expanded() ? null : 'Sobre'"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+            <circle cx="12" cy="12" r="9"></circle>
+            <path d="M12 11v5"></path>
+            <path d="M12 7.6h.01"></path>
+          </svg>
+          <span class="nav-label">Sobre</span>
+        </button>
+        <div class="nav-children" *ngIf="openGroup() === 'about' && expanded()">
+          <button
+            *ngIf="authService.can('DOCUMENTATION', 'VIEW')"
+            type="button"
+            routerLink="/documentation"
+            routerLinkActive="active"
+            (click)="onNavigate()"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+              <path d="M5 4.5h8.5a3 3 0 0 1 3 3V20a2.5 2.5 0 0 0-2.5-2.5H5z"></path>
+              <path d="M19 6.5V20a2.5 2.5 0 0 0-2.5-2.5"></path>
+            </svg>
+            <span class="nav-label">Documentação</span>
+          </button>
+        </div>
+      </div>
     </nav>
 
     <button

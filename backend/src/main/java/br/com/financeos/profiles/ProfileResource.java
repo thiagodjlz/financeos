@@ -114,13 +114,17 @@ public class ProfileResource {
 
     private void savePermissions(UUID profileId, List<PermissionEntry> entries) {
         for (PermissionEntry entry : entries) {
+            // A Central de Documentacao e so leitura: a matriz da tela nem oferece as tres acoes de
+            // escrita, e saneamos aqui porque o payload pode chegar por chamada direta a API.
+            boolean writable = entry.screen() != Screen.DOCUMENTATION;
+
             ProfilePermission permission = new ProfilePermission();
             permission.profileId = profileId;
             permission.screen = entry.screen();
             permission.canView = entry.canView();
-            permission.canCreate = entry.canCreate();
-            permission.canEdit = entry.canEdit();
-            permission.canDelete = entry.canDelete();
+            permission.canCreate = writable && entry.canCreate();
+            permission.canEdit = writable && entry.canEdit();
+            permission.canDelete = writable && entry.canDelete();
             permissionRepository.persist(permission);
         }
     }

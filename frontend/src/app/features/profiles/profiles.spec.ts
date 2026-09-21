@@ -55,7 +55,7 @@ describe('Profiles', () => {
     return Array.from(fixture.nativeElement.querySelectorAll('form input[type="checkbox"]'));
   }
 
-  const SCREEN_ROWS = ['Resumo', 'Lançamentos', 'Categorias', 'Usuários', 'Perfis'];
+  const SCREEN_ROWS = ['Resumo', 'Lançamentos', 'Categorias', 'Usuários', 'Perfis', 'Documentação'];
   const ACTION_COLUMNS = ['view', 'create', 'edit', 'delete'];
 
   function checkbox(cell: string): HTMLInputElement {
@@ -150,7 +150,7 @@ describe('Profiles', () => {
     await click(cancelButton());
 
     expect(query<HTMLInputElement>('form input[name="name"]').value).toBe('');
-    expect(checkboxes()).toHaveLength(20);
+    expect(checkboxes()).toHaveLength(21);
     expect(checkboxes().every((input) => !input.checked)).toBe(true);
     expect(formTitle()).toBe('Novo perfil');
     httpMock.expectNone(() => true);
@@ -366,6 +366,65 @@ describe('Profiles', () => {
     expect(formTitle()).toBe('Novo perfil');
     expect(toasts()).toHaveLength(toastsAfterError);
     httpMock.expectNone(() => true);
+  });
+
+  it('tem seis linhas e só a coluna Ver na linha Documentação', async () => {
+    await render();
+
+    const rows = Array.from(fixture.nativeElement.querySelectorAll('form tbody tr')) as HTMLElement[];
+    expect(rows).toHaveLength(6);
+    expect(rows.map((row) => row.querySelector('.screen-cell')?.textContent?.trim())).toEqual(SCREEN_ROWS);
+
+    rows.forEach((row) => expect(row.querySelectorAll('td')).toHaveLength(5));
+    rows.slice(0, 5).forEach((row) =>
+      expect(row.querySelectorAll('input[type="checkbox"]')).toHaveLength(4),
+    );
+    expect(rows[5].querySelectorAll('input[type="checkbox"]')).toHaveLength(1);
+    expect(checkboxes()).toHaveLength(21);
+    httpMock.expectNone(() => true);
+  });
+
+  it('trata o switch de Documentação como alteração pendente', async () => {
+    await render();
+    await startEditing();
+    await toggle('Documentação.view');
+
+    expect(checkbox('Documentação.view').checked).toBe(true);
+
+    await click(cancelButton());
+
+    expect(checkbox('Documentação.view').checked).toBe(false);
+    expect(formTitle()).toBe('Editar perfil');
+    httpMock.expectNone(() => true);
+
+    await click(cancelButton());
+
+    expect(formTitle()).toBe('Novo perfil');
+    httpMock.expectNone(() => true);
+  });
+
+  it('envia a permissão de Documentação ao salvar', async () => {
+    await render();
+    await startEditing();
+    await toggle('Documentação.view');
+
+    await click(query<HTMLButtonElement>('form button[type="submit"]'));
+
+    const request = httpMock.expectOne(`${API_BASE}/profiles/profile-1`);
+    expect(request.request.method).toBe('PUT');
+    expect(request.request.body.permissions).toContainEqual({
+      screen: 'DOCUMENTATION',
+      canView: true,
+      canCreate: false,
+      canEdit: false,
+      canDelete: false,
+    });
+    request.flush(PROFILE);
+    await settle();
+    httpMock.expectOne(`${API_BASE}/profiles`).flush([PROFILE]);
+    await settle();
+
+    expect(toasts()[0].title).toBe('Sucesso');
   });
 
   it('não dispara toast no Cancelar de dois estágios', async () => {

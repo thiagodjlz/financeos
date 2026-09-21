@@ -70,7 +70,7 @@ describe('MainLayout', () => {
 
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('h1')?.textContent).toContain('FinanceOS');
-    expect(navButtons(fixture)).toHaveLength(4);
+    expect(navButtons(fixture)).toHaveLength(5);
     expect(findButton(fixture, 'Cadastros')).toBeDefined();
     expect(findButton(fixture, 'Configurações')).toBeDefined();
     expect(findButton(fixture, 'Categorias')).toBeUndefined();
@@ -157,7 +157,7 @@ describe('MainLayout', () => {
     expect(compiled.querySelector('.collapse-toggle')).toBeNull();
 
     const buttons = navButtons(fixture);
-    expect(buttons).toHaveLength(4);
+    expect(buttons).toHaveLength(5);
     for (const button of buttons) {
       expect(button.querySelector('svg')).not.toBeNull();
       expect(button.getAttribute('title')).toBe(button.textContent?.trim());
@@ -168,6 +168,7 @@ describe('MainLayout', () => {
       'Lançamentos',
       'Cadastros',
       'Configurações',
+      'Sobre',
     ]);
   });
 
@@ -264,6 +265,77 @@ describe('MainLayout', () => {
     fixture.detectChanges();
     expect(findButton(fixture, 'Usuários')).toBeDefined();
     expect(findButton(fixture, 'Categorias')).toBeUndefined();
+  });
+
+  it('exibe o grupo Sobre como último item do menu', () => {
+    const authService = TestBed.inject(AuthService);
+    authService.permissions.set([viewPermission('DOCUMENTATION')]);
+    const fixture = createFixture();
+
+    const buttons = navButtons(fixture);
+    expect(buttons).toHaveLength(1);
+
+    const sobre = buttons[buttons.length - 1];
+    expect(sobre.textContent?.trim()).toBe('Sobre');
+    expect(sobre.querySelector('svg')?.getAttribute('width')).toBe('20');
+    expect(sobre.querySelector('.nav-label')?.textContent?.trim()).toBe('Sobre');
+    expect(sobre.getAttribute('title')).toBe('Sobre');
+  });
+
+  it('esconde Sobre e Documentação sem a permissão', () => {
+    const authService = TestBed.inject(AuthService);
+    authService.permissions.set([viewPermission('DASHBOARD')]);
+    const fixture = createFixture();
+
+    const nav = (fixture.nativeElement as HTMLElement).querySelector('.nav-list') as HTMLElement;
+    expect(nav.textContent).not.toContain('Sobre');
+    expect(nav.textContent).not.toContain('Documentação');
+  });
+
+  it('mantém um único grupo aberto entre Cadastros, Configurações e Sobre', () => {
+    const authService = TestBed.inject(AuthService);
+    authService.superAdmin.set(true);
+    const fixture = createFixture();
+
+    findButton(fixture, 'Configurações')?.click();
+    fixture.detectChanges();
+    expect(findButton(fixture, 'Usuários')).toBeDefined();
+
+    findButton(fixture, 'Sobre')?.click();
+    fixture.detectChanges();
+    expect(findButton(fixture, 'Documentação')).toBeDefined();
+    expect(findButton(fixture, 'Usuários')).toBeUndefined();
+
+    findButton(fixture, 'Cadastros')?.click();
+    fixture.detectChanges();
+    expect(findButton(fixture, 'Categorias')).toBeDefined();
+    expect(findButton(fixture, 'Documentação')).toBeUndefined();
+  });
+
+  it('recolhe o trilho e move o foco ao abrir a Documentação', async () => {
+    const authService = TestBed.inject(AuthService);
+    authService.superAdmin.set(true);
+    const fixture = createFixture();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const aside = sidebar(fixture);
+
+    aside.dispatchEvent(new Event('mouseenter'));
+    fixture.detectChanges();
+    findButton(fixture, 'Sobre')?.click();
+    fixture.detectChanges();
+
+    const documentacao = findButton(fixture, 'Documentação');
+    expect(documentacao).toBeDefined();
+
+    documentacao?.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(compiled.querySelector('.sidebar.expanded')).toBeNull();
+    expect(findButton(fixture, 'Documentação')).toBeUndefined();
+    const workspace = compiled.querySelector('.workspace') as HTMLElement;
+    expect(workspace.contains(document.activeElement)).toBe(true);
   });
 
   it('collapses the sidebar and moves focus to the workspace when a navigating item is activated', async () => {
