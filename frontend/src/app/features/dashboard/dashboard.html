@@ -5,14 +5,16 @@
       <p class="greeting-headline">{{ greeting().headline }}</p>
       <p class="greeting-subline">{{ greeting().subline }}</p>
     </div>
-    <h2>{{ formatMonthName(period.month) | titlecase }} {{ period.year }}</h2>
+    <h2>{{ formatMonthName(period.month) }} {{ period.year }}</h2>
   </div>
 
   <div class="period-controls">
-    <input aria-label="Ano" type="number" [(ngModel)]="period.year" min="2023" max="2035" (change)="load()" />
+    <select aria-label="Ano" [(ngModel)]="period.year" (change)="onYearChange()">
+      <option *ngFor="let year of availableYears()" [ngValue]="year">{{ year }}</option>
+    </select>
     <select aria-label="Mês" [(ngModel)]="period.month" (change)="load()">
-      <option *ngFor="let month of [1,2,3,4,5,6,7,8,9,10,11,12]" [ngValue]="month">
-        {{ formatMonthName(month) | titlecase }}
+      <option *ngFor="let month of availableMonths()" [ngValue]="month">
+        {{ formatMonthName(month) }}
       </option>
     </select>
   </div>
