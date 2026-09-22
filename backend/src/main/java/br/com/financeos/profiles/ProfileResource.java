@@ -31,6 +31,10 @@ import jakarta.ws.rs.core.Response;
 @Authenticated
 public class ProfileResource {
 
+    // Telas cuja funcionalidade e somente de leitura: a matriz nem oferece as tres acoes de escrita
+    // para elas, e saneamos aqui porque o payload pode chegar por chamada direta a API.
+    private static final Set<Screen> VIEW_ONLY_SCREENS = EnumSet.of(Screen.DOCUMENTATION, Screen.RELEASE_NOTES);
+
     private final ProfileRepository repository;
     private final ProfilePermissionRepository permissionRepository;
     private final AppUserRepository userRepository;
@@ -114,9 +118,7 @@ public class ProfileResource {
 
     private void savePermissions(UUID profileId, List<PermissionEntry> entries) {
         for (PermissionEntry entry : entries) {
-            // A Central de Documentacao e so leitura: a matriz da tela nem oferece as tres acoes de
-            // escrita, e saneamos aqui porque o payload pode chegar por chamada direta a API.
-            boolean writable = entry.screen() != Screen.DOCUMENTATION;
+            boolean writable = !VIEW_ONLY_SCREENS.contains(entry.screen());
 
             ProfilePermission permission = new ProfilePermission();
             permission.profileId = profileId;

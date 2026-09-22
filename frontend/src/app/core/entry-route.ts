@@ -10,6 +10,7 @@ const ENTRY_ROUTES: { screen: Screen; path: string }[] = [
   { screen: 'USERS', path: '/users' },
   { screen: 'PROFILES', path: '/profiles' },
   { screen: 'DOCUMENTATION', path: '/documentation' },
+  { screen: 'RELEASE_NOTES', path: '/release-notes' },
 ];
 
 // Le apenas o signal de permissoes ja resolvido: quem chama (guard e login) ja passou pelo

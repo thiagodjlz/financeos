@@ -45,6 +45,10 @@ describe('resolveEntryRoute', () => {
     expect(resolveEntryRoute(authWith([entry('DOCUMENTATION')]))).toBe('/documentation');
   });
 
+  it('leva às Novidades por versão quando só há essa permissão', () => {
+    expect(resolveEntryRoute(authWith([entry('RELEASE_NOTES')]))).toBe('/release-notes');
+  });
+
   it('respeita a ordem do menu quando há mais de uma tela permitida', () => {
     expect(resolveEntryRoute(authWith([entry('DOCUMENTATION'), entry('CATEGORIES')]))).toBe('/categories');
   });

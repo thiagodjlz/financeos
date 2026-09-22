@@ -43,6 +43,11 @@ export const routes: Routes = [
         canActivate: [permissionGuard('DOCUMENTATION', 'VIEW')],
         loadComponent: () => import('./features/documentation/documentation').then((m) => m.Documentation),
       },
+      {
+        path: 'release-notes',
+        canActivate: [permissionGuard('RELEASE_NOTES', 'VIEW')],
+        loadComponent: () => import('./features/release-notes/release-notes').then((m) => m.ReleaseNotes),
+      },
       // Sem permissionGuard de propósito: é o destino de quem não tem nenhuma tela permitida, então
       // um guard de permissão aqui criaria o laço que esta rota existe justamente para evitar.
       {

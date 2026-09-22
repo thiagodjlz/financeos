@@ -290,6 +290,21 @@ describe('MainLayout', () => {
     const nav = (fixture.nativeElement as HTMLElement).querySelector('.nav-list') as HTMLElement;
     expect(nav.textContent).not.toContain('Sobre');
     expect(nav.textContent).not.toContain('Documentação');
+    expect(nav.textContent).not.toContain('Novidades por versão');
+  });
+
+  it('exibe o grupo Sobre só com a permissão de Novidades por versão, e o subitem some sem ela', () => {
+    const authService = TestBed.inject(AuthService);
+    authService.permissions.set([viewPermission('RELEASE_NOTES')]);
+    const fixture = createFixture();
+
+    expect(findButton(fixture, 'Sobre')).toBeDefined();
+
+    findButton(fixture, 'Sobre')?.click();
+    fixture.detectChanges();
+
+    expect(findButton(fixture, 'Novidades por versão')).toBeDefined();
+    expect(findButton(fixture, 'Documentação')).toBeUndefined();
   });
 
   it('mantém um único grupo aberto entre Cadastros, Configurações e Sobre', () => {

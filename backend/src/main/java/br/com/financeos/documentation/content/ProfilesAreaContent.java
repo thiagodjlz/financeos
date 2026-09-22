@@ -57,8 +57,8 @@ final class ProfilesAreaContent {
                                                 + "uma desativação em Categorias e em Usuários, e a remoção do "
                                                 + "perfil sem uso em Perfis."))),
                 DocumentationBlock.paragraph(
-                        "As linhas da matriz são Resumo, Lançamentos, Categorias, Usuários, Perfis e Documentação, "
-                                + "na mesma ordem em que as telas aparecem no menu."));
+                        "As linhas da matriz são Resumo, Lançamentos, Categorias, Usuários, Perfis, Documentação e "
+                                + "Novidades por versão, na mesma ordem em que as telas aparecem no menu."));
     }
 
     private static DocumentationSection regras() {
@@ -73,6 +73,8 @@ final class ProfilesAreaContent {
                                 + "uso por usuários.",
                         "A linha Documentação tem apenas a coluna Ver, porque a Central de Documentação é somente "
                                 + "para leitura: não há o que incluir, alterar ou excluir nela.",
+                        "A linha Novidades por versão também tem apenas a coluna Ver, pelo mesmo motivo: é uma "
+                                + "tela só de consulta.",
                         "O nome do perfil é obrigatório."),
                 DocumentationBlock.highlight(
                         "Incluir, Alterar e Excluir só são exercidos por botões que ficam dentro da própria tela. "

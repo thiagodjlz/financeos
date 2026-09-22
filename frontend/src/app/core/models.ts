@@ -57,7 +57,14 @@ export interface AuthResponse {
   expiresIn: number;
 }
 
-export type Screen = 'DASHBOARD' | 'TRANSACTIONS' | 'CATEGORIES' | 'USERS' | 'PROFILES' | 'DOCUMENTATION';
+export type Screen =
+  | 'DASHBOARD'
+  | 'TRANSACTIONS'
+  | 'CATEGORIES'
+  | 'USERS'
+  | 'PROFILES'
+  | 'DOCUMENTATION'
+  | 'RELEASE_NOTES';
 export type Action = 'VIEW' | 'CREATE' | 'EDIT' | 'DELETE';
 
 export interface PermissionEntry {
@@ -131,4 +138,21 @@ export interface DocumentationContent {
   title: string;
   introduction: DocumentationArea;
   areas: DocumentationArea[];
+}
+
+export type ReleaseNoteCategoryKind = 'NEW' | 'IMPROVEMENT' | 'FIX';
+
+export interface ReleaseNoteCategory {
+  kind: ReleaseNoteCategoryKind;
+  items: string[];
+}
+
+export interface ReleaseNoteVersion {
+  version: string;
+  categories: ReleaseNoteCategory[];
+}
+
+export interface ReleaseNotesResponse {
+  currentVersion: string;
+  versions: ReleaseNoteVersion[];
 }

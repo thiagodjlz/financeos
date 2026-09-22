@@ -1,0 +1,23 @@
+<h2 class="page-title">Novidades por versão</h2>
+
+<section class="release-notes-list" [attr.aria-busy]="loading()">
+  <p class="loading-state" *ngIf="loading()"></p>
+
+  <article class="panel release-block" *ngFor="let version of versions(); trackBy: trackByVersion">
+    <header class="panel-heading">
+      <h3>Versão v{{ version.version }}</h3>
+      <span *ngIf="isCurrent(version.version)">atual</span>
+    </header>
+
+    <section class="release-category" *ngFor="let category of version.categories">
+      <h4 class="release-category-title">{{ categoryLabel(category.kind) }}</h4>
+      <ul class="release-category-list">
+        <li *ngFor="let item of category.items">{{ item }}</li>
+      </ul>
+    </section>
+  </article>
+
+  <p class="empty-state" *ngIf="!loading() && content() && !versions().length">
+    Nenhuma novidade publicada ainda.
+  </p>
+</section>
