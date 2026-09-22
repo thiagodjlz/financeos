@@ -1,6 +1,6 @@
 ---
 name: verify
-description: Etapa 8 da esteira de implementacao - verifica criterio por criterio se a implementacao atende a spec, gera verification-report.md e PARA para a validacao manual do usuario antes de qualquer commit ou PR.
+description: Etapa 7 da esteira de implementacao - verifica criterio por criterio se a implementacao atende a spec, gera verification-report.md e PARA para a validacao manual do usuario antes de qualquer commit ou PR.
 argument-hint: <numero-da-issue>
 ---
 
@@ -9,7 +9,7 @@ O argumento (`$1`/`$ARGUMENTS`) e o numero da issue. Resolva a pasta via glob `s
 **Esta e a parada obrigatoria da esteira.** Nada foi commitado ate aqui: o codigo da feature esta no working tree da branch e a stack Docker local ja foi reconstruida com ele. O commit, o push e o PR so acontecem depois que o usuario disser que validou.
 
 1. Chame a tool `Agent` com `subagent_type: pipeline-verifier`, `run_in_background: false`, passando o caminho da pasta `specs/<numero>-<slug>/` e o numero da issue.
-2. Leia `verification-report.md` e mostre ao usuario, em texto (nao mande ele abrir o arquivo):
+2. O agente ja devolve a contagem por status, os NAO ATENDIDO e o roteiro na integra. Repasse ao usuario, em texto (nao mande ele abrir o arquivo):
    - quantos criterios ficaram VERIFICADO, VALIDACAO MANUAL e NAO ATENDIDO;
    - a lista completa dos NAO ATENDIDO, se houver;
    - o **roteiro de validacao manual na integra**, com os enderecos do ambiente (`http://localhost` para a tela, `http://localhost:8080` para a API).

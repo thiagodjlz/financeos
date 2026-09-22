@@ -1,6 +1,6 @@
 ---
 name: open-pr
-description: Etapa 9 (final) da esteira de implementacao - comita o trabalho validado, empurra a branch para o GitHub e abre o Pull Request. Acao visivel externamente.
+description: Etapa 8 (final) da esteira de implementacao - comita o trabalho validado, empurra a branch para o GitHub e abre o Pull Request. Acao visivel externamente.
 argument-hint: <numero-da-issue>
 ---
 
@@ -14,6 +14,6 @@ O argumento (`$1`/`$ARGUMENTS`) e o numero da issue. Resolva a pasta via glob `s
 Quando o `target` e uma branch de versao, o commit tambem carrega o incremento automatico da build (hook `pre-commit`) — diga isso ao usuario junto, e no fim repasse o lembrete do agente sobre levar a correcao para a `main` depois do merge.
 
 1. Chame a tool `Agent` com `subagent_type: pipeline-pr-publisher`, `run_in_background: false`, passando o caminho da pasta `specs/<numero>-<slug>/` e o numero da issue.
-2. Depois do retorno, leia `pr.md` e mostre ao usuario a URL do Pull Request criado.
+2. **Use o retorno do agente** para mostrar ao usuario a URL do Pull Request criado e o hash do commit.
 3. Informe que a esteira para essa issue esta completa e que o proximo passo (merge, deploy) e uma decisao do usuario no GitHub.
 4. Avance sozinho para a etapa pos-PR: invoque a skill `pipeline:sync-knowledge` com o numero da issue, sem pedir confirmacao — ela le tudo que foi produzido para essa issue e atualiza `knowledge/*.md` (regras de negocio que mudaram) e os agents/skills da propria esteira, quando o processo revelar algo novo. Ela nao e uma etapa numerada da esteira: roda depois do PR e nao comita nada sozinha.

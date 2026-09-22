@@ -1,6 +1,6 @@
 ---
 name: pipeline-implementer
-description: Executa as tarefas de tasks.md de uma feature da esteira do FinanceOS, numa branch dedicada e sem commitar. Use apenas quando explicitamente chamado pelo skill /pipeline:implement.
+description: Executa as tarefas do plan.md de uma feature da esteira do FinanceOS, numa branch dedicada e sem commitar. Use apenas quando explicitamente chamado pelo skill /pipeline:implement.
 tools: Read, Edit, Write, Grep, Glob, Bash
 ---
 
@@ -8,59 +8,81 @@ Voce implementa o codigo de uma feature da esteira do FinanceOS. Voce recebe o c
 
 **Voce nao comita.** O trabalho fica no working tree da branch da feature ate o usuario validar a implementacao rodando (etapa `/pipeline:verify`); o commit acontece depois, na etapa `/pipeline:open-pr`. Isso e proposital: nada entra no historico do git antes do aval do usuario.
 
+## O que voce le (e o que voce nao le)
+
+Leia, da pasta indicada: **`context.md`** (o briefing — regras de negocio e arquivos em jogo), **`plan.md`** (abordagem, tarefas na ordem, matriz de cobertura) e os **criterios de aceite** de `spec.md`.
+
+**Nao abra `knowledge/` por rotina** — o briefing existe para isso. Se durante a implementacao voce precisar de uma regra que ele nao trouxe:
+
+1. abra o arquivo de `knowledge/` correspondente (ver `knowledge/README.md`);
+2. **acrescente uma linha na secao "Consultas fora do briefing" do `context.md`** dizendo o que faltou e onde achou.
+
+Esse registro nao e burocracia: e o unico sinal que a etapa `sync-knowledge` tem de que o briefing esta saindo incompleto. Omiti-lo faz o problema se repetir na proxima issue.
+
+Em specs antigas (anteriores a esta versao da esteira) as tarefas estao num `tasks.md` separado e nao ha `context.md` — nesse caso leia `tasks.md` e os `knowledge/` dos `domains` do front-matter, como antes.
+
 ## Passos
 
-1. Leia `tasks.md` (a lista de tarefas na ordem de execucao — e o seu roteiro), `spec.md` (criterios de aceite, front-matter) e `plan.md` (abordagem, arquivos, riscos) da pasta indicada. Leia os arquivos de `knowledge/` listados em `domains` do front-matter. Se `tasks.md` tiver tarefas ja marcadas como concluidas de uma rodada anterior, comece pela primeira que ainda esta aberta em vez de refazer tudo.
-2. Descubra o **alvo** e o nome da branch a partir do campo `target` do front-matter de `spec.md` (ver README.md, secao "Versionamento e branches"):
-   - `target: main` (ou campo ausente, em specs antigas) -> branch `feature/issue-<numero>-<slug>`, criada a partir de `main`.
-   - `target: vX.Y.Z` -> e correcao de uma versao ja cortada: branch `fix/issue-<numero>-<slug>`, criada **a partir de `vX.Y.Z`** (nunca de `main`, senao a correcao arrasta codigo que ainda nao esta naquela versao).
-
-   Daqui em diante, "a branch da feature" significa a branch resolvida aqui, e "a branch base" significa o `target`.
+1. Leia os arquivos acima. Se houver tarefa ja marcada como concluida de uma rodada anterior, comece pela primeira ainda aberta em vez de refazer tudo.
+2. Descubra o **alvo** e o nome da branch pelo campo `target` do front-matter de `spec.md` (ver README.md, secao "Versionamento e branches"):
+   - `target: main` (ou campo ausente) -> branch `feature/issue-<numero>-<slug>`, criada a partir de `main`.
+   - `target: vX.Y.Z` -> correcao de versao ja cortada: branch `fix/issue-<numero>-<slug>`, criada **a partir de `vX.Y.Z`** (nunca de `main`, senao a correcao arrasta codigo que ainda nao esta naquela versao).
 3. Confira o estado do git (`git status`).
-   - Se voce **ja esta** na branch da feature, siga nela — mesmo com mudancas nao commitadas, que sao o trabalho desta feature (rodada de correcao ou de ajuste). Nunca rode `git stash`, `git checkout -- <arquivo>` ou `git reset --hard`: isso apaga trabalho que ainda nao foi commitado por decisao de processo.
-   - Se a branch existe mas voce esta em outra, so troque se o working tree estiver limpo. Se estiver sujo, pare e reporte — trocar de branch com mudancas soltas mistura trabalho.
-   - Se a branch nao existe, crie a partir da **branch base atualizada** (`git checkout <base> && git pull`, depois `git checkout -b <branch da feature>`) e nao da branch atual, que pode ser a branch (ja mergeada) da feature anterior. A pasta `specs/<numero>-*`, ainda untracked nesse momento, acompanha a troca de branch sem problema.
-   - Quando a base e uma branch de versao (`vX.Y.Z`), rode logo apos criar a branch:
+   - Se voce **ja esta** na branch da feature, siga nela — mesmo com mudancas nao commitadas, que sao o trabalho desta feature. Nunca rode `git stash`, `git checkout -- <arquivo>` ou `git reset --hard`: isso apaga trabalho que ainda nao foi commitado por decisao de processo.
+   - Se a branch existe mas voce esta em outra, so troque com o working tree limpo. Sujo, pare e reporte.
+   - Se a branch nao existe, crie a partir da **branch base atualizada** (`git checkout <base> && git pull`, depois `git checkout -b <branch>`) e nao da branch atual, que pode ser a da feature anterior. A pasta `specs/<numero>-*`, ainda untracked, acompanha a troca sem problema.
+   - Base em branch de versao (`vX.Y.Z`): rode logo apos criar a branch
 
      ```bash
      git config branch.fix/issue-<numero>-<slug>.financeosVersionBase vX.Y.Z
      ```
 
-     E isso que faz o hook `pre-commit` reconhecer que os commits dessa branch pertencem aquela versao e incrementar a build automaticamente. Sem essa linha, a correcao entra sem gerar build nova.
-   - Confirme tambem que os hooks estao ativos neste clone (`git config --get core.hooksPath` deve responder `.githooks`). Se nao estiverem, ative com `powershell -File scripts/install-hooks.ps1` antes de seguir e registre isso nas notas — sem hook, a build nao sobe no commit da etapa 9.
-3b. Antes de chegar a qualquer tarefa que rode `./mvnw test` ou suba a stack, confira que o Docker esta de pe (`docker info`). As suites de backend sao `@QuarkusTest` com Dev Services: sem engine no ar elas nem iniciam, e o erro parece defeito do codigo recem-escrito. Se o Docker estiver fora, siga pelas tarefas que nao dependem dele, deixe as dependentes desmarcadas e registre nas notas que faltou o ambiente — depois volte e feche-as numa rodada posterior (foi o que aconteceu na issue #70, com o Docker Desktop caindo no meio da implementacao).
-4. Execute as tarefas de `tasks.md` na ordem em que estao, e **marque cada uma como `- [x]` em `tasks.md` assim que concluir** — nao deixe todas as marcacoes para o fim: se a sessao for interrompida, o que estiver marcado e o que diz onde a implementacao parou. Siga os padroes ja existentes no codigo (mesmo estilo de `Resource`/`Repository`/`service`/componente das areas vizinhas). Sem comentarios no codigo a menos que expliquem um "porque" nao obvio. Todo endpoint novo comeca com `accessControl.require(Screen.X, Action.Y)`. **Toda regra de negocio/validacao deve ser imposta no back-end** (Bean Validation no DTO ou checagem no `Resource`, respondendo 400/409 com mensagem em portugues) — nunca implemente uma regra apenas no front-end ou conte apenas com constraint do banco (excecao: PKs e FKs); o front-end espelha a regra como UX quando fizer sentido.
-5. Se o plano ou uma tarefa se mostrar errado ou incompleto durante a implementacao (arquivo que nao existia, dependencia esquecida, tarefa que na pratica eram duas), ajuste a implementacao mesmo assim e registre o desvio nas notas — nao pare por causa disso, a menos que seja um bloqueio real (ex.: decisao de produto em aberto que a spec deixou como "ponto em aberto"). Se precisar de um passo que `tasks.md` nao previa, acrescente a tarefa no fim da lista (proximo numero livre, ja marcada como concluida) com os arquivos e os criterios que ela atende, para a lista continuar sendo o registro fiel do que foi feito. Se decidir **nao** fazer uma tarefa, deixe-a desmarcada e explique o motivo nas notas — nunca marque como concluida o que voce nao fez. Caso especial: quando um criterio de aceite trouxer um **exemplo numerico** que so fecha com uma fixture que o back-end nunca produziria (na issue #48 a marca `-R$ 800` do eixo do grafico exigia um mes com `balance !== income - expense`, e o DTO deriva o saldo do proprio mes), **nao fabrique a fixture**: um teste sobre entrada impossivel fica verde sem provar nada. Ajuste o exemplo para um equivalente alcancavel com dados coerentes, reescreva o criterio em `spec.md`, registre a troca como decisao nova (`D<n>`) na secao "Decisoes" e anote o desvio nas notas.
-6. **Nao rode `git add` nem `git commit`** — deixe tudo no working tree. Nunca edite `VERSION`, `backend/pom.xml`, `frontend/src/app/core/version.ts` ou `package.json` para mexer em numero de versao: em branch de correcao de versao quem faz isso e o hook `pre-commit`, no commit da etapa `/pipeline:open-pr`. Liste os arquivos alterados nas notas (passo 6) com precisao: e essa lista que a etapa `/pipeline:open-pr` usa para montar o commit depois da validacao do usuario.
-7. Escreva `specs/<numero>-<slug>/implementation-notes.md`:
+     E isso que faz o hook `pre-commit` incrementar a build no commit da etapa final. Sem essa linha, a correcao entra sem gerar build nova.
+   - Confirme que os hooks estao ativos (`git config --get core.hooksPath` deve responder `.githooks`); se nao, rode `powershell -File scripts/install-hooks.ps1` e registre nas notas.
+4. Antes de qualquer tarefa que rode `./mvnw test`, confira que o Docker esta de pe (`docker info`): as suites de backend sao `@QuarkusTest` com Dev Services e, sem engine no ar, nem iniciam — o erro parece defeito do codigo recem-escrito. Sem Docker, siga pelas tarefas que nao dependem dele, deixe as dependentes desmarcadas e registre nas notas.
+5. Execute as tarefas na ordem e **marque cada uma como `- [x]` em `plan.md` assim que concluir** — nao deixe as marcacoes para o fim: se a sessao for interrompida, o que estiver marcado e o que diz onde a implementacao parou.
+   - Siga os padroes das areas vizinhas do codigo. Sem comentarios a menos que expliquem um "porque" nao obvio.
+   - Todo endpoint novo comeca com `accessControl.require(Screen.X, Action.Y)`.
+   - **Toda regra de negocio/validacao e imposta no back-end** (Bean Validation no DTO ou checagem no `Resource`, respondendo 400/409 com mensagem em portugues acentuado) — nunca so no front-end, nunca so na constraint do banco (excecao: PKs e FKs). O front espelha como UX quando fizer sentido.
+6. **Teste enquanto implementa, no escopo do que voce tocou** — nao rode a suite inteira aqui, ela e o portao da etapa seguinte:
+   - backend: `cd backend && ./mvnw -Dtest=<ClasseTocada>,<ClasseVizinha> test`
+   - frontend: `cd frontend && npm test` (285 testes em ~9s — nao vale a pena escopar)
+
+   Isso e **loop de iteracao, nao aprovacao**: quem aprova e `/pipeline:quality-check`, com a suite completa. Rode tambem as classes de **outros dominios** que consomem o que voce mudou — foi um teste de Dashboard que quebrou quando Lancamentos ganhou campo obrigatorio (issue #45). Na duvida sobre o alcance, deixe para a suite completa em vez de adivinhar.
+7. Se o plano ou uma tarefa se mostrar errado durante a implementacao (arquivo que nao existia, dependencia esquecida, tarefa que eram duas), ajuste a implementacao e registre o desvio nas notas — nao pare, a menos que seja bloqueio real (decisao de produto em aberto). Passo que o plano nao previa vira tarefa nova no fim da lista (proximo numero livre, ja marcada), com arquivos e criterios. Tarefa que voce decidir **nao** fazer fica desmarcada, com o motivo nas notas — **nunca marque como concluido o que nao foi feito**.
+   - Caso especial: criterio com **exemplo numerico** que so fecha com fixture que o back-end nunca produziria (issue #48) — **nao fabrique a fixture**. Ajuste o exemplo para um equivalente alcancavel, reescreva o criterio em `spec.md`, registre como decisao nova na secao "Decisoes" e anote o desvio.
+8. **Nao rode `git add` nem `git commit`.** Nunca edite `VERSION`, `backend/pom.xml`, `frontend/src/app/core/version.ts` ou `package.json` para mexer em numero de versao: quem faz isso e o hook `pre-commit`, no commit da etapa final.
+9. Escreva `specs/<numero>-<slug>/implementation-notes.md` — **teto de 6 KB**. E um registro de decisoes, nao um diario: o diff ja diz o que mudou linha a linha. Saida longa de comando, tabela de medicao ou log vai para `specs/<numero>-<slug>/evidence/<nome>.md`, citado por caminho.
 
 ```markdown
 # Notas de implementacao
 
-Branch: `<branch da feature>` (base: `<target>`; mudancas nao commitadas — commit na etapa `/pipeline:open-pr`)
+Branch: `<branch>` (base: `<target>`; mudancas nao commitadas — commit na etapa `/pipeline:open-pr`)
 
-Tarefas: <N de M concluidas> (ver `tasks.md`)
+Tarefas: <N de M concluidas> (ver `plan.md`)
 
 ## Arquivos alterados
 
-- `caminho` — <o que foi feito>
+- `caminho` — <o que foi feito, uma linha>
 
 ## Decisoes
 
 - <decisao tomada e por que>
 
-## Desvios em relacao ao plano e as tarefas
+## Desvios em relacao ao plano
 
-- <o que mudou em relacao a plan.md/tasks.md e por que: tarefa acrescentada, tarefa nao feita e o motivo> (ou "Nenhum desvio.")
+- <tarefa acrescentada, tarefa nao feita e o motivo> (ou "Nenhum desvio.")
 ```
 
-8. Atualize o front-matter de `spec.md`: `stage: implemented`, `branch: <branch da feature>`.
-9. Responda com um resumo curto: branch usada, quantas tarefas concluidas de quantas (e quais ficaram abertas, se alguma), arquivos alterados, se houve desvio do plano.
+A lista de arquivos alterados precisa ser **precisa**: e por ela que a etapa `/pipeline:open-pr` monta o commit depois da validacao do usuario.
 
-## Se estiver corrigindo apos falha de qualidade/build
+10. Atualize o front-matter de `spec.md`: `stage: implemented`, `branch: <branch>`.
+11. Responda com um resumo curto: branch, tarefas concluidas de quantas (e quais ficaram abertas), arquivos alterados, desvios.
 
-Se o prompt indicar que esta e uma nova rodada apos falha em `quality-report.md`, `build-report.md` ou apos criterio NAO ATENDIDO em `verification-report.md`, leia esse relatorio primeiro, corrija especificamente o que falhou e atualize `implementation-notes.md` acrescentando o que foi corrigido (nao reescreva do zero). Continue sem commitar.
+## Se estiver corrigindo apos falha de qualidade/build/verificacao
+
+Leia o relatorio da falha primeiro, corrija especificamente o que falhou e **acrescente** ao `implementation-notes.md` o que foi corrigido (nao reescreva do zero). Continue sem commitar.
 
 ## Se o usuario pedir ajustes apos a validacao manual
 
-A etapa `/pipeline:verify` para a esteira e pede ao usuario que valide a feature rodando na stack Docker local. Se o prompt indicar que o usuario pediu ajustes depois dessa validacao (tipicamente pequenos, visuais/UX, sem mudar os criterios de aceite), implemente-os e acrescente uma secao nova `## Ajustes pos-validacao (<AAAA-MM-DD>)` em `implementation-notes.md` listando o que mudou e o que o usuario pediu — nao reescreva as secoes anteriores. Como nada foi commitado ainda, o ajuste entra no mesmo commit da feature, criado depois em `/pipeline:open-pr`.
+Implemente e acrescente uma secao `## Ajustes pos-validacao (<AAAA-MM-DD>)` listando o que o usuario pediu e o que mudou — sem reescrever as secoes anteriores. Como nada foi commitado ainda, o ajuste entra no mesmo commit da feature.

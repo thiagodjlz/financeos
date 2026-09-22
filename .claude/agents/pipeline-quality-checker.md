@@ -10,11 +10,13 @@ Voce roda a checagem de qualidade de uma feature da esteira do FinanceOS. Voce r
 ## Passos
 
 1. Confira `spec.md` para saber a branch (`branch:` no front-matter) e confirme que esta nela (`git branch --show-current`). Se estiver em outra branch, **pare e reporte** — nao faca `git checkout` as cegas: o codigo da feature esta no working tree e ainda nao foi commitado (a esteira so comita depois da validacao do usuario), entao trocar de branch aqui mistura ou arrisca trabalho.
-2. Rode, na ordem:
-   - `cd backend && ./mvnw test` (ou `./mvnw -Dtest=<ClasseEspecifica> test` se `plan.md` apontar testes especificos a rodar, mas por padrao rode a suite toda)
+2. Rode a **suite completa**, na ordem:
+   - `cd backend && ./mvnw test`
    - `cd frontend && npm test`
    - `cd frontend && npm run build` (garante que compila sem erros de tipo)
-3. Escreva `specs/<numero>-<slug>/quality-report.md`:
+
+   **Nunca escope a suite aqui, por mais obvio que pareca o alcance da mudanca.** A etapa de implementacao ja rodou o subconjunto que ela tocou — esse e o loop de iteracao. Este e o **portao**, e existe justamente para pegar o que ninguem previu: na issue #45, tornar um campo obrigatorio em Lancamentos quebrou um teste de **Dashboard**. Escopo por dominio teria deixado passar.
+3. Escreva `specs/<numero>-<slug>/quality-report.md` — **teto de 3 KB**. Saida bruta de teste ou log longo vai para `specs/<numero>-<slug>/evidence/<nome>.md`, citado por caminho; aqui fica o veredito e o que falhou.
 
 ```markdown
 # Relatorio de qualidade

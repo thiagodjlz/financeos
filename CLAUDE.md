@@ -4,7 +4,7 @@ Sistema financeiro pessoal: backend Java/Quarkus (`backend/`), frontend Angular 
 
 ## Antes de mexer no dominio
 
-Regras de negocio e modelo de dados nao ficam aqui — ficam em [knowledge/](knowledge/README.md), separado por area (auth/permissoes, usuarios, contas, cartoes, categorias, transacoes, dashboard). Leia o(s) arquivo(s) relevante(s) antes de implementar algo que toque essas areas; varias regras nao sao obvias so lendo o codigo (ex.: categorias sao hoje um catalogo global, o usuario `super_admin` e oculto e ignora perfis, transacoes nunca sao excluidas de verdade).
+Regras de negocio e modelo de dados nao ficam aqui — ficam em [knowledge/](knowledge/README.md), separado por dominio de negocio (auth/permissoes, usuarios, categorias, transacoes, dashboard, documentacao) e por area tecnica (`backend-patterns.md`, `frontend-ui.md`, `testing.md`, `deployment.md`, com `architecture.md` como nucleo). Leia o(s) arquivo(s) relevante(s) antes de implementar algo que toque essas areas; varias regras nao sao obvias so lendo o codigo (ex.: categorias sao hoje um catalogo global, o usuario `super_admin` e oculto e ignora perfis, transacoes nunca sao excluidas de verdade).
 
 ## Convencoes
 
@@ -14,7 +14,7 @@ Regras de negocio e modelo de dados nao ficam aqui — ficam em [knowledge/](kno
 - **Toda regra de negocio e validacao e obrigatoriamente imposta no back-end** (Bean Validation no DTO ou checagem no `Resource`, com erro tratado em portugues). O front-end pode espelhar a regra como UX (`required`, `maxlength`, filtro de dropdown), mas nunca ser o unico lugar dela. Constraints do banco (not null, unique, check) sao so rede de seguranca — quem valida e responde e o back-end; as unicas regras que podem viver apenas no banco sao PKs e FKs.
 - Sem comentarios no codigo a menos que expliquem um "porque" nao-obvio.
 - Todo endpoint novo do backend comeca chamando `accessControl.require(Screen.X, Action.Y)` — ver [knowledge/auth-and-permissions.md](knowledge/auth-and-permissions.md).
-- Detalhes de stack/comandos de build e teste: [knowledge/architecture.md](knowledge/architecture.md).
+- Detalhes de stack e comandos de build: [knowledge/architecture.md](knowledge/architecture.md); padroes de teste: [knowledge/testing.md](knowledge/testing.md).
 
 ## Versionamento e branches
 
@@ -28,7 +28,7 @@ Cada versao tem a sua branch; `main` e a versao em desenvolvimento e nunca vai p
 
 ## Ambiente de producao externo
 
-`docker-compose.yml` descreve o ambiente **local** e nao pode ir para uma maquina exposta. Producao e o arquivo base **mais** a sobreposicao `docker-compose.prod.yml` (`-f docker-compose.yml -f docker-compose.prod.yml`), que fecha as portas, poe HTTPS (Caddy), tira Swagger/OpenAPI e liga `FINANCEOS_DEPLOYMENT=production` — modo em que o backend exige chave RSA propria e um administrador vindo do `.env`, e desativa as contas cujo hash esta publicado neste repositorio (que e publico). Publicar/atualizar: `./scripts/deploy.sh <versao>` na VM. Como a stack chega na internet e escolhido pelo `FINANCEOS_EXPOSICAO` no `.env`: `acme` (dominio proprio + Let's Encrypt) ou `funnel` (Tailscale Funnel, que acrescenta uma terceira sobreposicao, `docker-compose.funnel.yml`, dispensa dominio e nao abre porta nenhuma). Detalhes em [README.md](README.md#producao-ambiente-externo) e [knowledge/architecture.md](knowledge/architecture.md).
+`docker-compose.yml` descreve o ambiente **local** e nao pode ir para uma maquina exposta. Producao e o arquivo base **mais** a sobreposicao `docker-compose.prod.yml` (`-f docker-compose.yml -f docker-compose.prod.yml`), que fecha as portas, poe HTTPS (Caddy), tira Swagger/OpenAPI e liga `FINANCEOS_DEPLOYMENT=production` — modo em que o backend exige chave RSA propria e um administrador vindo do `.env`, e desativa as contas cujo hash esta publicado neste repositorio (que e publico). Publicar/atualizar: `./scripts/deploy.sh <versao>` na VM. Como a stack chega na internet e escolhido pelo `FINANCEOS_EXPOSICAO` no `.env`: `acme` (dominio proprio + Let's Encrypt) ou `funnel` (Tailscale Funnel, que acrescenta uma terceira sobreposicao, `docker-compose.funnel.yml`, dispensa dominio e nao abre porta nenhuma). Detalhes em [README.md](README.md#producao-ambiente-externo) e [knowledge/deployment.md](knowledge/deployment.md).
 
 ## Esteira automatizada de features (issue -> PR)
 
@@ -36,8 +36,7 @@ Para transformar uma issue do GitHub em Pull Request, ver [specs/README.md](spec
 
 ```
 /pipeline:spec-from-issue <numero-da-issue>
-/pipeline:plan-implementation <numero>
-/pipeline:tasks <numero>             # quebra o plano em tarefas rastreadas aos criterios
+/pipeline:plan-implementation <numero>   # briefing + plano + tarefas rastreadas aos criterios
 /pipeline:implement <numero>
 /pipeline:quality-check <numero>
 /pipeline:build <numero>
@@ -50,10 +49,14 @@ Cada comando roda um subagente dedicado (`.claude/agents/pipeline-*.md`), grava 
 
 **Cada issue tem um alvo (`target` no front-matter da spec).** `main` para funcionalidade nova (branch `feature/issue-<n>-<slug>`, PR contra `main`) ou `vX.Y.Z` para correcao de uma versao ja cortada (branch `fix/issue-<n>-<slug>` criada a partir da versao, PR contra ela, build incrementada automaticamente no commit). A etapa 1 pergunta ao usuario quando a issue e bug de versao ja cortada; as demais etapas seguem o `target`.
 
-**Cada tarefa e amarrada a um criterio de aceite.** A etapa 3 gera `tasks.md` com a matriz de cobertura criterio -> tarefas e recusa seguir para a implementacao se algum criterio de aceite ficou sem tarefa (volta uma vez para replanejar; persistindo, pergunta ao usuario). A etapa 4 marca as tarefas conforme conclui, e a etapa 8 usa a matriz para achar a evidencia de cada criterio.
+**Cada tarefa e amarrada a um criterio de aceite.** A etapa 2 gera o `plan.md` com as tarefas e a matriz de cobertura criterio -> tarefas, e recusa seguir para a implementacao se algum criterio ficou sem tarefa (volta uma vez para replanejar; persistindo, pergunta ao usuario). A etapa 3 marca as tarefas conforme conclui, e a etapa 7 usa a matriz para achar a evidencia de cada criterio.
 
-**Nada e commitado antes da validacao do usuario.** Das etapas 4 a 8 o codigo fica no working tree da branch da feature; a etapa 7 atualiza o ambiente de teste local (`docker compose up -d --build`) e a etapa 8 verifica os criterios de aceite um por um e **para**, pedindo que o usuario valide a feature rodando em `http://localhost`. Commit, push e PR acontecem juntos na etapa 9, e `/pipeline:open-pr` recusa rodar se a spec nao estiver em `stage: validated`. Nenhum agente entre as etapas 4 e 9 deve rodar `git stash`, `git reset --hard` ou `git checkout -- <arquivo>`: nao existe commit para onde voltar.
+**So a etapa 2 le `knowledge/`.** Ela destila o que restringe aquela issue em `specs/<n>-<slug>/context.md` (o briefing), e as etapas seguintes leem esse arquivo em vez da base inteira. Se uma etapa precisar de regra que o briefing nao trouxe, ela **abre o `knowledge/` correspondente e registra a falta** em "Consultas fora do briefing" no proprio `context.md` — economia de contexto nunca justifica implementar sem saber a regra.
+
+**Teste escopado e para iterar, nunca para aprovar.** A etapa 3 roda so as classes que tocou; a etapa 4 (`quality-check`) roda a suite completa, sempre.
+
+**Nada e commitado antes da validacao do usuario.** Das etapas 3 a 7 o codigo fica no working tree da branch da feature; a etapa 6 atualiza o ambiente de teste local (`docker compose up -d --build`) e a etapa 7 verifica os criterios de aceite um por um e **para**, pedindo que o usuario valide a feature rodando em `http://localhost`. Commit, push e PR acontecem juntos na etapa 8, e `/pipeline:open-pr` recusa rodar se a spec nao estiver em `stage: validated`. Nenhum agente entre as etapas 3 e 8 deve rodar `git stash`, `git reset --hard` ou `git checkout -- <arquivo>`: nao existe commit para onde voltar.
 
 Fora essa parada obrigatoria, a esteira para para perguntar quando ha uma decisao de implementacao que ela nao consegue tomar sozinha (ex.: "Pontos em aberto" na spec, abordagens conflitantes no plano) ou quando testes/build continuam falhando apos 2 rodadas automaticas de correcao.
 
-Ao final do `/pipeline:open-pr`, roda automaticamente `/pipeline:sync-knowledge <numero>` — etapa que atualiza `knowledge/*.md` e os proprios agents/skills da esteira com regras de negocio e padroes de processo que a feature revelou. Ela nao comita sozinha: as mudancas ficam no working tree para voce revisar o diff antes de commitar.
+Ao final do `/pipeline:open-pr`, roda automaticamente `/pipeline:sync-knowledge <numero>` — etapa que atualiza `knowledge/*.md` e os proprios agents/skills da esteira com regras de negocio e padroes de processo que a feature revelou. Ela trabalha **com orcamento**: para acrescentar, precisa caber nos tetos de tamanho (`architecture.md` 10 KB, demais arquivos de `knowledge/` 25 KB, cada agent ~9 KB), fundindo a regra nova com a anterior que ela generaliza em vez de empilhar mais um caso. Ela nao comita sozinha: as mudancas ficam no working tree para voce revisar o diff antes de commitar.
