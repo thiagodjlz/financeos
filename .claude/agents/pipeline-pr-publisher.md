@@ -10,7 +10,7 @@ O commit acontece aqui, e nao na etapa de implementacao, porque a esteira para a
 
 ## Passos
 
-1. Leia `spec.md` (`branch`, `target`, `title`, `url` da issue, `stage`), `implementation-notes.md` (arquivos alterados), `plan.md`, `quality-report.md`, `build-report.md` e `verification-report.md` da pasta.
+1. Leia `spec.md` (`branch`, `target`, `title`, `url` da issue, `stage`, criterios de aceite) e `implementation-notes.md` (**arquivos alterados** — e a lista que monta o commit). De `quality-report.md`, `build-report.md` e `verification-report.md`, leia apenas o **veredito** e a contagem de criterios: voce escreve um resumo de PR, nao uma releitura da esteira. Nao abra `plan.md` nem `context.md`.
 2. Confirme que `stage: validated` no front-matter de `spec.md`. Se nao estiver, **pare e reporte** sem commitar nem abrir PR: significa que o usuario nao validou a feature.
 3. Confira `git status` e `git branch --show-current` (precisa ser a `branch` da spec). O **`target` da spec e a branch base do PR**: `main` para feature, `vX.Y.Z` para correcao de uma versao ja cortada (campo ausente em spec antiga = `main`). Crie o commit:
    - `git add` **apenas** nos arquivos listados em `implementation-notes.md` mais a pasta `specs/<numero>-<slug>/` (os artefatos da esteira entram no mesmo commit). Nunca `git add -A` nem `git add .` — pode arrastar arquivo local que nao e da feature.
@@ -57,4 +57,4 @@ Resolve #<numero da issue>
 
 - Nao rode este agente se `quality-report.md` ou `build-report.md` indicarem falha, ou se `spec.md` nao estiver em `stage: validated` — responda explicando o que precisa acontecer primeiro (`/pipeline:implement` para corrigir, `/pipeline:verify` para validar) em vez de commitar ou abrir o PR mesmo assim.
 - Voce e o unico agente da esteira que comita, empurra e cria PR. Nenhuma etapa anterior toca o historico do git.
-- Se `tasks.md` tiver tarefa desmarcada, nao bloqueie por isso (o usuario ja validou a feature na etapa anterior), mas mencione no corpo do PR, em uma linha, qual tarefa ficou de fora e o motivo registrado em `implementation-notes.md` — quem revisa o PR precisa saber.
+- Se a lista de tarefas de `plan.md` (ou `tasks.md`, em spec antiga) tiver tarefa desmarcada, nao bloqueie por isso (o usuario ja validou a feature na etapa anterior), mas mencione no corpo do PR, em uma linha, qual tarefa ficou de fora e o motivo registrado em `implementation-notes.md` — quem revisa o PR precisa saber.

@@ -1,32 +1,32 @@
-# Esteira de implementacao (issue -> spec -> plano -> tarefas -> implementacao -> qualidade -> build -> ambiente -> validacao -> PR)
+# Esteira de implementacao (issue -> spec -> plano -> implementacao -> qualidade -> build -> ambiente -> validacao -> PR)
 
 Cada issue do GitHub processada pela esteira automatizada vira uma pasta aqui:
 
 ```
 specs/<numero-da-issue>-<slug>/
   spec.md                    # etapa 1 - /pipeline:spec-from-issue
-  plan.md                    # etapa 2 - /pipeline:plan-implementation
-  tasks.md                   # etapa 3 - /pipeline:tasks
-  implementation-notes.md    # etapa 4 - /pipeline:implement
-  quality-report.md          # etapa 5 - /pipeline:quality-check
-  build-report.md            # etapa 6 - /pipeline:build
-  docker-report.md           # etapa 7 - /pipeline:docker-restart
-  verification-report.md     # etapa 8 - /pipeline:verify   <- PARADA para validacao do usuario
-  pr.md                      # etapa 9 - /pipeline:open-pr  (commit + push + PR)
+  context.md                 # etapa 2 - briefing: o que knowledge/ diz sobre ESTA issue
+  plan.md                    # etapa 2 - /pipeline:plan-implementation (abordagem + tarefas + cobertura)
+  implementation-notes.md    # etapa 3 - /pipeline:implement
+  quality-report.md          # etapa 4 - /pipeline:quality-check
+  build-report.md            # etapa 5 - /pipeline:build
+  docker-report.md           # etapa 6 - /pipeline:docker-restart
+  verification-report.md     # etapa 7 - /pipeline:verify   <- PARADA para validacao do usuario
+  pr.md                      # etapa 8 - /pipeline:open-pr  (commit + push + PR)
+  evidence/                  # anexos longos (saida de teste, tabelas de medicao), so lidos sob demanda
 ```
 
-`<slug>` e um resumo curto em kebab-case do titulo da issue (ex.: `42-exportar-lancamentos-csv`). Todos os comandos da esteira recebem o **numero da issue** como argumento e resolvem a pasta via glob `specs/<numero>-*`.
+`<slug>` e um resumo curto em kebab-case do titulo da issue (ex.: `42-exportar-lancamentos-csv`). Todos os comandos recebem o **numero da issue** e resolvem a pasta via glob `specs/<numero>-*`.
 
-Pastas criadas antes de julho/2026 tambem contem um `estimate.md`: era o resultado de uma etapa de estimativa que existiu no inicio da esteira e foi removida. Os arquivos ficam como registro historico; nada na esteira atual le ou gera esse arquivo.
+Pastas anteriores a esta versao da esteira tem um `tasks.md` separado (a quebra em tarefas era uma etapa propria) e nao tem `context.md`; as mais antigas tambem tem um `estimate.md`, de uma etapa de estimativa que nao existe mais. Ficam como registro historico — os agentes sabem ler esse formato, mas nao o geram mais.
 
 ## Como usar
 
-Rode a primeira etapa e a esteira segue sozinha ate a parada de validacao — cada etapa invoca a proxima automaticamente, sem pedir confirmacao:
+Rode a primeira etapa e a esteira segue sozinha ate a parada de validacao — cada etapa invoca a proxima, sem pedir confirmacao:
 
 ```
 /pipeline:spec-from-issue <numero>
 /pipeline:plan-implementation <numero>
-/pipeline:tasks <numero>
 /pipeline:implement <numero>
 /pipeline:quality-check <numero>
 /pipeline:build <numero>
@@ -37,20 +37,50 @@ Rode a primeira etapa e a esteira segue sozinha ate a parada de validacao — ca
 
 A esteira para para perguntar em tres situacoes:
 
-1. **Sempre, na etapa 8** — a parada de validacao (ver abaixo).
-2. Quando ha uma decisao de implementacao que ela nao consegue tomar sozinha (ex.: "Pontos em aberto" na spec, abordagens conflitantes no plano, criterio de aceite que continua sem cobertura depois de replanejar).
+1. **Sempre, na etapa 7** — a parada de validacao (ver abaixo).
+2. Quando ha decisao de implementacao que ela nao consegue tomar sozinha ("Pontos em aberto" na spec, abordagens conflitantes, criterio que continua sem cobertura depois de replanejar).
 3. Quando testes/build continuam falhando apos 2 rodadas automaticas de correcao.
 
-Se `quality-check`, `build` ou `verify` encontrarem problema, a esteira roda automaticamente uma rodada de correcao (`/pipeline:implement` de novo — o agente le o relatorio de falha alem do plano e das tarefas) e repete dali, ate no maximo 2 rodadas automaticas; persistindo a falha, ela para e reporta. Ajustes que **voce** pede na validacao manual nao contam nesse limite.
+Se `quality-check`, `build` ou `verify` encontrarem problema, a esteira roda automaticamente uma rodada de correcao (`/pipeline:implement` de novo, com o trecho relevante do relatorio de falha) e repete dali, ate 2 rodadas automaticas. Ajustes que **voce** pede na validacao manual nao contam nesse limite.
 
-## Rastreabilidade: da spec a tarefa (etapa 3)
+## Contexto: quem le `knowledge/` (e quem nao le)
 
-`/pipeline:tasks` quebra o `plan.md` em tarefas executaveis (`T1`, `T2`, ...) na ordem de execucao, cada uma declarando os arquivos que toca e **quais criterios de aceite ela atende**. No fim, monta a matriz de cobertura criterio -> tarefas e confere as duas direcoes:
+O gasto de contexto da esteira nao vem do codigo — vem de reler as mesmas regras em toda etapa. Por isso:
 
-- criterio de aceite sem nenhuma tarefa: o plano esta incompleto. A esteira volta uma vez para `/pipeline:plan-implementation` informando exatamente o que ficou descoberto, e refaz as tarefas. Se a lacuna persistir, ela para e pergunta — pode ser que o criterio esteja mal escrito, e isso e decisao sua.
-- tarefa sem criterio nenhum que nao seja infraestrutura declarada (migration, por exemplo): pode ser escopo a mais do que a issue pediu, e a esteira pergunta antes de seguir.
+- **So a etapa 2 le `knowledge/` e varre o codigo.** Ela destila o que restringe *esta* issue em `context.md` (teto de 6 KB): as regras aplicaveis **com a ancora do arquivo de onde vieram**, os arquivos em jogo e as 3 a 5 convencoes que a issue pode violar.
+- **As etapas 3 e 7 leem `context.md`, nao `knowledge/`.**
+- **A valvula de escape e obrigatoria**: se uma etapa precisar de regra que o briefing nao trouxe, ela abre o arquivo de `knowledge/` correspondente **e registra a falta** na secao "Consultas fora do briefing" do `context.md`. Esse registro e o unico sinal de que o briefing esta saindo incompleto, e a etapa `sync-knowledge` o usa para corrigir a causa. Economia de token nunca justifica implementar sem saber a regra.
 
-E de proposito que essa checagem venha antes da implementacao: criterio esquecido descoberto aqui custa um paragrafo; descoberto na etapa 8 custa uma rodada inteira de correcao. A etapa 4 marca cada tarefa como concluida conforme avanca, e a etapa 8 usa a matriz para saber onde procurar a evidencia de cada criterio.
+`knowledge/` tambem foi quebrado por area (ver [knowledge/README.md](../knowledge/README.md)): `architecture.md` e o nucleo carregado sempre (teto de 10 KB) e o detalhe de backend, frontend, teste e deploy vive em arquivos proprios, carregados so quando a issue toca aquela area.
+
+## Tetos de tamanho dos artefatos
+
+Artefato sem teto vira custo fixo de todas as etapas seguintes. Estourou, o excesso vai para `evidence/` e e citado por caminho — nao some, so deixa de ser carregado por quem nao precisa dele.
+
+| Artefato | Teto |
+|---|---|
+| `spec.md` | 8 KB |
+| `context.md` | 6 KB |
+| `plan.md` | 12 KB |
+| `implementation-notes.md` | 6 KB |
+| `quality-report.md` | 3 KB |
+| `verification-report.md` | 8 KB |
+
+## Rastreabilidade: da spec a tarefa (etapa 2)
+
+A etapa 2 quebra o plano em tarefas (`T1`, `T2`, ...) na ordem de execucao, cada uma declarando os arquivos que toca e **quais criterios de aceite ela atende**, e monta a matriz de cobertura criterio -> tarefas, conferindo as duas direcoes:
+
+- **criterio de aceite sem nenhuma tarefa**: o plano esta incompleto. A esteira replaneja uma vez informando exatamente o que ficou descoberto. Se a lacuna persistir, para e pergunta — pode ser que o criterio esteja mal escrito, e isso e decisao sua.
+- **tarefa sem criterio nenhum** que nao seja infraestrutura declarada (migration, por exemplo): pode ser escopo a mais do que a issue pediu, e a esteira pergunta antes de seguir.
+
+A conferencia vem antes da implementacao de proposito: criterio esquecido descoberto aqui custa um paragrafo; descoberto na etapa 7 custa uma rodada inteira. A etapa 3 marca as tarefas conforme conclui, e a etapa 7 usa a matriz para achar a evidencia de cada criterio.
+
+## Testes: loop rapido na implementacao, suite completa no portao
+
+- **Etapa 3 (implementacao)** roda so o que tocou — `./mvnw -Dtest=<ClasseTocada>,<ClasseVizinha> test` — para iterar rapido. O frontend roda inteiro mesmo assim (285 testes em ~9s; escopar nao compensa).
+- **Etapa 4 (`quality-check`)** roda a **suite completa**, sempre, sem excecao. E o portao, e existe para pegar o que ninguem previu: na issue #45, tornar um campo obrigatorio em Lancamentos quebrou um teste de **Dashboard**. Escopo por dominio teria deixado passar.
+
+Escopar e para iterar; nunca para aprovar.
 
 ## Feature na `main`, correcao numa versao (`target`)
 
@@ -61,30 +91,30 @@ O campo `target` do front-matter diz em cima de que branch a issue e implementad
 | `main` | funcionalidade nova, melhoria, refatoracao | `feature/issue-<n>-<slug>` | `main` | nao muda (`main` fica em `X.Y.Z-dev`) |
 | `vX.Y.Z` | bug de uma versao ja cortada | `fix/issue-<n>-<slug>` | `vX.Y.Z` | sobe sozinha no commit (`X.Y.Z-NN`) |
 
-Quem decide isso e a etapa 1: para bug que afeta versao ja cortada, `/pipeline:spec-from-issue` pergunta ao usuario se a correcao sai numa build daquela versao ou so na proxima versao. As demais etapas apenas seguem o `target`.
+Quem decide e a etapa 1: para bug que afeta versao ja cortada, ela pergunta ao usuario se a correcao sai numa build daquela versao ou so na proxima versao. As demais etapas apenas seguem o `target`.
 
-Na correcao de versao, a etapa 4 cria a branch a partir de `vX.Y.Z` e grava `branch.<nome>.financeosVersionBase = vX.Y.Z` — e isso que faz o hook `pre-commit` incrementar a build quando a etapa 9 commita. A etapa 9 abre o PR com `--base vX.Y.Z` e lembra o usuario de levar a correcao para a `main` depois do merge.
+Na correcao de versao, a etapa 3 cria a branch a partir de `vX.Y.Z` e grava `branch.<nome>.financeosVersionBase = vX.Y.Z` — e isso que faz o hook `pre-commit` incrementar a build quando a etapa 8 commita. A etapa 8 abre o PR com `--base vX.Y.Z` e lembra de levar a correcao para a `main` depois do merge.
 
 ## Nada e commitado antes da sua validacao
 
-O commit, o push e o PR acontecem todos na etapa 9, depois que voce aprova a feature. Da etapa 4 a 8 o codigo fica no working tree da branch de trabalho (`feature/issue-<numero>-<slug>` ou, em correcao de versao, `fix/issue-<numero>-<slug>`), sem entrar no historico do git.
+O commit, o push e o PR acontecem todos na etapa 8, depois que voce aprova a feature. Das etapas 3 a 7 o codigo fica no working tree da branch de trabalho, sem entrar no historico do git.
 
-Isso funciona porque os Dockerfiles do `backend` e do `frontend` sao multi-stage e buildam a partir do codigo-fonte copiado: a stack Docker roda o working tree, sem depender de commit. Consequencia pratica: nenhum agente da esteira deve rodar `git stash`, `git reset --hard` ou `git checkout -- <arquivo>` entre as etapas 4 e 9, porque nao existe commit para onde voltar.
+Isso funciona porque os Dockerfiles do `backend` e do `frontend` sao multi-stage e buildam a partir do codigo-fonte copiado: a stack Docker roda o working tree, sem depender de commit. Consequencia pratica: **nenhum agente da esteira deve rodar `git stash`, `git reset --hard` ou `git checkout -- <arquivo>` entre as etapas 3 e 8** — nao existe commit para onde voltar.
 
-## A parada de validacao (etapa 8)
+## A parada de validacao (etapa 7)
 
-A ordem das etapas 7 e 8 e proposital: primeiro o ambiente de teste local e atualizado com o codigo da feature, depois a esteira para para voce validar nele.
+A ordem das etapas 6 e 7 e proposital: primeiro o ambiente de teste local e atualizado com o codigo da feature, depois a esteira para para voce validar nele.
 
-- **Etapa 7 (`/pipeline:docker-restart`)** roda `docker compose up -d --build` e confirma que o ambiente esta no ar de verdade (containers de pe, `GET /api/health` = 200, frontend respondendo, nenhum erro de migration Flyway). Ela sobe a stack mesmo se ela estiver parada — sem ambiente atualizado nao ha o que validar, e por isso uma falha aqui interrompe a esteira.
-- **Etapa 8 (`/pipeline:verify`)** percorre os criterios de aceite da spec um por um e classifica cada um: **VERIFICADO** (com evidencia: teste que passou, chamada HTTP real, ou trecho do diff), **VALIDACAO MANUAL** (depende de ver a tela) ou **NAO ATENDIDO**. Os VERIFICADO ja saem marcados como `- [x]` na spec.
-  - Se algum criterio esta NAO ATENDIDO, a esteira volta para `implement` sem te incomodar — a feature esta incompleta.
-  - Caso contrario, ela te mostra o roteiro de validacao manual (tela: `http://localhost`; API/Swagger: `http://localhost:8080/docs`) e **espera sua resposta**. Aprovado -> `stage: validated` e segue para commit + push + PR. Ajustes -> volta para `implement` com o que voce pediu.
+- **Etapa 6 (`/pipeline:docker-restart`)** roda `docker compose up -d --build` e confirma que o ambiente esta no ar de verdade (containers de pe, `GET /api/health` = 200, frontend respondendo, nenhum erro de migration Flyway). Ela sobe a stack mesmo se estiver parada — sem ambiente atualizado nao ha o que validar, e por isso uma falha aqui interrompe a esteira.
+- **Etapa 7 (`/pipeline:verify`)** percorre os criterios de aceite um por um e classifica cada um: **VERIFICADO** (com evidencia: teste que passou, chamada HTTP real, medicao na pagina renderizada, ou trecho do diff), **VALIDACAO MANUAL** (depende de juizo humano) ou **NAO ATENDIDO**. Os VERIFICADO ja saem marcados como `- [x]` na spec.
+  - Algum criterio NAO ATENDIDO: a esteira volta para `implement` sem te incomodar — a feature esta incompleta.
+  - Caso contrario, ela mostra o roteiro de validacao manual (tela: `http://localhost`; API/Swagger: `http://localhost:8080/docs`) e **espera sua resposta**. Aprovado -> `stage: validated` e segue para commit + push + PR. Ajustes -> volta para `implement` com o que voce pediu.
+
+O roteiro manual e para **juizo humano** (tom de texto, aparencia com os dados reais), nao para o que a esteira nao teve paciencia de medir: layout, CSS efetivo, foco e geometria se medem na pagina renderizada, e criterios de API se exercitam com chamada real.
 
 `/pipeline:open-pr` recusa rodar se a spec nao estiver em `stage: validated`. Essa checagem e o que garante que a parada nao seja contornada.
 
 ## Contrato de `spec.md` (front-matter = estado da esteira)
-
-`spec.md` sempre comeca com um front-matter YAML que funciona como o "estado" da issue nesta esteira:
 
 ```yaml
 ---
@@ -92,38 +122,35 @@ issue: 42
 url: https://github.com/thiagodjlz/financeos/issues/42
 title: "Titulo original da issue"
 domains: [transactions, dashboard]   # ver knowledge/README.md - so os dominios afetados
-target: main                         # branch base: main (versao em desenvolvimento) ou vX.Y.Z (correcao de versao)
+target: main                         # main (versao em desenvolvimento) ou vX.Y.Z (correcao de versao)
 stage: spec                          # ver lista abaixo
 branch: feature/issue-42-exportar-lancamentos-csv   # preenchido a partir da etapa "implement"
 created: 2026-07-07
 ---
 ```
 
-Valores de `stage`, na ordem: `spec` -> `planned` -> `tasked` -> `implemented` -> `quality-checked` -> `built` -> `docker-restarted` -> `verified` -> `validated` -> `pr-open`.
+Valores de `stage`, na ordem: `spec` -> `planned` -> `implemented` -> `quality-checked` -> `built` -> `docker-restarted` -> `verified` -> `validated` -> `pr-open`.
 
 `verified` significa "a esteira verificou o que dava para verificar automaticamente"; `validated` significa "o usuario validou no ambiente local" e **so o comando `/pipeline:verify` aplica esse valor**, nunca um agente.
 
-Ha uma unica flag transitoria: `quality: failed`, adicionada por `/pipeline:quality-check` quando algo falha, para a rodada de correcao saber que precisa corrigir. Ela e **removida** pela propria etapa quando os testes voltam a passar — front-matter nao deve guardar falha antiga.
-
-Cada etapa seguinte:
-1. Le esse front-matter para saber o `stage` atual e os `domains`.
-2. Carrega **so** os arquivos de `knowledge/` listados em `domains` (nunca a pasta toda) + `knowledge/architecture.md`.
-3. Ao terminar, atualiza o campo `stage` (e `branch`, quando aplicavel) e grava seu proprio arquivo de saida.
-
-Isso mantem cada etapa com contexto pequeno e previsivel — e o mecanismo principal de economia de tokens da esteira: nenhum agente rele a conversa inteira nem toda a base de conhecimento, so o que a issue especifica precisa.
+Ha uma unica flag transitoria: `quality: failed`, adicionada por `/pipeline:quality-check` quando algo falha, para a rodada de correcao saber que precisa corrigir. Ela e **removida** pela propria etapa quando os testes voltam a passar.
 
 ## O que cada artefato contem
 
-- **spec.md**: historia no formato "Como / quero / para que", contexto, criterios de aceite testaveis, fora de escopo, dominios afetados. Quando a issue e ambigua em algum ponto, a spec registra isso em "Pontos em aberto"; se o usuario resolver esses pontos durante a conversa, a resposta vira uma secao "Decisoes" (com data) em vez de ficar em aberto — so seguem como "Pontos em aberto" duvidas que ninguem resolveu ainda. Os checkboxes dos criterios de aceite sao marcados na etapa 8, conforme cada criterio e verificado (nunca antes).
-- **plan.md**: abordagem escolhida, arquivos a criar/alterar (backend/frontend/migration), ordem geral entre as camadas, como cada criterio de aceite sera verificado ("Superficie de validacao"), riscos/pontos de atencao. O passo a passo executavel nao fica aqui — fica em `tasks.md`.
-- **tasks.md**: tarefas numeradas (`T1`, `T2`, ...) na ordem de execucao, cada uma com os arquivos que toca e os criterios de aceite que atende; matriz de cobertura criterio -> tarefas; secao "Lacunas". Os checkboxes sao marcados pela etapa 4 conforme cada tarefa e concluida — tarefa marcada e o registro de onde a implementacao chegou, entao nunca se marca o que nao foi feito.
-- **implementation-notes.md**: branch usada, quantas tarefas foram concluidas, arquivos efetivamente alterados, decisoes tomadas, desvios em relacao ao `plan.md`/`tasks.md` e por que, e ajustes pos-validacao quando o usuario pede algo na etapa 8. A lista de arquivos alterados e o que a etapa 9 usa para montar o commit.
-- **quality-report.md**: resultado de `./mvnw test` e `npm test`/`ng build`, resumo pass/fail, detalhe de falhas.
-- **build-report.md**: resultado de `./mvnw package` e `npm run build`, artefatos gerados, sucesso/falha.
-- **docker-report.md**: resultado de `docker compose up -d --build`, checagens de saude do ambiente e os enderecos onde validar.
+- **spec.md**: historia "Como / quero / para que", contexto, criterios de aceite testaveis, fora de escopo, dominios. Ambiguidade vira "Pontos em aberto"; resolvida com o usuario, vira "Decisoes" (com data). Os checkboxes sao marcados na etapa 7, nunca antes.
+- **context.md**: o briefing — regras de negocio que restringem esta issue (com a ancora do `knowledge/` de origem), tabela de arquivos em jogo, convencoes aplicaveis, e a secao "Consultas fora do briefing" que as etapas seguintes alimentam.
+- **plan.md**: abordagem, arquivos a criar/alterar por camada, **tarefas na ordem de execucao** (com arquivos e criterios de cada uma), matriz de cobertura, superficie de validacao, o que fica para validacao manual, riscos e lacunas.
+- **implementation-notes.md**: branch, quantas tarefas concluidas, **arquivos efetivamente alterados** (e essa lista que monta o commit da etapa 8), decisoes, desvios do plano e ajustes pos-validacao.
+- **quality-report.md**: resultado de `./mvnw test`, `npm test` e `ng build` — veredito e falhas, com saida longa em `evidence/`.
+- **build-report.md**: resultado de `./mvnw package` e `npm run build`, artefatos gerados.
+- **docker-report.md**: resultado de `docker compose up -d --build`, checagens de saude e enderecos onde validar.
 - **verification-report.md**: tabela criterio a criterio (status + evidencia), roteiro de validacao manual, dados de teste descartaveis criados, e a linha "Validado pelo usuario em <data>" depois do seu OK.
-- **pr.md**: URL do Pull Request aberto, hash do commit e resumo do que foi incluido.
+- **pr.md**: URL do Pull Request, hash do commit e resumo do que entrou.
 
 ## Etapa apos o PR: sincronizar conhecimento
 
-Depois de `/pipeline:open-pr`, roda automaticamente `/pipeline:sync-knowledge <numero>` — etapa pos-PR, nao numerada. O subagente `pipeline-knowledge-updater` le tudo que foi produzido pela esteira para aquela issue e atualiza `knowledge/*.md` (regras de negocio que mudaram) e os agents/skills da propria esteira (`.claude/agents/pipeline-*.md`, `.claude/skills/pipeline/*/SKILL.md`) quando o processo revelar um padrao novo (ex.: um criterio que ficou como validacao manual mas daria para automatizar, um ajuste que voce pediu duas vezes em features diferentes). Ela nao comita sozinha — as mudancas ficam no working tree para voce revisar o diff antes de decidir commitar. Tambem pode ser rodada manualmente a qualquer momento.
+Depois de `/pipeline:open-pr`, roda automaticamente `/pipeline:sync-knowledge <numero>` — etapa pos-PR, nao numerada. Ela le **secoes especificas** do que a esteira produziu (decisoes, desvios, lacunas, consultas fora do briefing, achados da verificacao) e atualiza `knowledge/*.md` e, quando o processo revelar um padrao novo, os proprios agents/skills da esteira.
+
+Ela trabalha **com orcamento**: para acrescentar, precisa caber nos tetos (`architecture.md` 10 KB, demais `knowledge/` 25 KB, cada agent 9 KB). Licao de issue entra como **regra generalizada** com o numero da issue como referencia, nunca como narrativa; regra nova que generaliza uma anterior **funde** as duas. Licao de area tecnica vai para `knowledge/` (carregado sob demanda), nao para o prompt do agent (carregado em toda issue). Foi por nao ter orcamento que `architecture.md` chegou a 44 KB sendo lido por toda etapa de toda issue.
+
+Ela nao comita sozinha — as mudancas ficam no working tree para voce revisar o diff antes de decidir. Tambem pode ser rodada manualmente a qualquer momento.
