@@ -4,7 +4,7 @@ url: https://github.com/thiagodjlz/financeos/issues/71
 title: "Novidades por versão"
 domains: [documentation, auth]
 target: main
-stage: validated
+stage: pr-open
 branch: feature/issue-71-novidades-por-versao
 created: 2026-09-21
 ---
