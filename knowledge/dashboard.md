@@ -9,7 +9,7 @@ Fonte: `backend/src/main/java/br/com/financeos/dashboard/`. Unica area do backen
   - O **ano corrente nunca e recusado** por disponibilidade: mesmo um usuario sem nenhum lancamento recebe 200 zerado nele.
   - **Mes sem dados nunca e erro**: continua 200 com totais zerados, `monthlyEvolution` completo e o `.empty-state` "Sem dados no período" na tela. A validacao do ano e a unica que recusa um periodo.
   - Efeito visivel da validacao nova: "resumo zerado para um ano qualquer" deixou de existir — URL/bookmark antigo com ano sem lancamento agora recebe toast de Alerta em vez de tela zerada.
-  - Os dois parametros sao lidos do `@Context UriInfo`, nao por `@QueryParam` — ver [architecture.md](architecture.md), "Convencoes de codigo".
+  - Os dois parametros sao lidos do `@Context UriInfo`, nao por `@QueryParam` — ver [backend-patterns.md](backend-patterns.md), "Parametros de query".
 - `GET /dashboard/periods` (issue #69): periodos que o usuario tem, no formato `[{ "year": 2026, "months": [1, 7, 11] }]`, **anos decrescentes e meses crescentes**, derivados de `transactions.transaction_date` (`group by` ano/mes em `DashboardRepository.availablePeriods`). E a fonte dos dois campos de selecao do Resumo. Regras:
   - escopado por `user_id`, como todas as consultas do dashboard: ano/mes que so existe em lancamento de outro usuario nao aparece;
   - **sem filtro de `status`** — lancamento cancelado conta como periodo disponivel (nao ha hard delete e esconder o periodo tiraria o unico caminho de tela ate ele, ver [transactions.md](transactions.md));

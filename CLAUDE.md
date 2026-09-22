@@ -14,7 +14,7 @@ Regras de negocio e modelo de dados nao ficam aqui — ficam em [knowledge/](kno
 - **Toda regra de negocio e validacao e obrigatoriamente imposta no back-end** (Bean Validation no DTO ou checagem no `Resource`, com erro tratado em portugues). O front-end pode espelhar a regra como UX (`required`, `maxlength`, filtro de dropdown), mas nunca ser o unico lugar dela. Constraints do banco (not null, unique, check) sao so rede de seguranca — quem valida e responde e o back-end; as unicas regras que podem viver apenas no banco sao PKs e FKs.
 - Sem comentarios no codigo a menos que expliquem um "porque" nao-obvio.
 - Todo endpoint novo do backend comeca chamando `accessControl.require(Screen.X, Action.Y)` — ver [knowledge/auth-and-permissions.md](knowledge/auth-and-permissions.md).
-- Detalhes de stack/comandos de build e teste: [knowledge/architecture.md](knowledge/architecture.md).
+- Detalhes de stack e comandos de build: [knowledge/architecture.md](knowledge/architecture.md); padroes de teste: [knowledge/testing.md](knowledge/testing.md).
 
 ## Versionamento e branches
 
@@ -28,7 +28,7 @@ Cada versao tem a sua branch; `main` e a versao em desenvolvimento e nunca vai p
 
 ## Ambiente de producao externo
 
-`docker-compose.yml` descreve o ambiente **local** e nao pode ir para uma maquina exposta. Producao e o arquivo base **mais** a sobreposicao `docker-compose.prod.yml` (`-f docker-compose.yml -f docker-compose.prod.yml`), que fecha as portas, poe HTTPS (Caddy), tira Swagger/OpenAPI e liga `FINANCEOS_DEPLOYMENT=production` — modo em que o backend exige chave RSA propria e um administrador vindo do `.env`, e desativa as contas cujo hash esta publicado neste repositorio (que e publico). Publicar/atualizar: `./scripts/deploy.sh <versao>` na VM. Como a stack chega na internet e escolhido pelo `FINANCEOS_EXPOSICAO` no `.env`: `acme` (dominio proprio + Let's Encrypt) ou `funnel` (Tailscale Funnel, que acrescenta uma terceira sobreposicao, `docker-compose.funnel.yml`, dispensa dominio e nao abre porta nenhuma). Detalhes em [README.md](README.md#producao-ambiente-externo) e [knowledge/architecture.md](knowledge/architecture.md).
+`docker-compose.yml` descreve o ambiente **local** e nao pode ir para uma maquina exposta. Producao e o arquivo base **mais** a sobreposicao `docker-compose.prod.yml` (`-f docker-compose.yml -f docker-compose.prod.yml`), que fecha as portas, poe HTTPS (Caddy), tira Swagger/OpenAPI e liga `FINANCEOS_DEPLOYMENT=production` — modo em que o backend exige chave RSA propria e um administrador vindo do `.env`, e desativa as contas cujo hash esta publicado neste repositorio (que e publico). Publicar/atualizar: `./scripts/deploy.sh <versao>` na VM. Como a stack chega na internet e escolhido pelo `FINANCEOS_EXPOSICAO` no `.env`: `acme` (dominio proprio + Let's Encrypt) ou `funnel` (Tailscale Funnel, que acrescenta uma terceira sobreposicao, `docker-compose.funnel.yml`, dispensa dominio e nao abre porta nenhuma). Detalhes em [README.md](README.md#producao-ambiente-externo) e [knowledge/deployment.md](knowledge/deployment.md).
 
 ## Esteira automatizada de features (issue -> PR)
 
@@ -59,4 +59,4 @@ Cada comando roda um subagente dedicado (`.claude/agents/pipeline-*.md`), grava 
 
 Fora essa parada obrigatoria, a esteira para para perguntar quando ha uma decisao de implementacao que ela nao consegue tomar sozinha (ex.: "Pontos em aberto" na spec, abordagens conflitantes no plano) ou quando testes/build continuam falhando apos 2 rodadas automaticas de correcao.
 
-Ao final do `/pipeline:open-pr`, roda automaticamente `/pipeline:sync-knowledge <numero>` — etapa que atualiza `knowledge/*.md` e os proprios agents/skills da esteira com regras de negocio e padroes de processo que a feature revelou. Ela trabalha **com orcamento**: para acrescentar, precisa caber nos tetos de tamanho (`architecture.md` 10 KB, demais arquivos de `knowledge/` 25 KB, cada agent 9 KB), fundindo a regra nova com a anterior que ela generaliza em vez de empilhar mais um caso. Ela nao comita sozinha: as mudancas ficam no working tree para voce revisar o diff antes de commitar.
+Ao final do `/pipeline:open-pr`, roda automaticamente `/pipeline:sync-knowledge <numero>` — etapa que atualiza `knowledge/*.md` e os proprios agents/skills da esteira com regras de negocio e padroes de processo que a feature revelou. Ela trabalha **com orcamento**: para acrescentar, precisa caber nos tetos de tamanho (`architecture.md` 10 KB, demais arquivos de `knowledge/` 25 KB, cada agent ~9 KB), fundindo a regra nova com a anterior que ela generaliza em vez de empilhar mais um caso. Ela nao comita sozinha: as mudancas ficam no working tree para voce revisar o diff antes de commitar.
