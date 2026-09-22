@@ -23,7 +23,18 @@ E o manual do sistema **dentro do sistema**: menu "Sobre" -> "Documentação", r
 - **Nada de funcionalidade inexistente**: Contas, Cartoes, Relatorios, importacao de Excel, recorrencia e subcategorias ficam de fora (removidas ou nao implementadas).
 - **Linguagem de usuario**: os nomes sao os rotulos em portugues da UI ("Resumo", "Lançamentos", "Pendentes", "Situação") — nenhum valor de enum, nome de classe ou termo de implementacao aparece no texto. Quando o rotulo da tela divergir do que a spec/`knowledge` escreve, vale o **rotulo da tela**.
 - Paragrafo curto (limite de 600 caracteres, coberto por teste), conteudo em blocos estruturados e toda `<td>` de tabela com `data-label` — e o que faz a tabela virar cartao pela regra global de 680px.
-- **Mudanca de regra de negocio em qualquer tela obriga a revisar a area correspondente da Central**: hoje nao ha nenhum mecanismo que detecte a divergencia — o conteudo e texto escrito a mao no backend, e so um humano (ou esta base de conhecimento) percebe que envelheceu.
+- **Mudanca visivel ao usuario tem dois consumidores escritos a mao que nenhum mecanismo automatico acusa quando envelhecem**: a area correspondente da Central (o que o sistema faz *hoje*) e, desde a issue #71, o bloco da versao corrente em "Novidades por versao" (o que *mudou* nesta versao — ver secao abaixo). Mudar regra de tela documentada obriga revisar os dois; so um humano (ou esta base de conhecimento) percebe a divergencia.
+
+## Novidades por versao (issue #71)
+
+Submenu irmao dentro de "Sobre", ao lado de "Documentação" — mas e outro conteudo, outro `Screen` (`RELEASE_NOTES`, mesmo padrao view-only, migration `V14`, `VIEW_ONLY_SCREENS` em `ProfileResource` — ver [auth-and-permissions.md](auth-and-permissions.md)) e outro pacote (`backend/.../releasenotes/`, endpoint `GET /release-notes`). Enquanto a Central explica o sistema como ele e hoje, esta tela conta **o que mudou entre versoes**, tambem como dado tipado escrito a mao (`releasenotes/content/ReleaseNotesContent.java`), nunca Markdown.
+
+- Contrato: `ReleaseNotesResponse(currentVersion, versions[])`; `ReleaseNoteVersion(version, categories[])`; `ReleaseNoteCategory(kind, items[])` com `kind` em `NEW | IMPROVEMENT | FIX` (rotulos "Novidades"/"Melhorias"/"Correções"). Categoria sem item **nao entra** na lista (nunca renderizada vazia). `currentVersion` vem do mesmo `quarkus.application.version` do `GET /api/health` (sem sufixo de build/`-dev`) — o frontend so compara por igualdade de string com o `version` de cada bloco para exibir o rotulo "atual", sem fallback.
+- **Um bloco por `X.Y.Z`, nunca por build**: uma correcao publicada como build novo da mesma versao (`X.Y.Z-NN -> X.Y.Z-NN+1`) entra na categoria `FIX` do bloco **ja existente** dessa versao — o modelo nao tem campo de build, entao criar bloco novo por build e impossivel por construcao, nao por disciplina de quem escreve.
+- **Nenhum item se repete entre blocos**: uma mudanca aparece so no bloco da versao em que foi introduzida; retrabalho numa versao seguinte entra so como a descricao do retrabalho, no bloco novo.
+- Versoes ja cortadas mas nunca destacadas na tela (ex.: `1.0.1`, decisao explicita da issue #71) simplesmente nao tem `versao_X_Y_Z()` nenhuma — omissao por ausencia de bloco, nao por filtro em runtime.
+- Mesma regra de redacao da Central (linguagem de usuario, sem identificador tecnico) e mesma exigencia de rastreabilidade (tabela afirmacao -> origem em `implementation-notes.md` da issue que curou o bloco).
+- **Toda feature que muda algo visivel ao usuario e candidata a um item novo no bloco da versao corrente** — e a razao de existir da tela. Sem mecanismo que force isso: quem decide se a mudanca merece linha e quem planeja a issue seguinte.
 
 ## Acrescentar uma area
 

@@ -25,7 +25,7 @@ Duas dimensoes independentes. Uma tarefa tipica carrega 3 ou 4 arquivos, nao dez
 | [categories.md](categories.md) | Categorias |
 | [transactions.md](transactions.md) | Lancamentos/Transacoes |
 | [dashboard.md](dashboard.md) | resumo/dashboard |
-| [documentation.md](documentation.md) | Central de Documentacao (menu "Sobre") — e sempre que mudar uma regra que a Central publica |
+| [documentation.md](documentation.md) | Central de Documentacao e Novidades por versao (menu "Sobre") — e sempre que mudar uma regra que uma delas publica |
 | [accounts.md](accounts.md) | Contas — removida na issue #20; so se for reintroduzir |
 | [cards.md](cards.md) | Cartoes — removida na issue #20; so se for reintroduzir |
 

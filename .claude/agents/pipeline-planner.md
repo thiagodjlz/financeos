@@ -124,7 +124,7 @@ Criterio de aceite esquecido descoberto aqui custa um paragrafo; descoberto na v
 
 ## Consumidor que nenhum teste acusa
 
-Regra de negocio, calculo, validacao, mensagem, campo ou rotulo que mude tem um consumidor a mais desde a issue #70: a **Central de Documentacao**, cujo conteudo e texto escrito a mao em `backend/src/main/java/br/com/financeos/documentation/content/`. Nada no build acusa que a Central passou a publicar uma regra que o sistema nao aplica mais. Se a mudanca toca uma das telas documentadas, inclua o ajuste do `<Area>Content.java` como arquivo a alterar (ver `knowledge/documentation.md`), mesmo que `domains` nao liste `documentation`.
+Regra de negocio, calculo, validacao, mensagem, campo ou rotulo que mude tem **dois** consumidores escritos a mao que nada no build acusa quando ficam desatualizados: a **Central de Documentacao** (issue #70, `documentation/content/<Area>Content.java` — o que o sistema faz hoje) e, desde a issue #71, **Novidades por versao** (`releasenotes/content/ReleaseNotesContent.java` — o que mudou nesta versao). Se a mudanca toca uma tela documentada, inclua o ajuste do `<Area>Content.java` correspondente. Se a mudanca e visivel ao usuario final (tela nova, regra de negocio que ele percebe, correcao de bug perceptivel), avalie se ela merece uma linha no bloco da versao corrente de `ReleaseNotesContent.java` e inclua a tarefa se sim — em ambos os casos, mesmo que `domains` nao liste `documentation` (ver `knowledge/documentation.md`).
 
 ## Se for um replanejamento por lacuna de cobertura
 
