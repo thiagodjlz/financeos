@@ -14,6 +14,7 @@ const SCREENS: { code: Screen; label: string; viewOnly?: boolean }[] = [
   { code: 'USERS', label: 'Usuários' },
   { code: 'PROFILES', label: 'Perfis' },
   { code: 'DOCUMENTATION', label: 'Documentação', viewOnly: true },
+  { code: 'RELEASE_NOTES', label: 'Novidades por versão', viewOnly: true },
 ];
 
 function blankPermissions(): PermissionEntry[] {

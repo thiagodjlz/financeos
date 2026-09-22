@@ -57,7 +57,7 @@ final class OverviewContent {
                         "Lançamentos: o cadastro das receitas e despesas.",
                         "Cadastros: reúne a tela de Categorias.",
                         "Configurações: reúne as telas de Usuários e Perfis.",
-                        "Sobre: reúne esta Central de Documentação."),
+                        "Sobre: reúne esta Central de Documentação e a tela de Novidades por versão."),
                 DocumentationBlock.paragraph(
                         "Em telas estreitas, como as de celular, o menu vira uma gaveta que abre pelo botão Menu "
                                 + "no alto da tela e fecha ao escolher um item ou ao pressionar a tecla Esc."));

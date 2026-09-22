@@ -42,6 +42,21 @@ class ProfileResourceTest {
             }
             """;
 
+    private static final String WRITABLE_RELEASE_NOTES_BODY = """
+            {
+              "name": "%s",
+              "permissions": [
+                {
+                  "screen": "RELEASE_NOTES",
+                  "canView": true,
+                  "canCreate": true,
+                  "canEdit": true,
+                  "canDelete": true
+                }
+              ]
+            }
+            """;
+
     @Inject
     ProfileRepository repository;
 
@@ -220,6 +235,63 @@ class ProfileResourceTest {
                 .body("find { it.id == '%s' }.permissions.find { it.screen == 'DOCUMENTATION' }.canDelete"
                         .formatted(id), equalTo(false))
                 .body("find { it.id == '%s' }.permissions.find { it.screen == 'DOCUMENTATION' }.canView"
+                        .formatted(id), equalTo(true));
+    }
+
+    @Test
+    void shouldForceReleaseNotesPermissionToViewOnlyOnCreate() {
+        given()
+                .contentType(ContentType.JSON)
+                .body(WRITABLE_RELEASE_NOTES_BODY.formatted("Teste Perfil " + UUID.randomUUID()))
+                .when().post("/profiles")
+                .then()
+                .statusCode(201)
+                .body("permissions.find { it.screen == 'RELEASE_NOTES' }.canView", equalTo(true))
+                .body("permissions.find { it.screen == 'RELEASE_NOTES' }.canCreate", equalTo(false))
+                .body("permissions.find { it.screen == 'RELEASE_NOTES' }.canEdit", equalTo(false))
+                .body("permissions.find { it.screen == 'RELEASE_NOTES' }.canDelete", equalTo(false));
+    }
+
+    @Test
+    void shouldForceReleaseNotesPermissionToViewOnlyOnUpdate() {
+        String id = given()
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "name": "Teste Perfil %s",
+                          "permissions": [
+                            { "screen": "DASHBOARD", "canView": true }
+                          ]
+                        }
+                        """.formatted(UUID.randomUUID()))
+                .when().post("/profiles")
+                .then()
+                .statusCode(201)
+                .extract()
+                .path("id");
+
+        given()
+                .contentType(ContentType.JSON)
+                .body(WRITABLE_RELEASE_NOTES_BODY.formatted("Teste Perfil " + UUID.randomUUID()))
+                .when().put("/profiles/{id}", id)
+                .then()
+                .statusCode(200)
+                .body("permissions.find { it.screen == 'RELEASE_NOTES' }.canView", equalTo(true))
+                .body("permissions.find { it.screen == 'RELEASE_NOTES' }.canCreate", equalTo(false))
+                .body("permissions.find { it.screen == 'RELEASE_NOTES' }.canEdit", equalTo(false))
+                .body("permissions.find { it.screen == 'RELEASE_NOTES' }.canDelete", equalTo(false));
+
+        given()
+                .when().get("/profiles")
+                .then()
+                .statusCode(200)
+                .body("find { it.id == '%s' }.permissions.find { it.screen == 'RELEASE_NOTES' }.canCreate"
+                        .formatted(id), equalTo(false))
+                .body("find { it.id == '%s' }.permissions.find { it.screen == 'RELEASE_NOTES' }.canEdit"
+                        .formatted(id), equalTo(false))
+                .body("find { it.id == '%s' }.permissions.find { it.screen == 'RELEASE_NOTES' }.canDelete"
+                        .formatted(id), equalTo(false))
+                .body("find { it.id == '%s' }.permissions.find { it.screen == 'RELEASE_NOTES' }.canView"
                         .formatted(id), equalTo(true));
     }
 

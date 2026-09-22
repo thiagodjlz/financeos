@@ -55,7 +55,15 @@ describe('Profiles', () => {
     return Array.from(fixture.nativeElement.querySelectorAll('form input[type="checkbox"]'));
   }
 
-  const SCREEN_ROWS = ['Resumo', 'Lançamentos', 'Categorias', 'Usuários', 'Perfis', 'Documentação'];
+  const SCREEN_ROWS = [
+    'Resumo',
+    'Lançamentos',
+    'Categorias',
+    'Usuários',
+    'Perfis',
+    'Documentação',
+    'Novidades por versão',
+  ];
   const ACTION_COLUMNS = ['view', 'create', 'edit', 'delete'];
 
   function checkbox(cell: string): HTMLInputElement {
@@ -150,7 +158,7 @@ describe('Profiles', () => {
     await click(cancelButton());
 
     expect(query<HTMLInputElement>('form input[name="name"]').value).toBe('');
-    expect(checkboxes()).toHaveLength(21);
+    expect(checkboxes()).toHaveLength(22);
     expect(checkboxes().every((input) => !input.checked)).toBe(true);
     expect(formTitle()).toBe('Novo perfil');
     httpMock.expectNone(() => true);
@@ -368,19 +376,19 @@ describe('Profiles', () => {
     httpMock.expectNone(() => true);
   });
 
-  it('tem seis linhas e só a coluna Ver na linha Documentação', async () => {
+  it('tem sete linhas e só a coluna Ver nas linhas Documentação e Novidades por versão', async () => {
     await render();
 
     const rows = Array.from(fixture.nativeElement.querySelectorAll('form tbody tr')) as HTMLElement[];
-    expect(rows).toHaveLength(6);
+    expect(rows).toHaveLength(7);
     expect(rows.map((row) => row.querySelector('.screen-cell')?.textContent?.trim())).toEqual(SCREEN_ROWS);
 
     rows.forEach((row) => expect(row.querySelectorAll('td')).toHaveLength(5));
     rows.slice(0, 5).forEach((row) =>
       expect(row.querySelectorAll('input[type="checkbox"]')).toHaveLength(4),
     );
-    expect(rows[5].querySelectorAll('input[type="checkbox"]')).toHaveLength(1);
-    expect(checkboxes()).toHaveLength(21);
+    rows.slice(5).forEach((row) => expect(row.querySelectorAll('input[type="checkbox"]')).toHaveLength(1));
+    expect(checkboxes()).toHaveLength(22);
     httpMock.expectNone(() => true);
   });
 

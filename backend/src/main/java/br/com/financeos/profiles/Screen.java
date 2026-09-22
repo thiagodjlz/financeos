@@ -6,5 +6,6 @@ public enum Screen {
     CATEGORIES,
     USERS,
     PROFILES,
-    DOCUMENTATION
+    DOCUMENTATION,
+    RELEASE_NOTES
 }

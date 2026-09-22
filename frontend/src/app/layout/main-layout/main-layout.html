@@ -177,6 +177,19 @@
             </svg>
             <span class="nav-label">Documentação</span>
           </button>
+          <button
+            *ngIf="authService.can('RELEASE_NOTES', 'VIEW')"
+            type="button"
+            routerLink="/release-notes"
+            routerLinkActive="active"
+            (click)="onNavigate()"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+              <path d="M12 4a5 5 0 0 0-5 5v3l-1.5 3h13L17 12V9a5 5 0 0 0-5-5z"></path>
+              <path d="M9.5 19a2.5 2.5 0 0 0 5 0"></path>
+            </svg>
+            <span class="nav-label">Novidades por versão</span>
+          </button>
         </div>
       </div>
     </nav>

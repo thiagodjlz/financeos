@@ -183,11 +183,11 @@ export class MainLayout implements OnDestroy {
   }
 
   protected isAboutActive(): boolean {
-    return this.router.url.startsWith('/documentation');
+    return this.router.url.startsWith('/documentation') || this.router.url.startsWith('/release-notes');
   }
 
   protected canSeeAbout(): boolean {
-    return this.authService.can('DOCUMENTATION', 'VIEW');
+    return this.authService.can('DOCUMENTATION', 'VIEW') || this.authService.can('RELEASE_NOTES', 'VIEW');
   }
 
   protected logout(): void {
