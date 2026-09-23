@@ -175,6 +175,30 @@ class DocumentationContentTest {
     }
 
     @Test
+    void shouldDescribeDefinitiveCategoryDeletion() {
+        String published = String.join("\n", displayedTexts());
+
+        assertFalse(published.contains("Excluir uma categoria significa apenas torná-la Inativa"));
+        assertFalse(published.contains("uma desativação em Categorias"));
+
+        String categoryRules = CONTENT.areas().stream()
+                .filter(area -> "Categorias".equals(area.title()))
+                .findFirst()
+                .orElseThrow()
+                .sections().stream()
+                .filter(section -> "Regras de negócio".equals(section.title()))
+                .flatMap(section -> section.blocks().stream())
+                .flatMap(block -> block.items().stream())
+                .reduce("", (left, right) -> left + "\n" + right);
+
+        assertTrue(categoryRules.contains("remove definitivamente"), categoryRules);
+        assertTrue(categoryRules.contains("Não é possível excluir a categoria"), categoryRules);
+        assertTrue(categoryRules.contains("qualquer que seja a pessoa"), categoryRules);
+        assertTrue(categoryRules.contains("cancelado"), categoryRules);
+        assertTrue(categoryRules.contains("Situação"), categoryRules);
+    }
+
+    @Test
     void shouldKeepEveryTableRowAlignedWithItsColumns() {
         allAreas().forEach(area -> area.sections().forEach(section -> section.blocks().forEach(block -> {
             if (block.table() != null) {

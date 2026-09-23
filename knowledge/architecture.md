@@ -51,7 +51,7 @@ Fonte da verdade: arquivo `VERSION` na raiz. Formato `X.Y.Z-NN` (versao + build)
 
 - **Sem comentarios** a menos que expliquem um "porque" nao-obvio (regra geral do projeto, nao so desta esteira).
 - Todo endpoint que le ou escreve dado chama `accessControl.require(Screen.X, Action.Y)` como primeira linha do metodo — ver [auth-and-permissions.md](auth-and-permissions.md). Qualquer endpoint novo deve seguir esse padrao.
-- Exclusao normalmente e **soft delete** (`active=false`) ou, no caso de transacoes, mudanca de status para `CANCELED` — nao ha hard delete de registros de negocio (so perfis sem uso e usuarios sao excecoes especificas, ver docs de dominio).
+- Exclusao normalmente e **soft delete** (`active=false`) ou, no caso de transacoes, mudanca de status para `CANCELED` — nao ha hard delete de registros de negocio (excecoes: perfis sem usuario e categorias sem lancamento, issue #77 — ver docs de dominio).
 - **Toda regra de negocio e validacao e imposta no back-end** (Bean Validation no DTO ou checagem no `Resource`, com erro em portugues). O front-end pode espelhar a regra como UX, mas nunca ser o unico lugar dela; constraint de banco e rede de seguranca (excecao: PKs e FKs). Detalhes de como o erro chega a tela em [backend-patterns.md](backend-patterns.md).
 
 ## Idioma

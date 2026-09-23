@@ -24,4 +24,8 @@ export class CategoryService {
   update(id: string, payload: Partial<Category>): Promise<Category> {
     return firstValueFrom(this.http.put<Category>(`${API_BASE}/categories/${id}`, payload));
   }
+
+  async remove(id: string): Promise<void> {
+    await firstValueFrom(this.http.delete<void>(`${API_BASE}/categories/${id}`));
+  }
 }

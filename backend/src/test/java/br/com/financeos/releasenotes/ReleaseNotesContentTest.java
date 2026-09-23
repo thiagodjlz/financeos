@@ -99,6 +99,18 @@ class ReleaseNotesContentTest {
     }
 
     @Test
+    void shouldAnnounceCategoryDeletionAsImprovementIn102() {
+        ReleaseNoteVersion v102 = VERSIONS.get(0);
+
+        assertEquals("1.0.2", v102.version());
+        assertEquals(1, v102.categories().stream()
+                .filter(c -> c.kind() == ReleaseNoteCategory.Kind.IMPROVEMENT)
+                .flatMap(c -> c.items().stream())
+                .filter(item -> item.contains("Categorias") && item.contains("Excluir"))
+                .count());
+    }
+
+    @Test
     void shouldAnnounceTheBackToTopButtonAsImprovementIn102() {
         ReleaseNoteVersion v102 = VERSIONS.get(0);
 
