@@ -4,7 +4,7 @@ url: https://github.com/thiagodjlz/financeos/issues/78
 title: "Acentuar os 8 comentarios de codigo que sobraram das varreduras"
 domains: [dashboard, auth]
 target: main
-stage: validated
+stage: pr-open
 branch: feature/issue-78-acentuar-comentarios-varreduras
 created: 2026-09-23
 ---

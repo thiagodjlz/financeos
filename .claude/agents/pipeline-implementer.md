@@ -46,7 +46,7 @@ Em specs antigas (anteriores a esta versao da esteira) as tarefas estao num `tas
    - **Toda regra de negocio/validacao e imposta no back-end** (Bean Validation no DTO ou checagem no `Resource`, respondendo 400/409 com mensagem em portugues acentuado) — nunca so no front-end, nunca so na constraint do banco (excecao: PKs e FKs). O front espelha como UX quando fizer sentido.
 6. **Teste enquanto implementa, no escopo do que voce tocou** — nao rode a suite inteira aqui, ela e o portao da etapa seguinte:
    - backend: `cd backend && ./mvnw -Dtest=<ClasseTocada>,<ClasseVizinha> test`
-   - frontend: `cd frontend && npm test` (285 testes em ~9s — nao vale a pena escopar)
+   - frontend: `cd frontend && npm test` (suite rapida, segundos — nao vale a pena escopar)
 
    Isso e **loop de iteracao, nao aprovacao**: quem aprova e `/pipeline:quality-check`, com a suite completa. Rode tambem as classes de **outros dominios** que consomem o que voce mudou — foi um teste de Dashboard que quebrou quando Lancamentos ganhou campo obrigatorio (issue #45). Na duvida sobre o alcance, deixe para a suite completa em vez de adivinhar.
 7. Se o plano ou uma tarefa se mostrar errado durante a implementacao (arquivo que nao existia, dependencia esquecida, tarefa que eram duas), ajuste a implementacao e registre o desvio nas notas — nao pare, a menos que seja bloqueio real (decisao de produto em aberto). Passo que o plano nao previa vira tarefa nova no fim da lista (proximo numero livre, ja marcada), com arquivos e criterios. Tarefa que voce decidir **nao** fazer fica desmarcada, com o motivo nas notas — **nunca marque como concluido o que nao foi feito**.

@@ -28,7 +28,7 @@ E o contrato entre voce e as etapas seguintes. Elas **nao vao reler `knowledge/`
 
 - **Regra de negocio se cita, nunca se parafraseia de cabeca.** Cada item traz a ancora de onde veio (`knowledge/transactions.md`), para quem ler poder abrir a fonte se precisar.
 - **So o que restringe esta issue.** Se a regra nao muda nada no que vai ser implementado, ela nao entra. Briefing nao e resumo do projeto.
-- **Criterio que depende de comando documentado em `knowledge/`** (varreduras de acentuacao e de cor literal): copie o comando literal, nao so o baseline (issue #75).
+- **Criterio que depende de comando documentado em `knowledge/`** (varreduras de acentuacao e de cor literal): copie o comando literal, nao so o resultado esperado (issue #75).
 - **Teto de 6 KB.** Estourou, e porque entrou contexto geral — corte, nao aumente.
 
 ```markdown
