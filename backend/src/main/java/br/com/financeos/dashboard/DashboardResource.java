@@ -38,8 +38,8 @@ public class DashboardResource {
         this.accessControl = accessControl;
     }
 
-    // Os parametros sao lidos do UriInfo, e nao por @QueryParam Integer: a conversao falharia fora do
-    // corpo do metodo em "?year=abc" e a resposta escaparia do BusinessExceptionMapper; e "?year="
+    // Os parâmetros são lidos do UriInfo, e não por @QueryParam Integer: a conversão falharia fora do
+    // corpo do método em "?year=abc" e a resposta escaparia do BusinessExceptionMapper; e "?year="
     // (vazio) precisa ser distinguido de "year ausente", que tem outra mensagem.
     @GET
     @Path("/summary")
@@ -82,8 +82,8 @@ public class DashboardResource {
         return List.copyOf(periods);
     }
 
-    // A checagem do mes vem antes da do ano de proposito: ano fixo em teste/URL antiga com mes invalido
-    // tem de continuar respondendo o erro de mes, mesmo quando aquele ano deixar de ser o corrente.
+    // A checagem do mês vem antes da do ano de propósito: ano fixo em teste/URL antiga com mês inválido
+    // tem de continuar respondendo o erro de mês, mesmo quando aquele ano deixar de ser o corrente.
     private YearMonth resolvePeriod(String year, String month) throws Exception {
         if (year == null && month == null) {
             return YearMonth.now();
@@ -121,8 +121,8 @@ public class DashboardResource {
         return values.get(0) == null ? "" : values.get(0);
     }
 
-    // A mensagem da NumberFormatException ("For input string: ...") nao pode virar texto de tela:
-    // o valor invalido vira null e quem responde e a mensagem em portugues do chamador.
+    // A mensagem da NumberFormatException ("For input string: ...") não pode virar texto de tela:
+    // o valor inválido vira null e quem responde é a mensagem em português do chamador.
     private static Integer parseNumber(String value) {
         try {
             return Integer.valueOf(value.trim());

@@ -174,9 +174,9 @@ public class ProductionBootstrap {
         }
     }
 
-    // Toda FK para app_users e `on delete cascade` ou `set null`, entao remover a conta
-    // levaria junto o que estivesse pendurado nela. As tabelas saem do catalogo, e nao de uma
-    // lista fixa aqui, para que uma migration futura nao abra esse buraco silenciosamente.
+    // Toda FK para app_users é `on delete cascade` ou `set null`, então remover a conta
+    // levaria junto o que estivesse pendurado nela. As tabelas saem do catálogo, e não de uma
+    // lista fixa aqui, para que uma migration futura não abra esse buraco silenciosamente.
     private boolean hasRelatedRows(UUID userId) {
         for (Object[] foreignKey : foreignKeysToUsers()) {
             String table = String.valueOf(foreignKey[0]);

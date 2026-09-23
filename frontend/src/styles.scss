@@ -20,17 +20,17 @@
 }
 
 /*
- * Conjunto unico de breakpoints do FinanceOS. Toda `@media` de largura do frontend usa
- * exatamente uma destas tres larguras — nao existe corte para aparelho especifico:
+ * Conjunto único de breakpoints do FinanceOS. Toda `@media` de largura do frontend usa
+ * exatamente uma destas três larguras — não existe corte para aparelho específico:
  *
  *   1080px (--bp-desktop) — desktop estreito/tablet: grids de duas colunas colapsam
- *    680px (--bp-mobile)  — modo mobile: gaveta de navegacao e tabela em cartoes
+ *    680px (--bp-mobile)  — modo mobile: gaveta de navegação e tabela em cartões
  *    480px (--bp-compact) — toque e tipografia de campo: alvos de 44px e campo de 16px
  *
- * `@media (hover: hover)` nao declara largura e por isso nao pertence a este conjunto:
+ * `@media (hover: hover)` não declara largura e por isso não pertence a este conjunto:
  * ela apenas restringe os estados de `:hover` a ponteiros reais (evita o hover preso no iOS).
  *
- * Os tokens `--bp-*` abaixo sao documentacao e inspecao no DevTools. Custom property NAO e
+ * Os tokens `--bp-*` abaixo são documentação e inspeção no DevTools. Custom property NÃO é
  * avaliada dentro de media query: `@media (max-width: var(--bp-mobile))` compila e nunca casa.
  * Por isso as `@media` deste projeto escrevem o literal correspondente.
  */
