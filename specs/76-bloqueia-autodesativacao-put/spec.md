@@ -4,7 +4,7 @@ url: https://github.com/thiagodjlz/financeos/issues/76
 title: "Usuario consegue desativar a propria conta pelo PUT"
 domains: [users, documentation]
 target: main
-stage: validated
+stage: pr-open
 branch: feature/issue-76-bloqueia-autodesativacao-put
 created: 2026-09-22
 ---
