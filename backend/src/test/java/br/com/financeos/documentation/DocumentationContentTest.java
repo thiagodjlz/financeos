@@ -150,6 +150,31 @@ class DocumentationContentTest {
     }
 
     @Test
+    void shouldExplainOwnAccountProtectionsInUsersBusinessRules() {
+        DocumentationSection regras = CONTENT.areas().stream()
+                .filter(area -> "Usuários".equals(area.title()))
+                .findFirst()
+                .orElseThrow()
+                .sections().stream()
+                .filter(section -> "Regras de negócio".equals(section.title()))
+                .findFirst()
+                .orElseThrow();
+
+        String highlight = regras.blocks().stream()
+                .filter(block -> block.kind() == DocumentationBlock.Kind.HIGHLIGHT)
+                .map(DocumentationBlock::text)
+                .findFirst()
+                .orElseThrow();
+
+        assertTrue(highlight.contains("botão Desativar"), highlight);
+        assertTrue(highlight.contains("Status"), highlight);
+        assertTrue(highlight.contains("Inativo"), highlight);
+        assertTrue(highlight.contains("próprio perfil"), highlight);
+        assertTrue(highlight.contains("Você não pode desativar a própria conta."), highlight);
+        assertTrue(highlight.contains("Você não pode alterar o próprio perfil."), highlight);
+    }
+
+    @Test
     void shouldKeepEveryTableRowAlignedWithItsColumns() {
         allAreas().forEach(area -> area.sections().forEach(section -> section.blocks().forEach(block -> {
             if (block.table() != null) {

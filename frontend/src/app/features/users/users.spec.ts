@@ -423,6 +423,75 @@ describe('Users', () => {
     expect(toasts()[0].message).toBe('Você não pode desativar a própria conta.');
   });
 
+  async function selectInactiveInRow(): Promise<void> {
+    const select = query<HTMLSelectElement>('tbody select[name="editActive"]');
+    select.selectedIndex = 1;
+    select.dispatchEvent(new Event('change'));
+    await settle();
+  }
+
+  async function expectConflictAlertKeepingEdition(message: string): Promise<void> {
+    httpMock.expectOne(`${API_BASE}/users/user-1`).flush({ message }, { status: 409, statusText: 'Conflict' });
+    await settle();
+
+    expect(toasts()).toHaveLength(1);
+    expect(toasts()[0].title).toBe('Alerta');
+    expect(toasts()[0].message).toBe(message);
+    expect(toasts().some((toast) => toast.title === 'Sucesso')).toBe(false);
+    expect(query('tbody input[name="editName"]')).not.toBeNull();
+    httpMock.expectNone(`${API_BASE}/users`);
+  }
+
+  it('exibe alerta no 409 ao salvar a própria linha como Inativo, mantendo a edição', async () => {
+    await render();
+    await startEditing();
+    await selectInactiveInRow();
+
+    await click(rowSaveButton());
+
+    await expectConflictAlertKeepingEdition('Você não pode desativar a própria conta.');
+  });
+
+  it('exibe alerta no 409 ao trocar o próprio perfil, mantendo a edição', async () => {
+    await render();
+    await startEditing();
+    await selectValue('tbody select[name="editProfileId"]', 'profile-2');
+
+    await click(rowSaveButton());
+
+    await expectConflictAlertKeepingEdition('Você não pode alterar o próprio perfil.');
+    expect(value('tbody select[name="editProfileId"]')).toBe('profile-2');
+  });
+
+  it('envia active verdadeiro no PUT quando o Status fica Ativo', async () => {
+    await render();
+    await startEditing();
+
+    await click(rowSaveButton());
+
+    const request = httpMock.expectOne(`${API_BASE}/users/user-1`);
+    expect(request.request.body.active).toBe(true);
+    request.flush(USER);
+    await settle();
+    httpMock.expectOne(`${API_BASE}/users`).flush([USER]);
+    await settle();
+  });
+
+  it('envia active falso no PUT quando o Status muda para Inativo', async () => {
+    await render();
+    await startEditing();
+    await selectInactiveInRow();
+
+    await click(rowSaveButton());
+
+    const request = httpMock.expectOne(`${API_BASE}/users/user-1`);
+    expect(request.request.body.active).toBe(false);
+    request.flush({ ...USER, active: false });
+    await settle();
+    httpMock.expectOne(`${API_BASE}/users`).flush([{ ...USER, active: false }]);
+    await settle();
+  });
+
   it('não dispara toast no Cancelar do formulário nem no Sair sem alteração', async () => {
     await render();
     await fillText('form input[name="name"]', 'Bruno');

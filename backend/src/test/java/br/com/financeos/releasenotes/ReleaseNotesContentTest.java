@@ -81,6 +81,24 @@ class ReleaseNotesContentTest {
     }
 
     @Test
+    void shouldAnnounceOwnAccountProtectionsAsASingleFixIn102() {
+        ReleaseNoteVersion v102 = VERSIONS.get(0);
+
+        List<String> fixes = v102.categories().stream()
+                .filter(c -> c.kind() == ReleaseNoteCategory.Kind.FIX)
+                .flatMap(c -> c.items().stream())
+                .toList();
+
+        assertEquals("1.0.2", v102.version());
+        assertEquals(2, fixes.size());
+        assertTrue(fixes.contains(
+                "Contraste da borda dos campos de formulário corrigido, visível sob luz forte ou baixa visão."));
+        assertEquals(1, fixes.stream()
+                .filter(item -> item.contains("própria conta") && item.contains("próprio perfil"))
+                .count());
+    }
+
+    @Test
     void shouldAnnounceTheBackToTopButtonAsImprovementIn102() {
         ReleaseNoteVersion v102 = VERSIONS.get(0);
 
