@@ -4,7 +4,7 @@ url: https://github.com/thiagodjlz/financeos/issues/77
 title: "Tela de Categorias nao tem botao de excluir, e a permissao correspondente nao controla nada"
 domains: [categories, auth, transactions, documentation]
 target: main
-stage: validated
+stage: pr-open
 branch: feature/issue-77-exclusao-categorias-permissao
 created: 2026-09-23
 ---
