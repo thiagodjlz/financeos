@@ -166,4 +166,25 @@ describe('ToastHost', () => {
       'Quarto',
     ]);
   });
+
+  it('mantém cada linha da mensagem separada no texto do alerta', () => {
+    const message =
+      'Não é possível excluir a categoria. Ela está em uso em:\nLançamentos: 3 registros';
+    toastService.warning(message);
+    render();
+
+    const element = query<HTMLElement>('.toast-message');
+    expect(element?.textContent).toBe(message);
+    expect(element?.textContent?.split('\n')).toEqual([
+      'Não é possível excluir a categoria. Ela está em uso em:',
+      'Lançamentos: 3 registros',
+    ]);
+  });
+
+  it('mantém inalterada a mensagem de uma linha', () => {
+    toastService.success('Categoria salva com sucesso.');
+    render();
+
+    expect(query<HTMLElement>('.toast-message')?.textContent).toBe('Categoria salva com sucesso.');
+  });
 });

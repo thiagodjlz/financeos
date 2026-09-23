@@ -36,7 +36,9 @@ public final class ReleaseNotesContent {
                 "Período do Resumo: mês por extenso; ano e mês só listam datas com lançamentos existentes.",
                 "Mais segurança nas contas ao publicar na internet: administrador com nome fixo, contas de "
                         + "teste removidas do ambiente publicado.",
-                "Botão \"Voltar ao topo\" nas telas longas: aparece ao rolar a página e leva de volta ao início.");
+                "Botão \"Voltar ao topo\" nas telas longas: aparece ao rolar a página e leva de volta ao início.",
+                "Tela de Categorias: botão Excluir em cada linha. Remove de vez a categoria sem lançamentos e, "
+                        + "se ela estiver em uso, avisa quantos lançamentos a usam.");
 
         addIfPresent(categories, Kind.FIX,
                 "Contraste da borda dos campos de formulário corrigido, visível sob luz forte ou baixa visão.",

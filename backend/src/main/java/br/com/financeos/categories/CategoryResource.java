@@ -31,10 +31,13 @@ import jakarta.ws.rs.core.Response;
 public class CategoryResource {
 
     private final CategoryRepository repository;
+    private final CategoryUsageCheck usageCheck;
     private final AccessControl accessControl;
 
-    public CategoryResource(CategoryRepository repository, AccessControl accessControl) {
+    public CategoryResource(CategoryRepository repository, CategoryUsageCheck usageCheck,
+            AccessControl accessControl) {
         this.repository = repository;
+        this.usageCheck = usageCheck;
         this.accessControl = accessControl;
     }
 
@@ -88,12 +91,16 @@ public class CategoryResource {
     @DELETE
     @Path("/{id}")
     @Transactional
-    public Response deactivate(@PathParam("id") UUID id) {
+    public Response delete(@PathParam("id") UUID id) {
         accessControl.require(Screen.CATEGORIES, Action.DELETE);
-        Category category = repository.findActiveById(id)
+        Category category = repository.findByIdOptional(id)
                 .orElseThrow(NotFoundException::new);
 
-        category.active = false;
+        CategoryUsageCheck.blockingMessage(usageCheck.usagesOf(id)).ifPresent(message -> {
+            throw new WebApplicationException(message, Response.Status.CONFLICT);
+        });
+
+        repository.delete(category);
         return Response.noContent().build();
     }
 

@@ -54,8 +54,9 @@ final class ProfilesAreaContent {
                                 List.of("Alterar", "Corrigir registros existentes naquela tela."),
                                 List.of("Excluir",
                                         "Executar a ação de remoção daquela tela: um cancelamento em Lançamentos, "
-                                                + "uma desativação em Categorias e em Usuários, e a remoção do "
-                                                + "perfil sem uso em Perfis."))),
+                                                + "a exclusão de uma categoria sem lançamentos em Categorias, uma "
+                                                + "desativação em Usuários e a remoção do perfil sem uso em "
+                                                + "Perfis."))),
                 DocumentationBlock.paragraph(
                         "As linhas da matriz são Resumo, Lançamentos, Categorias, Usuários, Perfis, Documentação e "
                                 + "Novidades por versão, na mesma ordem em que as telas aparecem no menu."));

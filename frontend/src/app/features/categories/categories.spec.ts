@@ -1,7 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { API_BASE, Category } from '../../core/models';
+import { API_BASE, Category, PermissionEntry } from '../../core/models';
 import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
 import { Categories } from './categories';
@@ -24,6 +24,29 @@ const OTHER_CATEGORY: Category = {
   active: true,
 };
 
+const INACTIVE_CATEGORY: Category = {
+  id: 'cat-3',
+  parentId: null,
+  name: 'Farmácia',
+  type: 'EXPENSE',
+  color: '#654321',
+  active: false,
+};
+
+const BLOCKING_MESSAGE =
+  'Não é possível excluir a categoria. Ela está em uso em:\nLançamentos: 3 registros';
+
+function categoriesPermission(overrides: Partial<PermissionEntry>): PermissionEntry {
+  return {
+    screen: 'CATEGORIES',
+    canView: true,
+    canCreate: false,
+    canEdit: false,
+    canDelete: false,
+    ...overrides,
+  };
+}
+
 describe('Categories', () => {
   let fixture: ComponentFixture<Categories>;
   let httpMock: HttpTestingController;
@@ -44,6 +67,19 @@ describe('Categories', () => {
   async function render(superAdmin = true, categories: Category[] = [CATEGORY]): Promise<void> {
     fixture = TestBed.createComponent(Categories);
     TestBed.inject(AuthService).superAdmin.set(superAdmin);
+    fixture.detectChanges();
+    httpMock.expectOne(`${API_BASE}/categories`).flush(categories);
+    await settle();
+  }
+
+  async function renderWithPermissions(
+    permissions: PermissionEntry[],
+    categories: Category[] = [CATEGORY],
+  ): Promise<void> {
+    fixture = TestBed.createComponent(Categories);
+    const authService = TestBed.inject(AuthService);
+    authService.superAdmin.set(false);
+    authService.permissions.set(permissions);
     fixture.detectChanges();
     httpMock.expectOne(`${API_BASE}/categories`).flush(categories);
     await settle();
@@ -112,6 +148,19 @@ describe('Categories', () => {
 
   async function startEditing(): Promise<void> {
     await click(query<HTMLButtonElement>('tbody button.ghost-button'));
+  }
+
+  function deleteButtons(): HTMLButtonElement[] {
+    return queryAll<HTMLButtonElement>('tbody .row-actions button.icon-button');
+  }
+
+  function rowNames(): string[] {
+    return queryAll('tbody tr td:first-child').map((cell) => cell.textContent?.trim() ?? '');
+  }
+
+  async function confirmDeletion(): Promise<void> {
+    await click(deleteButtons()[0]);
+    await click(query<HTMLButtonElement>('.modal-actions button.primary-button'));
   }
 
   function fieldErrorTexts(scope: string): string[] {
@@ -427,5 +476,202 @@ describe('Categories', () => {
     await render(true, []);
 
     expect(query('.empty-state').textContent?.trim()).toBe('Nenhuma categoria cadastrada');
+  });
+
+  it('exibe a lixeira nas linhas ativas e inativas com rótulo Excluir e ícone de 20px', async () => {
+    await render(true, [CATEGORY, INACTIVE_CATEGORY]);
+
+    const buttons = deleteButtons();
+    expect(buttons).toHaveLength(2);
+    buttons.forEach((button) => {
+      expect(button.getAttribute('aria-label')).toBe('Excluir');
+      expect(button.getAttribute('title')).toBe('Excluir');
+      expect(button.getAttribute('type')).toBe('button');
+      expect(button.disabled).toBe(false);
+      expect(button.querySelector('svg')?.getAttribute('width')).toBe('20');
+      expect(button.querySelector('svg')?.getAttribute('height')).toBe('20');
+    });
+  });
+
+  it('exibe a lixeira para o perfil com permissão de excluir, mesmo sem permissão de alterar', async () => {
+    await renderWithPermissions([categoriesPermission({ canDelete: true })]);
+
+    expect(deleteButtons()).toHaveLength(1);
+    expect(query('tbody button.ghost-button')).toBeNull();
+  });
+
+  it('não coloca a lixeira no DOM sem a permissão de excluir', async () => {
+    await renderWithPermissions([categoriesPermission({ canCreate: true, canEdit: true })]);
+
+    expect(query('tbody button.ghost-button')).toBeTruthy();
+    expect(deleteButtons()).toHaveLength(0);
+    expect(query('[aria-label="Excluir"]')).toBeNull();
+  });
+
+  it('não coloca a lixeira no DOM para perfil sem nenhuma permissão de escrita', async () => {
+    await render(false);
+
+    expect(deleteButtons()).toHaveLength(0);
+  });
+
+  it('tira a lixeira da linha em edição e a desabilita nas demais, como o Editar', async () => {
+    await render(true, [CATEGORY, OTHER_CATEGORY]);
+
+    await startEditing();
+
+    const editingRow = query('tbody input[name="editName"]').closest('tr') as HTMLElement;
+    expect(editingRow.querySelector('button.icon-button')).toBeNull();
+    const buttons = deleteButtons();
+    expect(buttons).toHaveLength(1);
+    expect(buttons[0].disabled).toBe(true);
+  });
+
+  it('abre a confirmação citando o nome e fecha em Cancelar sem HTTP e sem toast', async () => {
+    await render();
+
+    await click(deleteButtons()[0]);
+
+    expect(query('.modal-card p').textContent).toContain('"Mercado"');
+    expect(query('.modal-actions button.primary-button').textContent?.trim()).toBe(
+      'Excluir categoria',
+    );
+    expect(query('.modal-actions button.ghost-button').textContent?.trim()).toBe('Cancelar');
+
+    await click(query<HTMLButtonElement>('.modal-actions button.ghost-button'));
+
+    expect(query('.modal-backdrop')).toBeNull();
+    expect(rowNames()).toEqual(['Mercado']);
+    expect(toasts()).toEqual([]);
+    httpMock.expectNone(() => true);
+  });
+
+  it('exclui ao confirmar, recarrega a lista e exibe toast de sucesso', async () => {
+    await render(true, [CATEGORY, OTHER_CATEGORY]);
+
+    await confirmDeletion();
+
+    const request = httpMock.expectOne(`${API_BASE}/categories/cat-1`);
+    expect(request.request.method).toBe('DELETE');
+    request.flush(null, { status: 204, statusText: 'No Content' });
+    await settle();
+    httpMock.expectOne(`${API_BASE}/categories`).flush([OTHER_CATEGORY]);
+    await settle();
+
+    expect(query('.modal-backdrop')).toBeNull();
+    expect(rowNames()).toEqual(['Salario']);
+    expect(toasts()).toHaveLength(1);
+    expect(toasts()[0].type).toBe('success');
+    expect(toasts()[0].title).toBe('Sucesso');
+    expect(toasts()[0].message).toBe('Categoria excluída com sucesso.');
+  });
+
+  it('exibe alerta com a mensagem do backend em linhas no 409 e mantém a categoria na lista', async () => {
+    await render();
+
+    await confirmDeletion();
+
+    const request = httpMock.expectOne(`${API_BASE}/categories/cat-1`);
+    expect(request.request.method).toBe('DELETE');
+    request.flush({ message: BLOCKING_MESSAGE }, { status: 409, statusText: 'Conflict' });
+    await settle();
+
+    expect(query('.modal-backdrop')).toBeNull();
+    expect(rowNames()).toEqual(['Mercado']);
+    expect(toasts()).toHaveLength(1);
+    expect(toasts()[0].type).toBe('warning');
+    expect(toasts()[0].title).toBe('Alerta');
+    expect(toasts()[0].message).toBe(BLOCKING_MESSAGE);
+    expect(toasts()[0].message.split('\n')).toEqual([
+      'Não é possível excluir a categoria. Ela está em uso em:',
+      'Lançamentos: 3 registros',
+    ]);
+    httpMock.expectNone(`${API_BASE}/categories`);
+  });
+
+  it('confirma a exclusão e avisa só da lista quando o recarregamento falha', async () => {
+    await render(true, [CATEGORY, OTHER_CATEGORY]);
+
+    await confirmDeletion();
+
+    httpMock
+      .expectOne(`${API_BASE}/categories/cat-1`)
+      .flush(null, { status: 204, statusText: 'No Content' });
+    await settle();
+    httpMock
+      .expectOne(`${API_BASE}/categories`)
+      .flush(null, { status: 500, statusText: 'Server Error' });
+    await settle();
+
+    expect(toasts().map((toast) => [toast.type, toast.message])).toEqual([
+      ['success', 'Categoria excluída com sucesso.'],
+      ['error', 'Não foi possível carregar as categorias.'],
+    ]);
+    expect(toasts().some((toast) => toast.message === 'Não foi possível excluir a categoria.')).toBe(
+      false,
+    );
+  });
+
+  it('confirma a criação, limpa o formulário e avisa só da lista quando o recarregamento falha', async () => {
+    await render();
+    await fillText('form input[name="name"]', 'Lazer');
+
+    await click(query<HTMLButtonElement>('form button[type="submit"]'));
+
+    httpMock.expectOne(`${API_BASE}/categories`).flush({ ...CATEGORY, id: 'cat-4', name: 'Lazer' });
+    await settle();
+    httpMock
+      .expectOne(`${API_BASE}/categories`)
+      .flush(null, { status: 500, statusText: 'Server Error' });
+    await settle();
+    // O ngModel só grava o valor limpo no DOM numa microtarefa após a detecção de mudanças.
+    await settle();
+
+    expect(toasts().map((toast) => [toast.type, toast.message])).toEqual([
+      ['success', 'Categoria salva com sucesso.'],
+      ['error', 'Não foi possível carregar as categorias.'],
+    ]);
+    expect(toasts().some((toast) => toast.message.startsWith('Não foi possível salvar'))).toBe(false);
+    expectBlankForm();
+    expect(queryAll('.invalid')).toHaveLength(0);
+    expect(query<HTMLButtonElement>('form button[type="submit"]').disabled).toBe(false);
+  });
+
+  it('confirma a edição, sai do modo edição e avisa só da lista quando o recarregamento falha', async () => {
+    await render();
+    await startEditing();
+    await selectIndex('tbody select[name="editActive"]', 1);
+
+    await click(rowSaveButton());
+
+    httpMock.expectOne(`${API_BASE}/categories/cat-1`).flush({ ...CATEGORY, active: false });
+    await settle();
+    httpMock
+      .expectOne(`${API_BASE}/categories`)
+      .flush(null, { status: 500, statusText: 'Server Error' });
+    await settle();
+
+    expect(toasts().map((toast) => [toast.type, toast.message])).toEqual([
+      ['success', 'Categoria atualizada com sucesso.'],
+      ['error', 'Não foi possível carregar as categorias.'],
+    ]);
+    expect(toasts().some((toast) => toast.message.startsWith('Não foi possível salvar'))).toBe(false);
+    expect(query('tbody input[name="editName"]')).toBeNull();
+  });
+
+  it('não soma aviso da lista quando o recarregamento responde 401, que já tem dono', async () => {
+    await render(true, [CATEGORY, OTHER_CATEGORY]);
+
+    await confirmDeletion();
+
+    httpMock
+      .expectOne(`${API_BASE}/categories/cat-1`)
+      .flush(null, { status: 204, statusText: 'No Content' });
+    await settle();
+    httpMock
+      .expectOne(`${API_BASE}/categories`)
+      .flush(null, { status: 401, statusText: 'Unauthorized' });
+    await settle();
+
+    expect(toasts().map((toast) => toast.message)).toEqual(['Categoria excluída com sucesso.']);
   });
 });

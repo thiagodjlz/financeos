@@ -11,6 +11,30 @@ col.col-situation {
   width: 150px;
 }
 
+.row-actions .icon-button {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius-sm);
+  padding: 0;
+  background: var(--surface);
+  color: var(--expense-on-soft);
+  cursor: pointer;
+}
+
+.row-actions .icon-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (hover: hover) {
+  .row-actions .icon-button:hover:not(:disabled) {
+    background: var(--expense-soft);
+  }
+}
+
 .category-name {
   display: flex;
   align-items: center;
@@ -43,6 +67,11 @@ col.col-situation {
 }
 
 @media (max-width: 480px) {
+  .row-actions .icon-button {
+    width: var(--touch-target);
+    height: var(--touch-target);
+  }
+
   .inline-name-fields {
     grid-template-columns: minmax(0, 1fr) var(--touch-target);
 

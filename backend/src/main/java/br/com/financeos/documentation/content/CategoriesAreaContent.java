@@ -38,7 +38,8 @@ final class CategoriesAreaContent {
                         "Criar uma categoria de receita ou de despesa.",
                         "Alterar nome, tipo, cor e situação de uma categoria existente, na própria linha.",
                         "Desativar uma categoria que não deve mais ser oferecida em novos lançamentos.",
-                        "Reativar uma categoria desativada."));
+                        "Reativar uma categoria desativada.",
+                        "Excluir definitivamente uma categoria que não é usada por nenhum lançamento."));
     }
 
     private static DocumentationSection campos() {
@@ -67,8 +68,13 @@ final class CategoriesAreaContent {
                                 + "categoria com esse nome e tipo.",
                         "Como a combinação é nome mais tipo, o mesmo nome pode existir uma vez como receita e uma "
                                 + "vez como despesa.",
-                        "Excluir uma categoria significa apenas torná-la Inativa: ela continua no sistema, e o "
-                                + "campo Situação é o caminho tanto para desativar quanto para reativar."),
+                        "Excluir uma categoria a remove definitivamente do sistema, esteja ela ativa ou inativa. "
+                                + "A exclusão não pode ser desfeita.",
+                        "Uma categoria usada por algum lançamento não pode ser excluída, qualquer que seja a pessoa "
+                                + "dona do lançamento e mesmo que ele esteja cancelado. O sistema recusa com Não é "
+                                + "possível excluir a categoria e informa quantos lançamentos a usam.",
+                        "Para tirar uma categoria de uso sem excluí-la, o caminho é o campo Situação: Inativo "
+                                + "desativa e Ativo reativa."),
                 DocumentationBlock.highlight(
                         "Desativar uma categoria não mexe nos lançamentos que já a usavam. Ela deixa de ser "
                                 + "oferecida na escolha de novos lançamentos, mas o nome dela continua aparecendo "
@@ -81,8 +87,8 @@ final class CategoriesAreaContent {
                 DocumentationBlock.list(
                         "Na tabela, a cor da categoria aparece como um ponto ao lado do nome e a situação aparece "
                                 + "como uma etiqueta Ativo ou Inativo.",
-                        "Só uma linha fica em edição por vez; o botão Editar das demais fica indisponível enquanto "
-                                + "isso.",
+                        "Só uma linha fica em edição por vez; os botões Editar e Excluir das demais ficam "
+                                + "indisponíveis enquanto isso, e a linha em edição não mostra o botão Excluir.",
                         "Sair da edição com alguma alteração ainda não salva abre uma confirmação antes de "
                                 + "descartar.",
                         "Uma categoria inativa que já estava em um lançamento continua disponível na edição daquele "
@@ -104,7 +110,11 @@ final class CategoriesAreaContent {
                                 List.of("Editar (linha)", "Abre a linha para alteração, ali mesmo na tabela."),
                                 List.of("Salvar (linha)", "Grava a alteração e recarrega a lista."),
                                 List.of("Sair (linha)", "Abandona a edição da linha; se houver alteração "
-                                        + "pendente, pede confirmação antes de descartá-la."))),
+                                        + "pendente, pede confirmação antes de descartá-la."),
+                                List.of("Excluir (linha)", "Pede confirmação citando o nome da categoria. "
+                                        + "Confirmada, a categoria é excluída definitivamente e a lista é "
+                                        + "recarregada; se ela estiver em uso, nada é excluído e o aviso mostra "
+                                        + "quantos lançamentos a usam."))),
                 DocumentationBlock.paragraph(
                         "Cada botão só aparece se o seu perfil tiver a permissão correspondente na tela de "
                                 + "Categorias."));
