@@ -4,7 +4,7 @@ url: https://github.com/thiagodjlz/financeos/issues/75
 title: "Botao \"voltar ao topo\" em todas as telas"
 domains: [documentation]
 target: main
-stage: validated
+stage: pr-open
 branch: feature/issue-75-botao-voltar-ao-topo
 created: 2026-09-22
 ---
