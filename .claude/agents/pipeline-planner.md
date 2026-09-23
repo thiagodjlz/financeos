@@ -28,6 +28,7 @@ E o contrato entre voce e as etapas seguintes. Elas **nao vao reler `knowledge/`
 
 - **Regra de negocio se cita, nunca se parafraseia de cabeca.** Cada item traz a ancora de onde veio (`knowledge/transactions.md`), para quem ler poder abrir a fonte se precisar.
 - **So o que restringe esta issue.** Se a regra nao muda nada no que vai ser implementado, ela nao entra. Briefing nao e resumo do projeto.
+- **Criterio que depende de comando documentado em `knowledge/`** (varreduras de acentuacao e de cor literal): copie o comando literal, nao so o baseline (issue #75).
 - **Teto de 6 KB.** Estourou, e porque entrou contexto geral — corte, nao aumente.
 
 ```markdown
@@ -119,12 +120,12 @@ Criterio de aceite esquecido descoberto aqui custa um paragrafo; descoberto na v
 
 ## Dois padroes que custaram rodadas de correcao
 
-- **Mudanca que aperta um contrato existente exige inventario dos consumidores.** Tornar obrigatorio um campo opcional (`@NotNull` novo, checagem no `Resource`) atinge: (1) os testes que omitiam o campo, **inclusive de outros dominios** (issue #45: `categoryId` obrigatorio em Lancamentos quebrou o helper do `DashboardResourceTest`); (2) os **defaults que ficam inalcancaveis**, porque o valor nunca mais chega nulo — diga no plano se o default sai do codigo ou fica como rede de seguranca; (3) o **dado legado ja gravado sem o campo**, que exige decisao explicita na spec (backfill por migration, saneamento ao editar, ou coluna que continua nullable) e costuma virar o comportamento mais visivel da feature na tela.
+- **Mudanca que aperta um contrato existente exige inventario dos consumidores.** Tornar obrigatorio um campo opcional (`@NotNull` novo, checagem no `Resource`) atinge: (1) os testes que omitiam o campo, **inclusive de outros dominios** (issue #45); (2) os **defaults que ficam inalcancaveis**, porque o valor nunca mais chega nulo — diga no plano se o default sai do codigo ou fica como rede de seguranca; (3) o **dado legado ja gravado sem o campo**, que exige decisao explicita na spec (backfill por migration, saneamento ao editar, ou coluna que continua nullable) e costuma virar o comportamento mais visivel da feature na tela.
 - **Mudanca que abre um canal novo exige inventario dos produtores.** Quando algo que era invisivel passa a ser exibido (um `ExceptionMapper` que faz a mensagem da excecao virar corpo de resposta, um campo que passa a aparecer na tela), **tudo** que ja alimentava aquele canal em silencio vira texto de UI de uma vez. Varra todos os pontos que produzem esse conteudo e confira que cada um esta apresentavel — portugues acentuado, sem nome de enum nem identificador de codigo (issue #39).
 
 ## Consumidor que nenhum teste acusa
 
-Regra de negocio, calculo, validacao, mensagem, campo ou rotulo que mude tem **dois** consumidores escritos a mao que nada no build acusa quando ficam desatualizados: a **Central de Documentacao** (issue #70, `documentation/content/<Area>Content.java` — o que o sistema faz hoje) e, desde a issue #71, **Novidades por versao** (`releasenotes/content/ReleaseNotesContent.java` — o que mudou nesta versao). Se a mudanca toca uma tela documentada, inclua o ajuste do `<Area>Content.java` correspondente. Se a mudanca e visivel ao usuario final (tela nova, regra de negocio que ele percebe, correcao de bug perceptivel), avalie se ela merece uma linha no bloco da versao corrente de `ReleaseNotesContent.java` e inclua a tarefa se sim — em ambos os casos, mesmo que `domains` nao liste `documentation` (ver `knowledge/documentation.md`).
+Regra de negocio, calculo, validacao, mensagem, campo ou rotulo que mude tem **dois** consumidores escritos a mao que nada no build acusa quando ficam desatualizados: a **Central de Documentacao** (`documentation/content/<Area>Content.java`, o que o sistema faz hoje — issue #70) e **Novidades por versao** (`releasenotes/content/ReleaseNotesContent.java`, o que mudou nesta versao — issue #71). Se a mudanca toca uma tela documentada, inclua o ajuste do `<Area>Content.java` correspondente. Se a mudanca e visivel ao usuario final (tela nova, regra de negocio que ele percebe, correcao de bug perceptivel), avalie se ela merece uma linha no bloco da versao corrente de `ReleaseNotesContent.java` e inclua a tarefa se sim — em ambos os casos, mesmo que `domains` nao liste `documentation` (ver `knowledge/documentation.md`).
 
 ## Se for um replanejamento por lacuna de cobertura
 

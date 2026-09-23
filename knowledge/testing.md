@@ -13,10 +13,11 @@ Leia quando a etapa escrever, ajustar ou rodar teste (`/pipeline:implement` e `/
 
 ## O que jsdom nao faz (e como isso derruba a suite inteira)
 
-A suite do frontend roda em **jsdom**, nao num navegador. Tres consequencias que quebram a suite **do componente inteiro**, nao so o teste novo:
+A suite do frontend roda em **jsdom**, nao num navegador. Consequencias que quebram a suite **do componente inteiro**, nao so o teste novo:
 
 - **Nao existe `ResizeObserver` e toda medida vem `0`.** Feature que desenha a partir de `clientWidth`/`getBoundingClientRect`/`viewBox` calculado precisa de guarda (`typeof ResizeObserver !== 'undefined'`) e de uma constante de fallback, senao a geometria sai `NaN`.
-- **Nao existe `window.matchMedia`.** Decisao de layout mora no CSS; o TS guarda no maximo um signal de estado.
+- **Nao existe `window.matchMedia`.** Decisao de layout mora no CSS; o TS guarda no maximo um signal de estado. Preferencia lida no momento de uma acao (ex.: `prefers-reduced-motion` no clique) precisa de guarda `typeof window.matchMedia === 'function'`, e o teste atribui um `vi.fn()` a `window.matchMedia` e restaura o original no `afterEach` (issue #75).
+- **`window.scrollTo` nao e implementado e `scrollY` e somente leitura.** Todo teste que dispara rolagem usa `vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined)`; a posicao se simula com `Object.defineProperty(window, 'scrollY', { configurable: true, value })` + `dispatchEvent(new Event('scroll'))` e se desfaz no `afterEach` (`delete window.scrollY`), senao vaza para os specs seguintes. Listener unico em `window` se prova espiando `addEventListener`/`removeEventListener`, filtrando o tipo e conferindo que o handler removido e o mesmo registrado (`back-to-top.spec.ts`, issue #75).
 - **Nenhum CSS e aplicado.** Teste de comportamento que dependa de visibilidade, posicionamento ou altura computada **aprova falsamente**. Observe o estado no instante da acao (ex.: se a classe que torna o elemento visivel ja estava aplicada quando o `focus()` foi chamado) e mande a confirmacao final para a validacao na tela.
 
 Regra geral: criterio que so fecha com pixel na tela nao vira teste — vira item do roteiro de validacao manual.
