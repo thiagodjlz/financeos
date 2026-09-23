@@ -75,9 +75,12 @@ final class UsersAreaContent {
                                 + "na lista com a situação Inativo.",
                         "Quem está inativo não consegue entrar, mesmo com a senha correta."),
                 DocumentationBlock.highlight(
-                        "Você não pode desativar a sua própria conta pelo botão Desativar: o sistema recusa com "
-                                + "a mensagem Você não pode desativar a própria conta. A desativação precisa ser "
-                                + "feita por outra pessoa com permissão na tela de Usuários."));
+                        "Você não pode desativar a sua própria conta, nem pelo botão Desativar nem mudando o "
+                                + "Status para Inativo na sua linha: o sistema recusa com a mensagem Você não pode "
+                                + "desativar a própria conta. Da mesma forma, ninguém altera o próprio perfil: "
+                                + "escolher outro Perfil na sua linha é recusado com Você não pode alterar o "
+                                + "próprio perfil. Nos dois casos nada é gravado, e a mudança precisa ser feita "
+                                + "por outra pessoa com permissão na tela de Usuários."));
     }
 
     private static DocumentationSection particularidades() {

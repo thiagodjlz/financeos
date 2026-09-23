@@ -2,6 +2,7 @@ package br.com.financeos.users;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 import br.com.financeos.profiles.ProfileRepository;
@@ -93,6 +94,15 @@ public class UserResource {
         }
 
         requireProfileExists(request.profileId());
+
+        if (currentUser.id().equals(id)) {
+            if (!request.active()) {
+                throw new WebApplicationException("Você não pode desativar a própria conta.", Response.Status.CONFLICT);
+            }
+            if (!Objects.equals(user.profileId, request.profileId())) {
+                throw new WebApplicationException("Você não pode alterar o próprio perfil.", Response.Status.CONFLICT);
+            }
+        }
 
         user.name = request.name().trim();
         user.email = email;

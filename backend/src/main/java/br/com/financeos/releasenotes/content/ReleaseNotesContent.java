@@ -39,7 +39,9 @@ public final class ReleaseNotesContent {
                 "Botão \"Voltar ao topo\" nas telas longas: aparece ao rolar a página e leva de volta ao início.");
 
         addIfPresent(categories, Kind.FIX,
-                "Contraste da borda dos campos de formulário corrigido, visível sob luz forte ou baixa visão.");
+                "Contraste da borda dos campos de formulário corrigido, visível sob luz forte ou baixa visão.",
+                "Tela de Usuários: não é mais possível desativar a própria conta nem trocar o próprio perfil "
+                        + "ao editar a sua linha.");
 
         return new ReleaseNoteVersion("1.0.2", List.copyOf(categories));
     }
