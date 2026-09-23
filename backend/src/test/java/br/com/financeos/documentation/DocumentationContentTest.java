@@ -139,6 +139,17 @@ class DocumentationContentTest {
     }
 
     @Test
+    void shouldExplainTheBackToTopButtonInHowToNavigate() {
+        DocumentationSection navegacao = CONTENT.introduction().sections().stream()
+                .filter(section -> "Como navegar".equals(section.title()))
+                .findFirst()
+                .orElseThrow();
+
+        assertTrue(navegacao.blocks().stream()
+                .anyMatch(block -> block.text() != null && block.text().contains("Voltar ao topo")));
+    }
+
+    @Test
     void shouldKeepEveryTableRowAlignedWithItsColumns() {
         allAreas().forEach(area -> area.sections().forEach(section -> section.blocks().forEach(block -> {
             if (block.table() != null) {

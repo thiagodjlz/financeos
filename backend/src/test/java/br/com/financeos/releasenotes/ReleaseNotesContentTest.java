@@ -79,4 +79,15 @@ class ReleaseNotesContentTest {
         assertTrue(v102.categories().stream().anyMatch(c -> c.kind() == ReleaseNoteCategory.Kind.IMPROVEMENT));
         assertTrue(v102.categories().stream().anyMatch(c -> c.kind() == ReleaseNoteCategory.Kind.FIX));
     }
+
+    @Test
+    void shouldAnnounceTheBackToTopButtonAsImprovementIn102() {
+        ReleaseNoteVersion v102 = VERSIONS.get(0);
+
+        assertEquals("1.0.2", v102.version());
+        assertTrue(v102.categories().stream()
+                .filter(c -> c.kind() == ReleaseNoteCategory.Kind.IMPROVEMENT)
+                .flatMap(c -> c.items().stream())
+                .anyMatch(item -> item.contains("Voltar ao topo")));
+    }
 }

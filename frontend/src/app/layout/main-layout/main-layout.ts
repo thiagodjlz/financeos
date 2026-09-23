@@ -11,6 +11,7 @@ import {
   signal,
 } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { BackToTop } from '../../core/back-to-top/back-to-top';
 import { AuthService } from '../../core/services/auth.service';
 import { APP_NAME, APP_VERSION } from '../../core/version';
 
@@ -21,7 +22,7 @@ const FOCUSABLE_SELECTOR = 'button:not([disabled]), a[href], input, select, [tab
 
 @Component({
   selector: 'app-main-layout',
-  imports: [CommonModule, RouterLink, RouterLinkActive, RouterOutlet],
+  imports: [BackToTop, CommonModule, RouterLink, RouterLinkActive, RouterOutlet],
   templateUrl: './main-layout.html',
   styleUrl: './main-layout.scss',
 })

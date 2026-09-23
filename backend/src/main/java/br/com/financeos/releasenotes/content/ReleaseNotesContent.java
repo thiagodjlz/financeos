@@ -35,7 +35,8 @@ public final class ReleaseNotesContent {
                 "Painel Resumo: saudação personalizada com o seu nome, conforme o horário do dia.",
                 "Período do Resumo: mês por extenso; ano e mês só listam datas com lançamentos existentes.",
                 "Mais segurança nas contas ao publicar na internet: administrador com nome fixo, contas de "
-                        + "teste removidas do ambiente publicado.");
+                        + "teste removidas do ambiente publicado.",
+                "Botão \"Voltar ao topo\" nas telas longas: aparece ao rolar a página e leva de volta ao início.");
 
         addIfPresent(categories, Kind.FIX,
                 "Contraste da borda dos campos de formulário corrigido, visível sob luz forte ou baixa visão.");

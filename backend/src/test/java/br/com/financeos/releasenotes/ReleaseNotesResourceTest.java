@@ -2,6 +2,8 @@ package br.com.financeos.releasenotes;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.matchesPattern;
 
@@ -28,6 +30,17 @@ class ReleaseNotesResourceTest {
                 .body("currentVersion", matchesPattern("\\d+\\.\\d+\\.\\d+"))
                 .body("versions", hasSize(1))
                 .body("versions[0].version", equalTo("1.0.2"));
+    }
+
+    @Test
+    void shouldListTheBackToTopButtonAmongThe102Improvements() {
+        given()
+                .when().get("/release-notes")
+                .then()
+                .statusCode(200)
+                .body("versions[0].version", equalTo("1.0.2"))
+                .body("versions[0].categories.find { it.kind == 'IMPROVEMENT' }.items",
+                        hasItem(containsString("Voltar ao topo")));
     }
 
     @Test
