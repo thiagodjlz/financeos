@@ -383,6 +383,25 @@ describe('MainLayout', () => {
     expect(workspace.contains(document.activeElement)).toBe(true);
   });
 
+  it('monta um único botão Voltar ao topo e navegar entre telas não cria outro listener de scroll', async () => {
+    const addSpy = vi.spyOn(window, 'addEventListener');
+    const authService = TestBed.inject(AuthService);
+    authService.superAdmin.set(true);
+    const fixture = createFixture();
+    const router = TestBed.inject(Router);
+
+    await router.navigateByUrl('/transactions');
+    fixture.detectChanges();
+    await router.navigateByUrl('/documentation');
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelectorAll('app-back-to-top')).toHaveLength(1);
+    expect(compiled.querySelectorAll('.back-to-top')).toHaveLength(1);
+    expect(addSpy.mock.calls.filter(([type]) => type === 'scroll')).toHaveLength(1);
+    addSpy.mockRestore();
+  });
+
   describe('gaveta de navegação no mobile', () => {
     afterEach(() => {
       document.body.classList.remove('drawer-open');

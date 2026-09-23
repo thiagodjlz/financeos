@@ -60,7 +60,10 @@ final class OverviewContent {
                         "Sobre: reúne esta Central de Documentação e a tela de Novidades por versão."),
                 DocumentationBlock.paragraph(
                         "Em telas estreitas, como as de celular, o menu vira uma gaveta que abre pelo botão Menu "
-                                + "no alto da tela e fecha ao escolher um item ou ao pressionar a tecla Esc."));
+                                + "no alto da tela e fecha ao escolher um item ou ao pressionar a tecla Esc."),
+                DocumentationBlock.paragraph(
+                        "Nas telas longas, ao rolar a página aparece no canto inferior direito o botão Voltar ao "
+                                + "topo, que leva de volta ao início da tela."));
     }
 
     private static DocumentationSection acesso() {
