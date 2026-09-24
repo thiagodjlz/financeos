@@ -11,8 +11,8 @@ Duas dimensoes independentes. Uma tarefa tipica carrega 3 ou 4 arquivos, nao dez
 | Arquivo | Carregue quando |
 |---|---|
 | [architecture.md](architecture.md) | **sempre** — stack, comandos, versionamento, convencoes transversais, idioma |
-| [backend-patterns.md](backend-patterns.md) | a issue altera `backend/src/main` (erros, validacao, mensagens, parametros) |
-| [frontend-ui.md](frontend-ui.md) | a issue altera tela, estilo ou navegacao (design system, responsividade, toasts, tabelas, menu) |
+| [backend-patterns.md](backend-patterns.md) | a issue altera `backend/src/main` (erros, validacao, mensagens, parametros, listagem paginada) |
+| [frontend-ui.md](frontend-ui.md) | a issue altera tela, estilo ou navegacao (design system, responsividade, toasts, listagem paginada e cadastro, menu) |
 | [testing.md](testing.md) | a etapa escreve, ajusta ou roda teste |
 | [deployment.md](deployment.md) | a issue toca deploy, Compose, Caddy, Tailscale ou modo de exposicao |
 
