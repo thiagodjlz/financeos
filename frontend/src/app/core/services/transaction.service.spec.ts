@@ -18,27 +18,29 @@ describe('TransactionService', () => {
 
   afterEach(() => httpMock.verify());
 
-  it('populates the transactions signal from GET /transactions', async () => {
-    const refreshPromise = service.refresh();
+  it('lista uma página via GET /transactions com page, size e só os filtros preenchidos', async () => {
+    const listPromise = service.list(
+      { description: ' feira ', categoryId: '', type: 'EXPENSE', status: '', startDate: '2026-03-01', endDate: '' },
+      2,
+    );
 
-    const req = httpMock.expectOne(`${API_BASE}/transactions`);
+    const req = httpMock.expectOne(
+      `${API_BASE}/transactions?page=2&size=10&description=feira&type=EXPENSE&startDate=2026-03-01`,
+    );
     expect(req.request.method).toBe('GET');
-    req.flush([
-      {
-        id: '1',
-        categoryId: null,
-        transactionDate: '2026-06-01',
-        description: 'Mercado',
-        amount: 100,
-        type: 'EXPENSE',
-        status: 'PAID',
-        source: 'MANUAL',
-      },
-    ]);
+    req.flush({ items: [], totalItems: 11, totalPages: 2, page: 2, size: 10 });
 
-    await refreshPromise;
-    expect(service.transactions()).toHaveLength(1);
-    expect(service.transactions()[0].description).toBe('Mercado');
+    await expect(listPromise).resolves.toMatchObject({ totalItems: 11, totalPages: 2 });
+  });
+
+  it('busca um lançamento via GET /transactions/{id}', async () => {
+    const getPromise = service.get('1');
+
+    const req = httpMock.expectOne(`${API_BASE}/transactions/1`);
+    expect(req.request.method).toBe('GET');
+    req.flush({ id: '1' });
+
+    await expect(getPromise).resolves.toMatchObject({ id: '1' });
   });
 
   it('creates a transaction via POST /transactions', async () => {

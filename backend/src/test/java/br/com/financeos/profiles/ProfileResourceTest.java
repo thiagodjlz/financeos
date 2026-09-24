@@ -3,6 +3,8 @@ package br.com.financeos.profiles;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.hasItem;
 
 import java.util.UUID;
 
@@ -225,17 +227,13 @@ class ProfileResourceTest {
                 .body("permissions.find { it.screen == 'DOCUMENTATION' }.canDelete", equalTo(false));
 
         given()
-                .when().get("/profiles")
+                .when().get("/profiles/{id}", id)
                 .then()
                 .statusCode(200)
-                .body("find { it.id == '%s' }.permissions.find { it.screen == 'DOCUMENTATION' }.canCreate"
-                        .formatted(id), equalTo(false))
-                .body("find { it.id == '%s' }.permissions.find { it.screen == 'DOCUMENTATION' }.canEdit"
-                        .formatted(id), equalTo(false))
-                .body("find { it.id == '%s' }.permissions.find { it.screen == 'DOCUMENTATION' }.canDelete"
-                        .formatted(id), equalTo(false))
-                .body("find { it.id == '%s' }.permissions.find { it.screen == 'DOCUMENTATION' }.canView"
-                        .formatted(id), equalTo(true));
+                .body("permissions.find { it.screen == 'DOCUMENTATION' }.canCreate", equalTo(false))
+                .body("permissions.find { it.screen == 'DOCUMENTATION' }.canEdit", equalTo(false))
+                .body("permissions.find { it.screen == 'DOCUMENTATION' }.canDelete", equalTo(false))
+                .body("permissions.find { it.screen == 'DOCUMENTATION' }.canView", equalTo(true));
     }
 
     @Test
@@ -282,17 +280,13 @@ class ProfileResourceTest {
                 .body("permissions.find { it.screen == 'RELEASE_NOTES' }.canDelete", equalTo(false));
 
         given()
-                .when().get("/profiles")
+                .when().get("/profiles/{id}", id)
                 .then()
                 .statusCode(200)
-                .body("find { it.id == '%s' }.permissions.find { it.screen == 'RELEASE_NOTES' }.canCreate"
-                        .formatted(id), equalTo(false))
-                .body("find { it.id == '%s' }.permissions.find { it.screen == 'RELEASE_NOTES' }.canEdit"
-                        .formatted(id), equalTo(false))
-                .body("find { it.id == '%s' }.permissions.find { it.screen == 'RELEASE_NOTES' }.canDelete"
-                        .formatted(id), equalTo(false))
-                .body("find { it.id == '%s' }.permissions.find { it.screen == 'RELEASE_NOTES' }.canView"
-                        .formatted(id), equalTo(true));
+                .body("permissions.find { it.screen == 'RELEASE_NOTES' }.canCreate", equalTo(false))
+                .body("permissions.find { it.screen == 'RELEASE_NOTES' }.canEdit", equalTo(false))
+                .body("permissions.find { it.screen == 'RELEASE_NOTES' }.canDelete", equalTo(false))
+                .body("permissions.find { it.screen == 'RELEASE_NOTES' }.canView", equalTo(true));
     }
 
     @Test
@@ -329,5 +323,118 @@ class ProfileResourceTest {
                 .then()
                 .statusCode(409)
                 .body("message", equalTo("Perfil em uso por usuários."));
+    }
+
+    private String createProfile(String name) {
+        return given()
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "name": "%s",
+                          "permissions": [
+                            { "screen": "DASHBOARD", "canView": true }
+                          ]
+                        }
+                        """.formatted(name))
+                .when().post("/profiles")
+                .then()
+                .statusCode(201)
+                .extract()
+                .path("id");
+    }
+
+    @Test
+    void shouldPaginateProfilesWithTotals() {
+        String prefix = "Teste Perfil Pagina " + UUID.randomUUID();
+        for (int i = 1; i <= 11; i++) {
+            createProfile(prefix + " %02d".formatted(i));
+        }
+
+        given()
+                .queryParam("name", prefix)
+                .queryParam("size", 10)
+                .when().get("/profiles")
+                .then()
+                .statusCode(200)
+                .body("items.size()", equalTo(10))
+                .body("items[0].name", equalTo(prefix + " 01"))
+                .body("items[0].permissions.size()", greaterThanOrEqualTo(1))
+                .body("totalItems", equalTo(11))
+                .body("totalPages", equalTo(2));
+
+        given()
+                .queryParam("name", prefix)
+                .queryParam("page", 2)
+                .when().get("/profiles")
+                .then()
+                .statusCode(200)
+                .body("items.size()", equalTo(1))
+                .body("items[0].name", equalTo(prefix + " 11"));
+
+        given()
+                .queryParam("name", prefix)
+                .queryParam("page", 99)
+                .when().get("/profiles")
+                .then()
+                .statusCode(200)
+                .body("items.size()", equalTo(0))
+                .body("totalItems", equalTo(11))
+                .body("totalPages", equalTo(2));
+
+        given()
+                .when().get("/profiles/options")
+                .then()
+                .statusCode(200)
+                .body("size()", greaterThanOrEqualTo(12))
+                .body("name", hasItem(prefix + " 11"));
+    }
+
+    @Test
+    void shouldSearchProfileNameIgnoringCaseAndAccents() {
+        String suffix = UUID.randomUUID().toString();
+        createProfile("Teste Perfil Gestão " + suffix);
+
+        given()
+                .queryParam("name", "perfil GESTAO " + suffix)
+                .when().get("/profiles")
+                .then()
+                .statusCode(200)
+                .body("totalItems", equalTo(1))
+                .body("items[0].name", equalTo("Teste Perfil Gestão " + suffix));
+    }
+
+    @Test
+    void shouldGetProfileByIdOrNotFound() {
+        String name = "Teste Perfil Busca " + UUID.randomUUID();
+        String id = createProfile(name);
+
+        given()
+                .when().get("/profiles/{id}", id)
+                .then()
+                .statusCode(200)
+                .body("name", equalTo(name))
+                .body("permissions.find { it.screen == 'DASHBOARD' }.canView", equalTo(true));
+
+        given()
+                .when().get("/profiles/{id}", UUID.randomUUID())
+                .then()
+                .statusCode(404);
+    }
+
+    @Test
+    void shouldRejectMalformedPaginationInPortuguese() {
+        given()
+                .queryParam("size", 50)
+                .when().get("/profiles")
+                .then()
+                .statusCode(400)
+                .body("message", equalTo("O tamanho da página deve ser um número entre 1 e 10."));
+
+        given()
+                .queryParam("page", "")
+                .when().get("/profiles")
+                .then()
+                .statusCode(400)
+                .body("message", equalTo("A página deve ser um número inteiro maior ou igual a 1."));
     }
 }

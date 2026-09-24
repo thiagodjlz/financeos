@@ -3,6 +3,8 @@ package br.com.financeos.users;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.Matchers.hasItem;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -513,13 +515,126 @@ class UserResourceTest {
 
     private static Map<String, Object> findUser(String id) {
         Map<String, Object> user = given()
-                .when().get("/users")
+                .when().get("/users/{id}", id)
                 .then()
                 .statusCode(200)
                 .extract()
                 .jsonPath()
-                .getMap("find { it.id == '%s' }".formatted(id));
-        assertNotNull(user, "Usuário " + id + " não está na lista.");
+                .getMap("$");
+        assertNotNull(user, "Usuário " + id + " não foi encontrado.");
         return user;
+    }
+
+    @Test
+    void shouldPaginateUsersWithTotals() {
+        String prefix = "teste-usuarios-p-" + UUID.randomUUID().toString().substring(0, 8);
+        for (int i = 1; i <= 11; i++) {
+            createUser("Teste Pagina %02d".formatted(i), prefix + "-%02d@financeos.local".formatted(i));
+        }
+
+        given()
+                .queryParam("email", prefix)
+                .queryParam("size", 10)
+                .when().get("/users")
+                .then()
+                .statusCode(200)
+                .body("items.size()", equalTo(10))
+                .body("items[0].name", equalTo("Teste Pagina 01"))
+                .body("totalItems", equalTo(11))
+                .body("totalPages", equalTo(2));
+
+        given()
+                .queryParam("email", prefix)
+                .queryParam("page", 2)
+                .when().get("/users")
+                .then()
+                .statusCode(200)
+                .body("items.size()", equalTo(1))
+                .body("items[0].name", equalTo("Teste Pagina 11"));
+
+        given()
+                .queryParam("email", prefix)
+                .queryParam("page", 3)
+                .when().get("/users")
+                .then()
+                .statusCode(200)
+                .body("items.size()", equalTo(0))
+                .body("totalItems", equalTo(11))
+                .body("totalPages", equalTo(2));
+    }
+
+    @Test
+    void shouldCombineUserFiltersIgnoringCaseAndAccents() {
+        String prefix = "teste-usuarios-f-" + UUID.randomUUID().toString().substring(0, 8);
+        String target = createUser("Teste João Filtro", prefix + "-alvo@financeos.local");
+        String inactive = createUser("Teste João Filtro", prefix + "-inativo@financeos.local");
+        createUser("Teste Maria Filtro", prefix + "-outro@financeos.local");
+        putUser(target, "Teste João Filtro", prefix + "-alvo@financeos.local", OTHER_PROFILE_ID, "true")
+                .then().statusCode(200);
+        putUser(inactive, "Teste João Filtro", prefix + "-inativo@financeos.local", OTHER_PROFILE_ID, "false")
+                .then().statusCode(200);
+
+        given()
+                .queryParam("name", "JOAO filtro")
+                .queryParam("email", prefix)
+                .queryParam("profileId", OTHER_PROFILE_ID)
+                .queryParam("active", "true")
+                .when().get("/users")
+                .then()
+                .statusCode(200)
+                .body("totalItems", equalTo(1))
+                .body("items[0].id", equalTo(target));
+    }
+
+    @Test
+    void shouldNeverListNorCountHiddenSuperAdmin() {
+        int total = given()
+                .queryParam("active", "true")
+                .when().get("/users")
+                .then()
+                .statusCode(200)
+                .extract()
+                .path("totalItems");
+        long visibleActive = QuarkusTransaction.requiringNew()
+                .call(() -> repository.count("superAdmin = false and active = true"));
+        assertEquals(visibleActive, total);
+
+        for (int page = 1; page <= (total + 9) / 10; page++) {
+            given()
+                    .queryParam("page", page)
+                    .when().get("/users")
+                    .then()
+                    .statusCode(200)
+                    .body("items.id", not(hasItem(SUPER_ADMIN_ID)));
+        }
+
+        given()
+                .when().get("/users/{id}", SUPER_ADMIN_ID)
+                .then()
+                .statusCode(404);
+    }
+
+    @Test
+    void shouldRejectMalformedUserFiltersInPortuguese() {
+        given()
+                .queryParam("profileId", "abc")
+                .when().get("/users")
+                .then()
+                .statusCode(400)
+                .body("message", equalTo("O perfil informado é inválido."));
+
+        given()
+                .queryParam("active", "sim")
+                .when().get("/users")
+                .then()
+                .statusCode(400)
+                .body("message", equalTo("A situação informada é inválida."));
+
+        given()
+                .queryParam("size", "-3")
+                .when().get("/users")
+                .then()
+                .statusCode(400)
+                .body("message", equalTo("O tamanho da página deve ser um número entre 1 e 10."));
     }
 }

@@ -1,0 +1,7 @@
+@if (totalPages() > 0) {
+  <nav class="pagination" aria-label="Paginação">
+    <button type="button" class="ghost-button" [disabled]="page() <= 1" (click)="previous()">Anterior</button>
+    <span class="pagination-status" aria-live="polite">Página {{ page() }} de {{ totalPages() }}</span>
+    <button type="button" class="ghost-button" [disabled]="page() >= totalPages()" (click)="next()">Próxima</button>
+  </nav>
+}

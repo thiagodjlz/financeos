@@ -107,6 +107,8 @@ interface MonthTooltip {
   balance: string;
 }
 
+const LOAD_FALLBACK = 'Não foi possível carregar o resumo.';
+
 @Component({
   selector: 'app-dashboard',
   imports: [CommonModule, FormsModule],
@@ -135,6 +137,7 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
   );
 
   protected readonly loading = signal(false);
+  protected readonly loadError = signal<string | null>(null);
   protected readonly summary = this.dashboardService.summary;
   protected readonly chartWidth = signal(DEFAULT_CHART_WIDTH);
   protected readonly activeMonth = signal<number | null>(null);
@@ -311,12 +314,14 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
 
   protected async load(): Promise<void> {
     this.loading.set(true);
+    this.loadError.set(null);
     this.closeTooltip();
 
     try {
       await this.dashboardService.refresh(this.period.year, this.period.month);
     } catch (err) {
-      this.toast.fromHttpError(err, 'Não foi possível carregar o resumo.');
+      this.loadError.set(LOAD_FALLBACK);
+      this.toast.fromHttpError(err, LOAD_FALLBACK);
     } finally {
       this.loading.set(false);
     }

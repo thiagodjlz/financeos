@@ -1,193 +1,115 @@
 <h2 class="page-title">Usuários</h2>
 
-<section class="content-grid">
-  <form class="panel form-panel" *ngIf="authService.can('USERS', 'CREATE')" (ngSubmit)="save()">
-    <div class="panel-heading">
-      <h3>Novo usuário</h3>
-    </div>
+<section class="panel table-panel">
+  <div class="panel-heading">
+    <h3>Usuários</h3>
+    <span>{{ list.totalItems() }}</span>
+  </div>
+
+  <app-filter-panel
+    [activeCount]="list.activeCount()"
+    [chips]="chips()"
+    [canClear]="list.differsFromDefault()"
+    (remove)="list.remove($event)"
+    (clear)="list.clear()"
+  >
+    <button
+      toolbarAction
+      *ngIf="authService.can('USERS', 'CREATE')"
+      type="button"
+      class="primary-button"
+      (click)="create()"
+    >
+      Incluir
+    </button>
+
     <label>
       Nome
-      <input
-        name="name"
-        #nameInput
-        [(ngModel)]="form.name"
-        [class.invalid]="isFieldInvalid('name')"
-        (input)="clearFieldError('name')"
-        required
-      />
-      <small class="field-error" *ngIf="isFieldInvalid('name')">{{ fieldError('name') }}</small>
+      <input name="filterName" [(ngModel)]="list.filters.name" (change)="list.apply()" (keydown.enter)="list.apply()" />
     </label>
     <label>
       E-mail
       <input
-        type="email"
-        name="email"
-        #emailInput
-        [(ngModel)]="form.email"
-        [class.invalid]="isFieldInvalid('email')"
-        (input)="clearFieldError('email')"
-        required
+        name="filterEmail"
+        [(ngModel)]="list.filters.email"
+        (change)="list.apply()"
+        (keydown.enter)="list.apply()"
       />
-      <small class="field-error" *ngIf="isFieldInvalid('email')">{{ fieldError('email') }}</small>
-    </label>
-    <label>
-      Senha
-      <input
-        type="password"
-        name="password"
-        #passwordInput
-        [(ngModel)]="form.password"
-        [class.invalid]="isFieldInvalid('password')"
-        (input)="clearFieldError('password')"
-        required
-      />
-      <small class="field-error" *ngIf="isFieldInvalid('password')">{{ fieldError('password') }}</small>
     </label>
     <label>
       Perfil
-      <select
-        name="profileId"
-        #profileSelect
-        [(ngModel)]="form.profileId"
-        [class.invalid]="isFieldInvalid('profileId')"
-        (change)="clearFieldError('profileId')"
-        required
-      >
-        <option value="">Selecione</option>
+      <select name="filterProfileId" [(ngModel)]="list.filters.profileId" (change)="list.apply()">
+        <option value="">Todos</option>
         <option *ngFor="let profile of profiles()" [value]="profile.id">{{ profile.name }}</option>
       </select>
-      <small class="field-error" *ngIf="isFieldInvalid('profileId')">{{ fieldError('profileId') }}</small>
     </label>
-    <div class="two-cols form-actions">
-      <button class="primary-button" type="submit" [disabled]="saving()">Salvar</button>
-      <button class="ghost-button" type="button" (click)="cancel()">Cancelar</button>
-    </div>
-  </form>
+    <label>
+      Situação
+      <select name="filterActive" [(ngModel)]="list.filters.active" (change)="list.apply()">
+        <option value="true">Ativos</option>
+        <option value="false">Inativos</option>
+        <option value="">Todos</option>
+      </select>
+    </label>
+  </app-filter-panel>
 
-  <section class="panel table-panel">
-    <div class="panel-heading">
-      <h3>Usuários</h3>
-      <span>{{ users().length }}</span>
-    </div>
-    <div class="table-wrap" [attr.aria-busy]="loading()">
-      <table class="fixed-layout">
-        <colgroup>
-          <col />
-          <col />
-          <col class="col-profile" />
-          <col class="col-status" />
-          <col class="col-actions" />
-        </colgroup>
-        <thead>
-          <tr>
-            <th>Nome</th>
-            <th>E-mail</th>
-            <th>Perfil</th>
-            <th>Status</th>
-            <th><span class="sr-only">Ações</span></th>
-          </tr>
-        </thead>
-        <tbody>
-          <ng-container *ngFor="let user of users()">
-            <tr *ngIf="editingId() !== user.id">
-              <td data-label="Nome">{{ user.name }}</td>
-              <td data-label="E-mail">{{ user.email }}</td>
-              <td data-label="Perfil">{{ profileName(user.profileId) }}</td>
-              <td data-label="Status">
-                <span class="status-pill" [class.pill-income]="user.active" [class.pill-neutral]="!user.active">
-                  {{ user.active ? 'Ativo' : 'Inativo' }}
-                </span>
-              </td>
-              <td class="row-actions">
-                <button
-                  *ngIf="authService.can('USERS', 'EDIT')"
-                  type="button"
-                  class="ghost-button"
-                  [disabled]="editingId() !== null"
-                  (click)="startEdit(user)"
-                >
-                  Editar
-                </button>
-                <button
-                  *ngIf="authService.can('USERS', 'DELETE') && user.active"
-                  type="button"
-                  class="ghost-button"
-                  (click)="deactivate(user)"
-                >
-                  Desativar
-                </button>
-              </td>
-            </tr>
-            <tr *ngIf="editingId() === user.id">
-              <td data-label="Nome">
-                <input
-                  name="editName"
-                  [(ngModel)]="editForm.name"
-                  [class.invalid]="isEditFieldInvalid('name')"
-                  (input)="clearEditFieldError('name')"
-                />
-                <small class="field-error" *ngIf="isEditFieldInvalid('name')">{{ editFieldError('name') }}</small>
-              </td>
-              <td data-label="E-mail">
-                <div class="inline-email-fields">
-                  <input
-                    type="email"
-                    name="editEmail"
-                    [(ngModel)]="editForm.email"
-                    [class.invalid]="isEditFieldInvalid('email')"
-                    (input)="clearEditFieldError('email')"
-                  />
-                  <small class="field-error" *ngIf="isEditFieldInvalid('email')">{{ editFieldError('email') }}</small>
-                  <input
-                    type="password"
-                    name="editPassword"
-                    placeholder="Nova senha (opcional)"
-                    [(ngModel)]="editForm.password"
-                    [class.invalid]="isEditFieldInvalid('password')"
-                    (input)="clearEditFieldError('password')"
-                  />
-                  <small class="field-error" *ngIf="isEditFieldInvalid('password')">{{ editFieldError('password') }}</small>
-                </div>
-              </td>
-              <td data-label="Perfil">
-                <select
-                  name="editProfileId"
-                  [(ngModel)]="editForm.profileId"
-                  [class.invalid]="isEditFieldInvalid('profileId')"
-                  (change)="clearEditFieldError('profileId')"
-                >
-                  <option value="">Selecione</option>
-                  <option *ngFor="let profile of profiles()" [value]="profile.id">{{ profile.name }}</option>
-                </select>
-                <small class="field-error" *ngIf="isEditFieldInvalid('profileId')">{{ editFieldError('profileId') }}</small>
-              </td>
-              <td data-label="Status">
-                <select name="editActive" [(ngModel)]="editForm.active">
-                  <option [ngValue]="true">Ativo</option>
-                  <option [ngValue]="false">Inativo</option>
-                </select>
-              </td>
-              <td class="row-actions">
-                <button type="button" class="primary-button" [disabled]="saving()" (click)="saveEdit(user)">
-                  Salvar
-                </button>
-                <button type="button" class="danger-button" (click)="requestExit()">Sair</button>
-              </td>
-            </tr>
-          </ng-container>
-        </tbody>
-      </table>
-      <p class="loading-state" *ngIf="loading()"></p>
-      <p class="empty-state" *ngIf="!loading() && !users().length">Nenhum usuário cadastrado</p>
-    </div>
-  </section>
+  <div class="table-wrap" [attr.aria-busy]="list.loading()">
+    <table class="fixed-layout" *ngIf="list.items().length">
+      <colgroup>
+        <col />
+        <col />
+        <col class="col-profile" />
+        <col class="col-status" />
+        <col class="col-actions" />
+      </colgroup>
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>E-mail</th>
+          <th>Perfil</th>
+          <th>Status</th>
+          <th><span class="sr-only">Ações</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let user of list.items()">
+          <td data-label="Nome">{{ user.name }}</td>
+          <td data-label="E-mail">{{ user.email }}</td>
+          <td data-label="Perfil">{{ profileName(user.profileId) }}</td>
+          <td data-label="Status">
+            <span class="status-pill" [class.pill-income]="user.active" [class.pill-neutral]="!user.active">
+              {{ user.active ? 'Ativo' : 'Inativo' }}
+            </span>
+          </td>
+          <td class="row-actions">
+            <button *ngIf="authService.can('USERS', 'EDIT')" type="button" class="ghost-button" (click)="edit(user)">
+              Editar
+            </button>
+            <button
+              *ngIf="authService.can('USERS', 'DELETE') && user.active"
+              type="button"
+              class="ghost-button"
+              [disabled]="saving()"
+              (click)="deactivate(user)"
+            >
+              Desativar
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <app-list-feedback
+      [loading]="list.loading()"
+      [error]="list.loadError()"
+      [empty]="!list.items().length"
+      [filtered]="list.activeCount() > 0"
+      [canClear]="list.differsFromDefault()"
+      (clear)="list.clear()"
+    >
+      <p class="empty-state">Nenhum usuário cadastrado</p>
+    </app-list-feedback>
+  </div>
+
+  <app-pagination [page]="list.page()" [totalPages]="list.totalPages()" (pageChange)="list.goTo($event)" />
 </section>
-
-<app-confirm-dialog
-  *ngIf="confirmingExit()"
-  message="Deseja sair sem salvar?"
-  cancelLabel="Continuar editando"
-  confirmLabel="Sair sem salvar"
-  (cancel)="confirmExitNo()"
-  (confirm)="confirmExitYes()"
-/>

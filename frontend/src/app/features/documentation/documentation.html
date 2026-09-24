@@ -32,6 +32,7 @@
 
   <section class="panel doc-content">
     <p class="loading-state" *ngIf="loading()"></p>
+    <p class="load-error" role="alert" *ngIf="!loading() && loadError()">{{ loadError() }}</p>
 
     <ng-container *ngIf="!loading() && activeArea() as area">
       <h3 class="doc-area-title">{{ area.title }}</h3>
@@ -69,7 +70,7 @@
       </section>
     </ng-container>
 
-    <p class="empty-state" *ngIf="!loading() && !activeArea()">
+    <p class="empty-state" *ngIf="!loading() && !loadError() && !activeArea()">
       Nenhum conteúdo encontrado para a sua busca.
     </p>
   </section>

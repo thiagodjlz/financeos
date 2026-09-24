@@ -149,6 +149,8 @@ describe('ReleaseNotes', () => {
 
     expect(toasts()).toHaveLength(1);
     expect(toasts()[0].title).toBe('Falha');
+    expect(query('.load-error')?.textContent?.trim()).toBe('Não foi possível carregar as novidades por versão.');
+    expect(query('.empty-state')).toBeNull();
   });
 
   it('mostra o estado de carga antes da resposta', async () => {
@@ -156,6 +158,7 @@ describe('ReleaseNotes', () => {
 
     expect(query('.loading-state')).not.toBeNull();
     expect(query('[aria-busy="true"]')).not.toBeNull();
+    expect(query('.empty-state')).toBeNull();
 
     httpMock.expectOne(`${API_BASE}/release-notes`).flush(CONTENT);
     await settle();

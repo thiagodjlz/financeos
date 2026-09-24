@@ -1,7 +1,6 @@
 package br.com.financeos.users;
 
 import java.net.URI;
-import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -10,6 +9,8 @@ import br.com.financeos.profiles.Screen;
 import br.com.financeos.shared.AccessControl;
 import br.com.financeos.shared.Action;
 import br.com.financeos.shared.CurrentUser;
+import br.com.financeos.shared.ListParams;
+import br.com.financeos.shared.PageResponse;
 import io.quarkus.elytron.security.common.BcryptUtil;
 import io.quarkus.security.Authenticated;
 import jakarta.transaction.Transactional;
@@ -24,8 +25,10 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
 
 @Path("/users")
 @Produces(MediaType.APPLICATION_JSON)
@@ -47,11 +50,24 @@ public class UserResource {
     }
 
     @GET
-    public List<UserResponse> list() {
+    public PageResponse<UserResponse> list(@Context UriInfo uriInfo) {
         accessControl.require(Screen.USERS, Action.VIEW);
-        return repository.listVisible().stream()
+        ListParams params = ListParams.from(uriInfo);
+        String name = ListParams.text(uriInfo, "name");
+        String email = ListParams.text(uriInfo, "email");
+        UUID profileId = ListParams.uuid(uriInfo, "profileId", "O perfil informado é inválido.");
+        Boolean active = ListParams.bool(uriInfo, "active", "A situação informada é inválida.");
+
+        return PageResponse.of(repository.searchVisible(name, email, profileId, active), params, UserResponse::from);
+    }
+
+    @GET
+    @Path("/{id}")
+    public UserResponse get(@PathParam("id") UUID id) {
+        accessControl.require(Screen.USERS, Action.VIEW);
+        return repository.findVisibleById(id)
                 .map(UserResponse::from)
-                .toList();
+                .orElseThrow(NotFoundException::new);
     }
 
     @POST

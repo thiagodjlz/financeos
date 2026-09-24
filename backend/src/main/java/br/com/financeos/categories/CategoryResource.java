@@ -7,6 +7,8 @@ import java.util.UUID;
 import br.com.financeos.profiles.Screen;
 import br.com.financeos.shared.AccessControl;
 import br.com.financeos.shared.Action;
+import br.com.financeos.shared.ListParams;
+import br.com.financeos.shared.PageResponse;
 import io.quarkus.security.Authenticated;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
@@ -19,10 +21,11 @@ import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
 
 @Path("/categories")
 @Produces(MediaType.APPLICATION_JSON)
@@ -42,18 +45,33 @@ public class CategoryResource {
     }
 
     @GET
-    public List<CategoryResponse> list(@QueryParam("type") CategoryType type) {
+    public PageResponse<CategoryResponse> list(@Context UriInfo uriInfo) {
         accessControl.require(Screen.CATEGORIES, Action.VIEW);
-        return repository.list(type).stream()
+        ListParams params = ListParams.from(uriInfo);
+        String name = ListParams.text(uriInfo, "name");
+        CategoryType type = ListParams.enumValue(uriInfo, "type", CategoryType.class, "O tipo informado é inválido.");
+        Boolean active = ListParams.bool(uriInfo, "active", "A situação informada é inválida.");
+
+        return PageResponse.of(repository.search(name, type, active), params, CategoryResponse::from);
+    }
+
+    @GET
+    @Path("/options")
+    public List<CategoryResponse> options(@Context UriInfo uriInfo) {
+        accessControl.require(Screen.CATEGORIES, Action.VIEW);
+        CategoryType type = ListParams.enumValue(uriInfo, "type", CategoryType.class, "O tipo informado é inválido.");
+
+        return repository.options(type).stream()
                 .map(CategoryResponse::from)
                 .toList();
     }
 
+    // Devolve também a inativa: a tela de edição precisa abri-la para permitir a reativação.
     @GET
     @Path("/{id}")
     public CategoryResponse get(@PathParam("id") UUID id) {
         accessControl.require(Screen.CATEGORIES, Action.VIEW);
-        return repository.findActiveById(id)
+        return repository.findByIdOptional(id)
                 .map(CategoryResponse::from)
                 .orElseThrow(NotFoundException::new);
     }

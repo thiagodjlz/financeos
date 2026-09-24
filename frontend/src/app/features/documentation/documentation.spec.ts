@@ -214,6 +214,8 @@ describe('Documentation', () => {
 
     expect(toasts()).toHaveLength(1);
     expect(toasts()[0].title).toBe('Falha');
+    expect(query('.load-error')?.textContent?.trim()).toBe('Não foi possível carregar a documentação.');
+    expect(query('.empty-state')).toBeNull();
   });
 
   it('exibe o 403 como Alerta, não como Falha', async () => {

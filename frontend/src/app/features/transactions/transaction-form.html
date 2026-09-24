@@ -1,0 +1,113 @@
+<h2 class="page-title">{{ id ? 'Editar lançamento' : 'Novo lançamento' }}</h2>
+
+<div class="form-page" [attr.aria-busy]="loading()">
+  <p class="loading-state" *ngIf="loading()"><span class="sr-only">Carregando...</span></p>
+  <p class="load-error" role="alert" *ngIf="!loading() && loadError()">{{ loadError() }}</p>
+
+  <form class="panel form-panel" *ngIf="!loading() && !loadError()" #transactionForm (ngSubmit)="save()">
+    <label>
+      Data
+      <input
+        type="date"
+        name="transactionDate"
+        [(ngModel)]="form.transactionDate"
+        required
+        [class.invalid]="fieldErrors.invalid('transactionDate')"
+        (input)="fieldErrors.clear('transactionDate')"
+      />
+      <small class="field-error" *ngIf="fieldErrors.invalid('transactionDate')">
+        {{ fieldErrors.message('transactionDate') }}
+      </small>
+    </label>
+    <label>
+      Descrição
+      <input
+        name="description"
+        [(ngModel)]="form.description"
+        maxlength="255"
+        required
+        [class.invalid]="fieldErrors.invalid('description')"
+        (input)="fieldErrors.clear('description')"
+      />
+      <small class="field-error" *ngIf="fieldErrors.invalid('description')">
+        {{ fieldErrors.message('description') }}
+      </small>
+    </label>
+    <label>
+      Valor
+      <input
+        type="number"
+        name="amount"
+        [(ngModel)]="form.amount"
+        min="0.01"
+        step="0.01"
+        required
+        [class.invalid]="fieldErrors.invalid('amount')"
+        (input)="fieldErrors.clear('amount')"
+      />
+      <small class="field-error" *ngIf="fieldErrors.invalid('amount')">{{ fieldErrors.message('amount') }}</small>
+    </label>
+    <div class="two-cols">
+      <label>
+        Tipo
+        <select
+          name="type"
+          [(ngModel)]="form.type"
+          (ngModelChange)="onTypeChange()"
+          [class.invalid]="fieldErrors.invalid('type')"
+          (change)="fieldErrors.clear('type')"
+        >
+          <option value="EXPENSE">Despesa</option>
+          <option value="INCOME">Receita</option>
+        </select>
+        <small class="field-error" *ngIf="fieldErrors.invalid('type')">{{ fieldErrors.message('type') }}</small>
+      </label>
+      <label *ngIf="form.type !== 'INCOME'">
+        Status
+        <select
+          name="status"
+          [(ngModel)]="form.status"
+          [class.invalid]="fieldErrors.invalid('status')"
+          (change)="fieldErrors.clear('status')"
+        >
+          <option value="PENDING">Pendente</option>
+          <option value="PAID">Pago</option>
+        </select>
+        <small class="field-error" *ngIf="fieldErrors.invalid('status')">{{ fieldErrors.message('status') }}</small>
+      </label>
+    </div>
+    <label>
+      Categoria
+      <select
+        name="categoryId"
+        [(ngModel)]="form.categoryId"
+        (ngModelChange)="onCategoryIdChange()"
+        required
+        [class.invalid]="fieldErrors.invalid('categoryId')"
+        (change)="fieldErrors.clear('categoryId')"
+      >
+        <option value="">Selecione</option>
+        <option *ngIf="preselectedInactiveCategory() as inactiveCategory" [value]="inactiveCategory.id">
+          {{ inactiveCategory.name }} (Inativo)
+        </option>
+        <option *ngFor="let category of categories()" [value]="category.id">{{ category.name }}</option>
+      </select>
+      <small class="field-error" *ngIf="fieldErrors.invalid('categoryId')">
+        {{ fieldErrors.message('categoryId') }}
+      </small>
+    </label>
+    <div class="two-cols form-actions">
+      <button class="primary-button" type="submit" [disabled]="saving()">Salvar</button>
+      <button class="ghost-button" type="button" (click)="requestCancel()">Cancelar</button>
+    </div>
+  </form>
+</div>
+
+<app-confirm-dialog
+  *ngIf="confirmingExit()"
+  message="Deseja sair sem salvar?"
+  cancelLabel="Continuar editando"
+  confirmLabel="Sair sem salvar"
+  (cancel)="keepEditing()"
+  (confirm)="confirmExit()"
+/>

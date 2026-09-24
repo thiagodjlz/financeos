@@ -1,59 +1,63 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { API_BASE, AppUserSummary, Profile } from '../../core/models';
+import { Router, provideRouter } from '@angular/router';
+import { API_BASE, AppUserSummary, Page, Profile } from '../../core/models';
 import { AuthService } from '../../core/services/auth.service';
+import { ListStateService } from '../../core/services/list-state.service';
 import { ToastService } from '../../core/services/toast.service';
 import { Users } from './users';
 
-const USER: AppUserSummary = {
-  id: 'user-1',
-  name: 'Ana',
-  email: 'ana@financeos.dev',
-  active: true,
-  profileId: 'profile-1',
-};
-
-const OTHER_USER: AppUserSummary = {
-  id: 'user-2',
-  name: 'Bruno',
-  email: 'bruno@financeos.dev',
-  active: true,
-  profileId: 'profile-2',
-};
+const DEFAULT_URL = `${API_BASE}/users?page=1&size=10&active=true`;
+const OPTIONS_URL = `${API_BASE}/profiles/options`;
 
 const PROFILES: Profile[] = [
-  { id: 'profile-1', name: 'Administrador', active: true, permissions: [] },
-  { id: 'profile-2', name: 'Leitura', active: true, permissions: [] },
+  { id: 'p1', name: 'Administrador', active: true, permissions: [] },
+  { id: 'p2', name: 'Leitura', active: true, permissions: [] },
 ];
+
+const USER: AppUserSummary = { id: 'u1', name: 'Ana', email: 'ana@financeos.local', active: true, profileId: 'p1' };
+
+function page(items: AppUserSummary[], totalItems = items.length, totalPages = items.length ? 1 : 0, current = 1): Page<AppUserSummary> {
+  return { items, totalItems, totalPages, page: current, size: 10 };
+}
 
 describe('Users', () => {
   let fixture: ComponentFixture<Users>;
   let httpMock: HttpTestingController;
   let toastService: ToastService;
+  let router: Router;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [Users],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
     }).compileComponents();
 
     httpMock = TestBed.inject(HttpTestingController);
     toastService = TestBed.inject(ToastService);
+    router = TestBed.inject(Router);
+    vi.spyOn(router, 'navigate').mockResolvedValue(true);
   });
 
   afterEach(() => httpMock.verify());
 
-  async function render(superAdmin = true, users: AppUserSummary[] = [USER]): Promise<void> {
+  async function render(
+    users: Page<AppUserSummary> = page([USER]),
+    superAdmin = true,
+    url = DEFAULT_URL,
+    profiles: Profile[] = PROFILES,
+  ): Promise<void> {
     fixture = TestBed.createComponent(Users);
     TestBed.inject(AuthService).superAdmin.set(superAdmin);
     fixture.detectChanges();
-    httpMock.expectOne(`${API_BASE}/users`).flush(users);
-    httpMock.expectOne(`${API_BASE}/profiles`).flush(PROFILES);
+    httpMock.expectOne(url).flush(users);
+    httpMock.expectOne(OPTIONS_URL).flush(profiles);
     await settle();
   }
 
   async function settle(): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve));
     await fixture.whenStable();
     fixture.detectChanges();
     await fixture.whenStable();
@@ -68,48 +72,12 @@ describe('Users', () => {
     return Array.from(fixture.nativeElement.querySelectorAll(selector)) as T[];
   }
 
-  function formTitle(): string {
-    return query('form .panel-heading h3').textContent?.trim() ?? '';
+  function buttonByText(text: string, scope = ''): HTMLButtonElement | undefined {
+    return queryAll<HTMLButtonElement>(`${scope} button`).find((button) => button.textContent?.trim() === text);
   }
 
-  function cancelButton(): HTMLButtonElement {
-    return query<HTMLButtonElement>('form button.ghost-button');
-  }
-
-  function rowSaveButton(): HTMLButtonElement {
-    return query<HTMLButtonElement>('tbody .row-actions button.primary-button');
-  }
-
-  function rowExitButton(): HTMLButtonElement {
-    return query<HTMLButtonElement>('tbody .row-actions button.danger-button');
-  }
-
-  function rowButtonByText(text: string): HTMLButtonElement | undefined {
-    return queryAll<HTMLButtonElement>('tbody .row-actions button').find(
-      (button) => button.textContent?.trim() === text,
-    );
-  }
-
-  function toasts() {
-    return toastService.toasts();
-  }
-
-  function value(selector: string): string {
-    return query<HTMLInputElement>(selector).value;
-  }
-
-  async function fillText(selector: string, text: string): Promise<void> {
-    const input = query<HTMLInputElement>(selector);
-    input.value = text;
-    input.dispatchEvent(new Event('input'));
-    await settle();
-  }
-
-  async function selectValue(selector: string, optionValue: string): Promise<void> {
-    const select = query<HTMLSelectElement>(selector);
-    select.value = optionValue;
-    select.dispatchEvent(new Event('change'));
-    await settle();
+  function chipTexts(): string[] {
+    return queryAll('.filter-chip span').map((chip) => chip.textContent?.trim() ?? '');
   }
 
   async function click(element: HTMLElement): Promise<void> {
@@ -117,391 +85,178 @@ describe('Users', () => {
     await settle();
   }
 
-  async function startEditing(): Promise<void> {
-    await click(rowButtonByText('Editar') as HTMLButtonElement);
-  }
-
-  async function submitForm(): Promise<void> {
-    await click(query<HTMLButtonElement>('form button[type="submit"]'));
-  }
-
-  async function flushValidationError(url: string): Promise<void> {
-    httpMock.expectOne(url).flush(
-      {
-        violations: [
-          { field: 'save.request.email', message: 'Informe um e-mail válido.' },
-          { field: 'save.request.password', message: 'A senha deve ter entre 8 e 72 caracteres.' },
-        ],
-        message: 'Informe um e-mail válido. A senha deve ter entre 8 e 72 caracteres.',
-      },
-      { status: 400, statusText: 'Bad Request' },
-    );
+  async function selectValue(selector: string, value: string): Promise<void> {
+    const select = query<HTMLSelectElement>(selector);
+    select.value = value;
+    select.dispatchEvent(new Event('change'));
     await settle();
   }
 
-  function expectBlankForm(): void {
-    expect(value('form input[name="name"]')).toBe('');
-    expect(value('form input[name="email"]')).toBe('');
-    expect(value('form input[name="password"]')).toBe('');
-    expect(value('form select[name="profileId"]')).toBe('');
-  }
-
-  it('exibe o formulário somente de criação com título fixo, senha obrigatória e Cancelar secundário', async () => {
+  it('lista sem formulário nem campo na linha, com Situação = Ativos por padrão', async () => {
     await render();
-
-    const button = cancelButton();
-    expect(formTitle()).toBe('Novo usuário');
-    expect(button).toBeTruthy();
-    expect(button.textContent?.trim()).toBe('Cancelar');
-    expect(button.getAttribute('type')).toBe('button');
-    expect(query<HTMLInputElement>('form input[name="password"]').hasAttribute('required')).toBe(true);
-  });
-
-  it('não renderiza o formulário nem os botões de linha sem permissão', async () => {
-    await render(false);
 
     expect(query('form')).toBeNull();
-    expect(queryAll('tbody .row-actions button')).toHaveLength(0);
+    expect(queryAll('tbody input, tbody select')).toHaveLength(0);
+    expect(query('.filter-toggle').textContent?.trim()).toBe('Filtros (1)');
+    expect(chipTexts()).toEqual(['Situação: Ativos']);
+    expect(queryAll('tbody tr td').map((cell) => cell.getAttribute('data-label'))).toEqual([
+      'Nome',
+      'E-mail',
+      'Perfil',
+      'Status',
+      null,
+    ]);
+    expect(queryAll('tbody tr td').slice(0, 4).map((cell) => cell.textContent?.trim())).toEqual([
+      'Ana',
+      'ana@financeos.local',
+      'Administrador',
+      'Ativo',
+    ]);
   });
 
-  it('limpa o formulário de criação em estágio único, sem HTTP', async () => {
-    await render();
-    await fillText('form input[name="name"]', 'Bruno');
-    await fillText('form input[name="email"]', 'bruno@financeos.dev');
-    await fillText('form input[name="password"]', 'segredo123');
-    await selectValue('form select[name="profileId"]', 'profile-2');
-
-    await click(cancelButton());
-
-    expectBlankForm();
-    expect(formTitle()).toBe('Novo usuário');
-    httpMock.expectNone(() => true);
-  });
-
-  it('limpa as mensagens de validação do backend ao cancelar a criação', async () => {
-    await render();
-    await fillText('form input[name="name"]', 'Bruno');
-    await fillText('form input[name="email"]', 'sem-arroba');
-    await fillText('form input[name="password"]', '123');
-    await selectValue('form select[name="profileId"]', 'profile-2');
-    await submitForm();
-    await flushValidationError(`${API_BASE}/users`);
-
-    expect(queryAll('.field-error').length).toBeGreaterThan(0);
-    expect(toasts()[0].title).toBe('Alerta');
-
-    await click(cancelButton());
-
-    expect(queryAll('.field-error')).toHaveLength(0);
-    expectBlankForm();
-    httpMock.expectNone(() => true);
-  });
-
-  it('entra em edição inline com senha vazia e formulário lateral intocado', async () => {
+  it('mostra "Incluir" e "Editar" com as permissões e navega para o cadastro', async () => {
     await render();
 
-    await startEditing();
+    await click(buttonByText('Incluir', '.list-toolbar') as HTMLButtonElement);
+    expect(router.navigate).toHaveBeenCalledWith(['/users/new']);
 
-    expect(value('tbody input[name="editName"]')).toBe('Ana');
-    expect(value('tbody input[name="editEmail"]')).toBe('ana@financeos.dev');
-    expect(value('tbody input[name="editPassword"]')).toBe('');
-    expect(query<HTMLSelectElement>('tbody select[name="editProfileId"]').value).toBe('profile-1');
-    expect(query<HTMLSelectElement>('tbody select[name="editActive"]').selectedIndex).toBe(0);
-    expect(formTitle()).toBe('Novo usuário');
-    expectBlankForm();
-    httpMock.expectNone(() => true);
+    await click(buttonByText('Editar', 'tbody') as HTMLButtonElement);
+    expect(router.navigate).toHaveBeenCalledWith(['/users', 'u1', 'edit']);
   });
 
-  it('desabilita o Editar das demais linhas com uma linha em edição', async () => {
-    await render(true, [USER, OTHER_USER]);
+  it('esconde as ações de escrita sem permissão', async () => {
+    await render(page([USER]), false);
 
-    await startEditing();
-
-    const editButtons = queryAll<HTMLButtonElement>('tbody .row-actions button').filter(
-      (button) => button.textContent?.trim() === 'Editar',
-    );
-    expect(editButtons).toHaveLength(1);
-    expect(editButtons[0].disabled).toBe(true);
+    expect(buttonByText('Incluir')).toBeUndefined();
+    expect(buttonByText('Editar')).toBeUndefined();
+    expect(buttonByText('Desativar')).toBeUndefined();
   });
 
-  it('salva com PUT sem password quando o campo de senha fica vazio', async () => {
-    await render();
-    await startEditing();
-    await fillText('tbody input[name="editName"]', 'Ana Maria');
-
-    await click(rowSaveButton());
-
-    const request = httpMock.expectOne(`${API_BASE}/users/user-1`);
-    expect(request.request.method).toBe('PUT');
-    expect(request.request.body).toMatchObject({ name: 'Ana Maria', email: 'ana@financeos.dev', active: true });
-    expect(request.request.body.password).toBeUndefined();
-    request.flush({ ...USER, name: 'Ana Maria' });
-    await settle();
-    httpMock.expectOne(`${API_BASE}/users`).flush([{ ...USER, name: 'Ana Maria' }]);
-    await settle();
-
-    expect(query('tbody input[name="editName"]')).toBeNull();
-  });
-
-  it('salva com PUT incluindo a senha quando preenchida', async () => {
-    await render();
-    await startEditing();
-    await fillText('tbody input[name="editPassword"]', 'novasenha1');
-
-    await click(rowSaveButton());
-
-    const request = httpMock.expectOne(`${API_BASE}/users/user-1`);
-    expect(request.request.method).toBe('PUT');
-    expect(request.request.body.password).toBe('novasenha1');
-    request.flush(USER);
-    await settle();
-    httpMock.expectOne(`${API_BASE}/users`).flush([USER]);
-    await settle();
-  });
-
-  it('sai direto sem modal e sem HTTP quando só a senha vazia permanece', async () => {
-    await render();
-    await startEditing();
-
-    await click(rowExitButton());
-
-    expect(query('.modal-backdrop')).toBeNull();
-    expect(query('tbody input[name="editName"]')).toBeNull();
-    httpMock.expectNone(() => true);
-  });
-
-  it('abre o modal ao sair com alteração pendente e mantém a edição em Continuar editando', async () => {
-    await render();
-    await startEditing();
-    await fillText('tbody input[name="editName"]', 'Ana Maria');
-
-    await click(rowExitButton());
-
-    expect(query('.modal-card p').textContent?.trim()).toBe('Deseja sair sem salvar?');
-
-    await click(query<HTMLButtonElement>('.modal-actions button.ghost-button'));
-
-    expect(query('.modal-backdrop')).toBeNull();
-    expect(value('tbody input[name="editName"]')).toBe('Ana Maria');
-    httpMock.expectNone(() => true);
-  });
-
-  it('descarta e recarrega da API ao confirmar a saída em Sair sem salvar', async () => {
-    await render();
-    await startEditing();
-    await fillText('tbody input[name="editName"]', 'Ana Maria');
-    await click(rowExitButton());
-
-    await click(query<HTMLButtonElement>('.modal-actions button.primary-button'));
-
-    httpMock.expectOne(`${API_BASE}/users`).flush([USER]);
-    await settle();
-
-    expect(query('.modal-backdrop')).toBeNull();
-    expect(query('tbody input[name="editName"]')).toBeNull();
-    expect(query('tbody tr td').textContent?.trim()).toBe('Ana');
-  });
-
-  it('exibe as legendas por campo e o alerta do backend ao mesmo tempo, mantendo a edição', async () => {
-    await render();
-    await startEditing();
-    await fillText('tbody input[name="editEmail"]', 'sem-arroba');
-    await fillText('tbody input[name="editPassword"]', '123');
-
-    await click(rowSaveButton());
-    await flushValidationError(`${API_BASE}/users/user-1`);
-
-    const rowErrors = queryAll('tbody .field-error').map((error) => error.textContent?.trim());
-    expect(rowErrors).toContain('Informe um e-mail válido.');
-    expect(rowErrors).toContain('A senha deve ter entre 8 e 72 caracteres.');
-    expect(toasts()).toHaveLength(1);
-    expect(toasts()[0].title).toBe('Alerta');
-    expect(toasts()[0].message).toBe('Informe um e-mail válido. A senha deve ter entre 8 e 72 caracteres.');
-    expect(value('tbody input[name="editEmail"]')).toBe('sem-arroba');
-  });
-
-  it('exibe alerta com o texto do corpo no 409 mantendo a edição', async () => {
-    await render();
-    await startEditing();
-    await fillText('tbody input[name="editEmail"]', 'bruno@financeos.dev');
-
-    await click(rowSaveButton());
-
-    httpMock
-      .expectOne(`${API_BASE}/users/user-1`)
-      .flush({ message: 'E-mail já cadastrado.' }, { status: 409, statusText: 'Conflict' });
-    await settle();
-
-    expect(toasts()).toHaveLength(1);
-    expect(toasts()[0].title).toBe('Alerta');
-    expect(toasts()[0].message).toBe('E-mail já cadastrado.');
-    expect(value('tbody input[name="editEmail"]')).toBe('bruno@financeos.dev');
-  });
-
-  it('mantém o Desativar na linha em leitura com DELETE e o esconde em edição', async () => {
+  it('mantém o "Desativar" com DELETE, recarrega e avisa', async () => {
     await render();
 
-    await click(rowButtonByText('Desativar') as HTMLButtonElement);
-
-    const request = httpMock.expectOne(`${API_BASE}/users/user-1`);
+    await click(buttonByText('Desativar', 'tbody') as HTMLButtonElement);
+    const request = httpMock.expectOne(`${API_BASE}/users/u1`);
     expect(request.request.method).toBe('DELETE');
     request.flush(null);
     await settle();
-    httpMock.expectOne(`${API_BASE}/users`).flush([USER]);
+    httpMock.expectOne(DEFAULT_URL).flush(page([]));
     await settle();
 
-    await startEditing();
-
-    expect(rowButtonByText('Desativar')).toBeUndefined();
-    expect(rowButtonByText('Salvar')).toBeTruthy();
-    expect(rowButtonByText('Sair')).toBeTruthy();
-  });
-
-  it('exibe toast de sucesso ao criar o usuário', async () => {
-    await render();
-    await fillText('form input[name="name"]', 'Bruno');
-    await fillText('form input[name="email"]', 'bruno@financeos.dev');
-    await fillText('form input[name="password"]', 'segredo123');
-    await selectValue('form select[name="profileId"]', 'profile-2');
-
-    await submitForm();
-
-    httpMock.expectOne(`${API_BASE}/users`).flush(OTHER_USER);
-    await settle();
-    httpMock.expectOne(`${API_BASE}/users`).flush([USER, OTHER_USER]);
-    await settle();
-
-    expect(toasts()).toHaveLength(1);
-    expect(toasts()[0].title).toBe('Sucesso');
-    expect(toasts()[0].message).toBe('Usuário salvo com sucesso.');
-  });
-
-  it('exibe toast de sucesso ao salvar a edição inline', async () => {
-    await render();
-    await startEditing();
-    await fillText('tbody input[name="editName"]', 'Ana Maria');
-
-    await click(rowSaveButton());
-
-    httpMock.expectOne(`${API_BASE}/users/user-1`).flush({ ...USER, name: 'Ana Maria' });
-    await settle();
-    httpMock.expectOne(`${API_BASE}/users`).flush([{ ...USER, name: 'Ana Maria' }]);
-    await settle();
-
-    expect(toasts()).toHaveLength(1);
-    expect(toasts()[0].title).toBe('Sucesso');
-    expect(toasts()[0].message).toBe('Usuário atualizado com sucesso.');
-  });
-
-  it('exibe toast de sucesso ao desativar o usuário', async () => {
-    await render();
-
-    await click(rowButtonByText('Desativar') as HTMLButtonElement);
-
-    httpMock.expectOne(`${API_BASE}/users/user-1`).flush(null);
-    await settle();
-    httpMock.expectOne(`${API_BASE}/users`).flush([{ ...USER, active: false }]);
-    await settle();
-
-    expect(toasts()).toHaveLength(1);
-    expect(toasts()[0].title).toBe('Sucesso');
-    expect(toasts()[0].message).toBe('Usuário desativado com sucesso.');
+    expect(toastService.toasts().map((toast) => [toast.title, toast.message])).toEqual([
+      ['Sucesso', 'Usuário desativado com sucesso.'],
+    ]);
   });
 
   it('exibe alerta com o texto do corpo no 409 de autodesativação', async () => {
     await render();
 
-    await click(rowButtonByText('Desativar') as HTMLButtonElement);
-
+    await click(buttonByText('Desativar', 'tbody') as HTMLButtonElement);
     httpMock
-      .expectOne(`${API_BASE}/users/user-1`)
+      .expectOne(`${API_BASE}/users/u1`)
       .flush({ message: 'Você não pode desativar a própria conta.' }, { status: 409, statusText: 'Conflict' });
     await settle();
 
-    expect(toasts()).toHaveLength(1);
-    expect(toasts()[0].title).toBe('Alerta');
-    expect(toasts()[0].message).toBe('Você não pode desativar a própria conta.');
+    expect(toastService.toasts()[0].title).toBe('Alerta');
+    expect(toastService.toasts()[0].message).toBe('Você não pode desativar a própria conta.');
   });
 
-  async function selectInactiveInRow(): Promise<void> {
-    const select = query<HTMLSelectElement>('tbody select[name="editActive"]');
-    select.selectedIndex = 1;
-    select.dispatchEvent(new Event('change'));
+  it('filtra por Perfil com todas as opções mesmo com mais de 10 perfis e resolve o nome na linha', async () => {
+    const many: Profile[] = Array.from({ length: 12 }, (_, index) => ({
+      id: `p${index + 1}`,
+      name: `Perfil ${index + 1}`,
+      active: true,
+      permissions: [],
+    }));
+    await render(page([{ ...USER, profileId: 'p12' }]), true, DEFAULT_URL, many);
+
+    expect(query('tbody td[data-label="Perfil"]').textContent?.trim()).toBe('Perfil 12');
+
+    await click(query('.filter-toggle'));
+    expect(queryAll('select[name="filterProfileId"] option')).toHaveLength(13);
+
+    await selectValue('select[name="filterProfileId"]', 'p12');
+    httpMock.expectOne(`${API_BASE}/users?page=1&size=10&profileId=p12&active=true`).flush(page([]));
     await settle();
-  }
 
-  async function expectConflictAlertKeepingEdition(message: string): Promise<void> {
-    httpMock.expectOne(`${API_BASE}/users/user-1`).flush({ message }, { status: 409, statusText: 'Conflict' });
-    await settle();
-
-    expect(toasts()).toHaveLength(1);
-    expect(toasts()[0].title).toBe('Alerta');
-    expect(toasts()[0].message).toBe(message);
-    expect(toasts().some((toast) => toast.title === 'Sucesso')).toBe(false);
-    expect(query('tbody input[name="editName"]')).not.toBeNull();
-    httpMock.expectNone(`${API_BASE}/users`);
-  }
-
-  it('exibe alerta no 409 ao salvar a própria linha como Inativo, mantendo a edição', async () => {
-    await render();
-    await startEditing();
-    await selectInactiveInRow();
-
-    await click(rowSaveButton());
-
-    await expectConflictAlertKeepingEdition('Você não pode desativar a própria conta.');
+    expect(chipTexts()).toEqual(['Perfil: Perfil 12', 'Situação: Ativos']);
+    expect(query('.filtered-empty p').textContent?.trim()).toBe('Nenhum registro encontrado.');
+    expect(buttonByText('Limpar filtros', '.filtered-empty')).toBeTruthy();
   });
 
-  it('exibe alerta no 409 ao trocar o próprio perfil, mantendo a edição', async () => {
+  it('remover o rótulo de Situação lista Todos', async () => {
     await render();
-    await startEditing();
-    await selectValue('tbody select[name="editProfileId"]', 'profile-2');
 
-    await click(rowSaveButton());
+    await click(query('.filter-chip-remove'));
+    httpMock.expectOne(`${API_BASE}/users?page=1&size=10`).flush(page([USER, { ...USER, id: 'u2', active: false }]));
+    await settle();
 
-    await expectConflictAlertKeepingEdition('Você não pode alterar o próprio perfil.');
-    expect(value('tbody select[name="editProfileId"]')).toBe('profile-2');
+    expect(query('.filter-toggle').textContent?.trim()).toBe('Filtros');
+    expect(queryAll('tbody tr')).toHaveLength(2);
   });
 
-  it('envia active verdadeiro no PUT quando o Status fica Ativo', async () => {
-    await render();
-    await startEditing();
-
-    await click(rowSaveButton());
-
-    const request = httpMock.expectOne(`${API_BASE}/users/user-1`);
-    expect(request.request.body.active).toBe(true);
-    request.flush(USER);
+  it('restaura filtros e página ao voltar do cadastro', async () => {
+    await render(page([USER], 11, 2));
+    await click(buttonByText('Próxima') as HTMLButtonElement);
+    httpMock.expectOne(`${API_BASE}/users?page=2&size=10&active=true`).flush(page([USER], 11, 2, 2));
     await settle();
-    httpMock.expectOne(`${API_BASE}/users`).flush([USER]);
-    await settle();
+    fixture.destroy();
+
+    await render(page([USER], 11, 2, 2), true, `${API_BASE}/users?page=2&size=10&active=true`);
+
+    expect(query('.pagination-status').textContent?.trim()).toBe('Página 2 de 2');
   });
 
-  it('envia active falso no PUT quando o Status muda para Inativo', async () => {
-    await render();
-    await startEditing();
-    await selectInactiveInRow();
-
-    await click(rowSaveButton());
-
-    const request = httpMock.expectOne(`${API_BASE}/users/user-1`);
-    expect(request.request.body.active).toBe(false);
-    request.flush({ ...USER, active: false });
+  it('na falha de carga mostra a mensagem na área, sem o vazio', async () => {
+    fixture = TestBed.createComponent(Users);
+    fixture.detectChanges();
+    httpMock.expectOne(DEFAULT_URL).flush(null, { status: 503, statusText: 'Unavailable' });
+    httpMock.expectOne(OPTIONS_URL).flush(PROFILES);
     await settle();
-    httpMock.expectOne(`${API_BASE}/users`).flush([{ ...USER, active: false }]);
-    await settle();
+
+    expect(query('.load-error').textContent?.trim()).toBe('Não foi possível carregar os usuários.');
+    expect(query('.empty-state')).toBeNull();
   });
 
-  it('não dispara toast no Cancelar do formulário nem no Sair sem alteração', async () => {
-    await render();
-    await fillText('form input[name="name"]', 'Bruno');
+  it('com a listagem respondendo antes dos perfis, segura as linhas e o rótulo até eles chegarem', async () => {
+    TestBed.inject(ListStateService).set('users', {
+      filters: { name: '', email: '', profileId: 'p1', active: 'true' },
+      page: 1,
+    });
+    fixture = TestBed.createComponent(Users);
+    fixture.detectChanges();
+    httpMock.expectOne(`${API_BASE}/users?page=1&size=10&profileId=p1&active=true`).flush(page([USER]));
+    await settle();
 
-    await click(cancelButton());
+    expect(query('.loading-state')).not.toBeNull();
+    expect(queryAll('tbody tr')).toHaveLength(0);
+    expect(chipTexts()).toEqual(['Perfil: …', 'Situação: Ativos']);
 
-    await startEditing();
-    await click(rowExitButton());
+    httpMock.expectOne(OPTIONS_URL).flush(PROFILES);
+    await settle();
 
-    expect(toasts()).toEqual([]);
-    httpMock.expectNone(() => true);
+    expect(query('.loading-state')).toBeNull();
+    expect(query('tbody td[data-label="Perfil"]').textContent?.trim()).toBe('Administrador');
+    expect(chipTexts()).toEqual(['Perfil: Administrador', 'Situação: Ativos']);
+  });
+
+  it('na falha dos perfis mostra o erro de carga no lugar das linhas e tenta de novo na próxima carga', async () => {
+    fixture = TestBed.createComponent(Users);
+    fixture.detectChanges();
+    httpMock.expectOne(DEFAULT_URL).flush(page([USER]));
+    httpMock.expectOne(OPTIONS_URL).flush(null, { status: 503, statusText: 'Unavailable' });
+    await settle();
+
+    expect(query('.load-error').textContent?.trim()).toBe('Não foi possível carregar os usuários.');
+    expect(queryAll('tbody tr')).toHaveLength(0);
+    expect(toastService.toasts()).toHaveLength(1);
+
+    await click(query('.filter-chip-remove'));
+    httpMock.expectOne(`${API_BASE}/users?page=1&size=10`).flush(page([USER]));
+    httpMock.expectOne(OPTIONS_URL).flush(PROFILES);
+    await settle();
+
+    expect(query('.load-error')).toBeNull();
+    expect(query('tbody td[data-label="Perfil"]').textContent?.trim()).toBe('Administrador');
   });
 });

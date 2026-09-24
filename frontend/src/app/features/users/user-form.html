@@ -1,0 +1,85 @@
+<h2 class="page-title">{{ id ? 'Editar usuário' : 'Novo usuário' }}</h2>
+
+<div class="form-page" [attr.aria-busy]="loading()">
+  <p class="loading-state" *ngIf="loading()"><span class="sr-only">Carregando...</span></p>
+  <p class="load-error" role="alert" *ngIf="!loading() && loadError()">{{ loadError() }}</p>
+
+  <form class="panel form-panel" *ngIf="!loading() && !loadError()" #userForm (ngSubmit)="save()">
+    <label>
+      Nome
+      <input
+        name="name"
+        [(ngModel)]="form.name"
+        [class.invalid]="fieldErrors.invalid('name')"
+        (input)="fieldErrors.clear('name')"
+        required
+      />
+      <small class="field-error" *ngIf="fieldErrors.invalid('name')">{{ fieldErrors.message('name') }}</small>
+    </label>
+    <label>
+      E-mail
+      <input
+        type="email"
+        name="email"
+        [(ngModel)]="form.email"
+        [class.invalid]="fieldErrors.invalid('email')"
+        (input)="fieldErrors.clear('email')"
+        required
+      />
+      <small class="field-error" *ngIf="fieldErrors.invalid('email')">{{ fieldErrors.message('email') }}</small>
+    </label>
+    <label>
+      {{ id ? 'Nova senha (opcional)' : 'Senha' }}
+      <input
+        type="password"
+        name="password"
+        autocomplete="new-password"
+        [(ngModel)]="form.password"
+        [class.invalid]="fieldErrors.invalid('password')"
+        (input)="fieldErrors.clear('password')"
+        [required]="!id"
+      />
+      <small class="field-error" *ngIf="fieldErrors.invalid('password')">{{ fieldErrors.message('password') }}</small>
+    </label>
+    <label>
+      Perfil
+      <select
+        name="profileId"
+        [(ngModel)]="form.profileId"
+        [class.invalid]="fieldErrors.invalid('profileId')"
+        (change)="fieldErrors.clear('profileId')"
+        required
+      >
+        <option value="">Selecione</option>
+        <option *ngFor="let profile of profiles()" [value]="profile.id">{{ profile.name }}</option>
+      </select>
+      <small class="field-error" *ngIf="fieldErrors.invalid('profileId')">{{ fieldErrors.message('profileId') }}</small>
+    </label>
+    <label *ngIf="id">
+      Status
+      <select
+        name="active"
+        [(ngModel)]="form.active"
+        [class.invalid]="fieldErrors.invalid('active')"
+        (change)="fieldErrors.clear('active')"
+      >
+        <option [ngValue]="true">Ativo</option>
+        <option [ngValue]="false">Inativo</option>
+      </select>
+      <small class="field-error" *ngIf="fieldErrors.invalid('active')">{{ fieldErrors.message('active') }}</small>
+    </label>
+    <div class="two-cols form-actions">
+      <button class="primary-button" type="submit" [disabled]="saving()">Salvar</button>
+      <button class="ghost-button" type="button" (click)="requestCancel()">Cancelar</button>
+    </div>
+  </form>
+</div>
+
+<app-confirm-dialog
+  *ngIf="confirmingExit()"
+  message="Deseja sair sem salvar?"
+  cancelLabel="Continuar editando"
+  confirmLabel="Sair sem salvar"
+  (cancel)="keepEditing()"
+  (confirm)="confirmExit()"
+/>

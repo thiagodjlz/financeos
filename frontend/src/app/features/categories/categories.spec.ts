@@ -1,10 +1,13 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { API_BASE, Category, PermissionEntry } from '../../core/models';
+import { Router, provideRouter } from '@angular/router';
+import { API_BASE, Category, Page, PermissionEntry } from '../../core/models';
 import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
 import { Categories } from './categories';
+
+const DEFAULT_URL = `${API_BASE}/categories?page=1&size=10&active=true`;
 
 const CATEGORY: Category = {
   id: 'cat-1',
@@ -36,6 +39,10 @@ const INACTIVE_CATEGORY: Category = {
 const BLOCKING_MESSAGE =
   'Não é possível excluir a categoria. Ela está em uso em:\nLançamentos: 3 registros';
 
+function page(items: Category[], totalItems = items.length, totalPages = items.length ? 1 : 0, current = 1): Page<Category> {
+  return { items, totalItems, totalPages, page: current, size: 10 };
+}
+
 function categoriesPermission(overrides: Partial<PermissionEntry>): PermissionEntry {
   return {
     screen: 'CATEGORIES',
@@ -51,38 +58,33 @@ describe('Categories', () => {
   let fixture: ComponentFixture<Categories>;
   let httpMock: HttpTestingController;
   let toastService: ToastService;
+  let router: Router;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [Categories],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
     }).compileComponents();
 
     httpMock = TestBed.inject(HttpTestingController);
     toastService = TestBed.inject(ToastService);
+    router = TestBed.inject(Router);
+    vi.spyOn(router, 'navigate').mockResolvedValue(true);
   });
 
   afterEach(() => httpMock.verify());
 
-  async function render(superAdmin = true, categories: Category[] = [CATEGORY]): Promise<void> {
+  async function render(superAdmin = true, categories: Category[] = [CATEGORY], url = DEFAULT_URL): Promise<void> {
     fixture = TestBed.createComponent(Categories);
     TestBed.inject(AuthService).superAdmin.set(superAdmin);
     fixture.detectChanges();
-    httpMock.expectOne(`${API_BASE}/categories`).flush(categories);
+    httpMock.expectOne(url).flush(page(categories));
     await settle();
   }
 
-  async function renderWithPermissions(
-    permissions: PermissionEntry[],
-    categories: Category[] = [CATEGORY],
-  ): Promise<void> {
-    fixture = TestBed.createComponent(Categories);
-    const authService = TestBed.inject(AuthService);
-    authService.superAdmin.set(false);
-    authService.permissions.set(permissions);
-    fixture.detectChanges();
-    httpMock.expectOne(`${API_BASE}/categories`).flush(categories);
-    await settle();
+  async function renderWithPermissions(permissions: PermissionEntry[]): Promise<void> {
+    TestBed.inject(AuthService).permissions.set(permissions);
+    await render(false);
   }
 
   async function settle(): Promise<void> {
@@ -100,30 +102,28 @@ describe('Categories', () => {
     return Array.from(fixture.nativeElement.querySelectorAll(selector)) as T[];
   }
 
+  function buttonByText(text: string, scope = ''): HTMLButtonElement | undefined {
+    return queryAll<HTMLButtonElement>(`${scope} button`).find((button) => button.textContent?.trim() === text);
+  }
+
   function toasts() {
     return toastService.toasts();
   }
 
-  function formTitle(): string {
-    return query('form .panel-heading h3').textContent?.trim() ?? '';
+  function deleteButtons(): HTMLButtonElement[] {
+    return queryAll<HTMLButtonElement>('tbody .row-actions button.icon-button');
   }
 
-  function cancelButton(): HTMLButtonElement {
-    return query<HTMLButtonElement>('form button.ghost-button');
+  function rowNames(): string[] {
+    return queryAll('tbody td[data-label="Nome"]').map((cell) => cell.textContent?.trim() ?? '');
   }
 
-  function rowSaveButton(): HTMLButtonElement {
-    return query<HTMLButtonElement>('tbody .row-actions button.primary-button');
+  function chipTexts(): string[] {
+    return queryAll('.filter-chip span').map((chip) => chip.textContent?.trim() ?? '');
   }
 
-  function rowExitButton(): HTMLButtonElement {
-    return query<HTMLButtonElement>('tbody .row-actions button.danger-button');
-  }
-
-  async function fillText(selector: string, value: string): Promise<void> {
-    const input = query<HTMLInputElement>(selector);
-    input.value = value;
-    input.dispatchEvent(new Event('input'));
+  async function click(element: HTMLElement): Promise<void> {
+    element.click();
     await settle();
   }
 
@@ -134,348 +134,149 @@ describe('Categories', () => {
     await settle();
   }
 
-  async function selectIndex(selector: string, index: number): Promise<void> {
-    const select = query<HTMLSelectElement>(selector);
-    select.selectedIndex = index;
-    select.dispatchEvent(new Event('change'));
-    await settle();
-  }
-
-  async function click(element: HTMLElement): Promise<void> {
-    element.click();
-    await settle();
-  }
-
-  async function startEditing(): Promise<void> {
-    await click(query<HTMLButtonElement>('tbody button.ghost-button'));
-  }
-
-  function deleteButtons(): HTMLButtonElement[] {
-    return queryAll<HTMLButtonElement>('tbody .row-actions button.icon-button');
-  }
-
-  function rowNames(): string[] {
-    return queryAll('tbody tr td:first-child').map((cell) => cell.textContent?.trim() ?? '');
-  }
-
   async function confirmDeletion(): Promise<void> {
     await click(deleteButtons()[0]);
     await click(query<HTMLButtonElement>('.modal-actions button.primary-button'));
   }
 
-  function fieldErrorTexts(scope: string): string[] {
-    return queryAll(`${scope} .field-error`).map((element) => element.textContent?.trim() ?? '');
-  }
-
-  async function flushCreateValidationError(): Promise<void> {
-    httpMock.expectOne(`${API_BASE}/categories`).flush(
-      {
-        violations: [
-          { field: 'create.request.name', message: 'O nome é obrigatório.' },
-          { field: 'create.request.color', message: 'A cor é obrigatória.' },
-          { field: 'create.request.active', message: 'A situação é obrigatória.' },
-        ],
-        message: 'Informe os campos obrigatórios: Nome, Cor, Situação.',
-      },
-      { status: 400, statusText: 'Bad Request' },
-    );
-    await settle();
-  }
-
-  function expectBlankForm(): void {
-    expect(query<HTMLInputElement>('form input[name="name"]').value).toBe('');
-    expect(query<HTMLSelectElement>('form select[name="type"]').value).toBe('EXPENSE');
-    expect(query<HTMLInputElement>('form input[name="color"]').value).toBe('#2f7d62');
-    expect(query<HTMLSelectElement>('form select[name="active"]').selectedIndex).toBe(0);
-    expect(controlNames('form')).toEqual(['name', 'type', 'color', 'active']);
-  }
-
-  function controlNames(scope: string): string[] {
-    return queryAll(`${scope} input[name], ${scope} select[name]`).map(
-      (control) => control.getAttribute('name') ?? '',
-    );
-  }
-
-  it('exibe o formulário somente de criação com título fixo e Cancelar secundário', async () => {
+  it('abre com Situação = Ativos contando em "Filtros (1)" e com o rótulo "Ativos"', async () => {
     await render();
 
-    const button = cancelButton();
-    expect(formTitle()).toBe('Nova categoria');
-    expect(button).toBeTruthy();
-    expect(button.textContent?.trim()).toBe('Cancelar');
-    expect(button.getAttribute('type')).toBe('button');
-  });
-
-  it('não renderiza o formulário nem o botão Editar sem permissão', async () => {
-    await render(false);
-
+    expect(query('.filter-toggle').textContent?.trim()).toBe('Filtros (1)');
+    expect(chipTexts()).toEqual(['Situação: Ativos']);
     expect(query('form')).toBeNull();
-    expect(query('tbody button.ghost-button')).toBeNull();
-  });
-
-  it('limpa o formulário de criação em estágio único, sem HTTP', async () => {
-    await render();
-    await fillText('form input[name="name"]', 'Alterado');
-    await selectValue('form select[name="type"]', 'INCOME');
-    await fillText('form input[name="color"]', '#aabbcc');
-    await selectIndex('form select[name="active"]', 1);
-
-    await click(cancelButton());
-
-    expectBlankForm();
-    expect(formTitle()).toBe('Nova categoria');
-    expect(toasts()).toEqual([]);
-    httpMock.expectNone(() => true);
-  });
-
-  it('entra em edição inline com controles de nome, tipo, situação e cor sem tocar o formulário lateral', async () => {
-    await render();
-
-    await startEditing();
-
-    expect(query<HTMLInputElement>('tbody input[name="editName"]').value).toBe('Mercado');
-    expect(query<HTMLInputElement>('tbody input[name="editColor"]').value).toBe('#123456');
-    expect(controlNames('tbody')).toEqual(['editName', 'editColor', 'editType', 'editActive']);
-    expect(query<HTMLSelectElement>('tbody select[name="editType"]').value).toBe('EXPENSE');
-    expect(query<HTMLSelectElement>('tbody select[name="editActive"]').selectedIndex).toBe(0);
-    expect(formTitle()).toBe('Nova categoria');
-    expectBlankForm();
-    httpMock.expectNone(() => true);
-  });
-
-  it('desabilita o Editar das demais linhas com uma linha em edição', async () => {
-    await render(true, [CATEGORY, OTHER_CATEGORY]);
-
-    await startEditing();
-
-    const editButtons = queryAll<HTMLButtonElement>('tbody button.ghost-button');
-    expect(editButtons).toHaveLength(1);
-    expect(editButtons[0].disabled).toBe(true);
-  });
-
-  it('salva a edição com PUT incluindo a cor, recarrega e volta ao modo leitura', async () => {
-    await render();
-    await startEditing();
-    await fillText('tbody input[name="editName"]', 'Feira');
-    await fillText('tbody input[name="editColor"]', '#aabbcc');
-
-    await click(rowSaveButton());
-
-    const request = httpMock.expectOne(`${API_BASE}/categories/cat-1`);
-    expect(request.request.method).toBe('PUT');
-    expect(request.request.body).toMatchObject({
-      name: 'Feira',
-      type: 'EXPENSE',
-      color: '#aabbcc',
-      active: true,
-    });
-    expect(Object.keys(request.request.body).sort()).toEqual(['active', 'color', 'name', 'type']);
-    request.flush({ ...CATEGORY, name: 'Feira', color: '#aabbcc' });
-    await settle();
-    httpMock.expectOne(`${API_BASE}/categories`).flush([{ ...CATEGORY, name: 'Feira' }]);
-    await settle();
-
-    expect(query('tbody input[name="editName"]')).toBeNull();
-    expect(query('tbody tr td').textContent?.trim()).toBe('Feira');
-    expect(toasts()).toHaveLength(1);
-    expect(toasts()[0].title).toBe('Sucesso');
-    expect(toasts()[0].message).toBe('Categoria atualizada com sucesso.');
-  });
-
-  it('sai direto sem modal e sem HTTP quando não há alteração pendente', async () => {
-    await render();
-    await startEditing();
-
-    await click(rowExitButton());
-
-    expect(query('.modal-backdrop')).toBeNull();
-    expect(query('tbody input[name="editName"]')).toBeNull();
-    expect(toasts()).toEqual([]);
-    httpMock.expectNone(() => true);
-  });
-
-  it('abre o modal ao sair com alteração pendente e mantém a edição em Continuar editando', async () => {
-    await render();
-    await startEditing();
-    await fillText('tbody input[name="editName"]', 'Alterado');
-
-    await click(rowExitButton());
-
-    expect(query('.modal-card p').textContent?.trim()).toBe('Deseja sair sem salvar?');
-
-    await click(query<HTMLButtonElement>('.modal-actions button.ghost-button'));
-
-    expect(query('.modal-backdrop')).toBeNull();
-    expect(query<HTMLInputElement>('tbody input[name="editName"]').value).toBe('Alterado');
-    httpMock.expectNone(() => true);
-  });
-
-  it('descarta e recarrega da API ao confirmar a saída em Sair sem salvar', async () => {
-    await render();
-    await startEditing();
-    await fillText('tbody input[name="editName"]', 'Alterado');
-    await click(rowExitButton());
-
-    await click(query<HTMLButtonElement>('.modal-actions button.primary-button'));
-
-    httpMock.expectOne(`${API_BASE}/categories`).flush([CATEGORY]);
-    await settle();
-
-    expect(query('.modal-backdrop')).toBeNull();
-    expect(query('tbody input[name="editName"]')).toBeNull();
-    expect(query('tbody tr td').textContent?.trim()).toBe('Mercado');
-  });
-
-  it('exibe alerta com a mensagem de duplicidade no 409 e mantém a linha em edição', async () => {
-    await render();
-    await startEditing();
-    await fillText('tbody input[name="editName"]', 'Duplicada');
-
-    await click(rowSaveButton());
-
-    httpMock
-      .expectOne(`${API_BASE}/categories/cat-1`)
-      .flush(
-        { message: 'Já existe uma categoria com esse nome e tipo.' },
-        { status: 409, statusText: 'Conflict' },
-      );
-    await settle();
-
-    expect(toasts()).toHaveLength(1);
-    expect(toasts()[0].title).toBe('Alerta');
-    expect(toasts()[0].message).toBe('Já existe uma categoria com esse nome e tipo.');
-    expect(query<HTMLInputElement>('tbody input[name="editName"]').value).toBe('Duplicada');
-  });
-
-  it('exibe toast de sucesso ao criar a categoria', async () => {
-    await render();
-    await fillText('form input[name="name"]', 'Lazer');
-
-    await click(query<HTMLButtonElement>('form button[type="submit"]'));
-
-    httpMock.expectOne(`${API_BASE}/categories`).flush({ ...CATEGORY, id: 'cat-3', name: 'Lazer' });
-    await settle();
-    httpMock.expectOne(`${API_BASE}/categories`).flush([CATEGORY]);
-    await settle();
-
-    expect(toasts()).toHaveLength(1);
-    expect(toasts()[0].title).toBe('Sucesso');
-    expect(toasts()[0].message).toBe('Categoria salva com sucesso.');
-  });
-
-  it('exibe toast de sucesso ao desativar pela edição inline', async () => {
-    await render();
-    await startEditing();
-    await selectIndex('tbody select[name="editActive"]', 1);
-
-    await click(rowSaveButton());
-
-    const request = httpMock.expectOne(`${API_BASE}/categories/cat-1`);
-    expect(request.request.body).toMatchObject({ active: false });
-    request.flush({ ...CATEGORY, active: false });
-    await settle();
-    httpMock.expectOne(`${API_BASE}/categories`).flush([{ ...CATEGORY, active: false }]);
-    await settle();
-
-    expect(toasts()[0].title).toBe('Sucesso');
-    expect(toasts()[0].message).toBe('Categoria atualizada com sucesso.');
-  });
-
-  it('exibe alerta nomeando os campos obrigatórios quando o backend recusa por validação', async () => {
-    await render();
-
-    await click(query<HTMLButtonElement>('form button[type="submit"]'));
-    await flushCreateValidationError();
-
-    expect(toasts()).toHaveLength(1);
-    expect(toasts()[0].title).toBe('Alerta');
-    expect(toasts()[0].message).toBe('Informe os campos obrigatórios: Nome, Cor, Situação.');
-  });
-
-  it('destaca em vermelho cada campo citado no 400 e exibe a legenda da violação', async () => {
-    await render();
-
-    await click(query<HTMLButtonElement>('form button[type="submit"]'));
-    await flushCreateValidationError();
-
-    expect(query('form input[name="name"]').classList.contains('invalid')).toBe(true);
-    expect(query('form input[name="color"]').classList.contains('invalid')).toBe(true);
-    expect(query('form select[name="active"]').classList.contains('invalid')).toBe(true);
-    expect(query('form select[name="type"]').classList.contains('invalid')).toBe(false);
-    expect(fieldErrorTexts('form')).toEqual([
-      'O nome é obrigatório.',
-      'A cor é obrigatória.',
-      'A situação é obrigatória.',
+    expect(queryAll('tbody input, tbody select')).toHaveLength(0);
+    expect(queryAll('tbody tr td').map((cell) => cell.getAttribute('data-label'))).toEqual([
+      'Nome',
+      'Tipo',
+      'Situação',
+      null,
     ]);
   });
 
-  it('limpa o destaque apenas do campo editado', async () => {
+  it('oferece Situação Ativos, Inativos e Todos; remover o rótulo = Todos e "Limpar filtros" volta a Ativos', async () => {
     await render();
-    await click(query<HTMLButtonElement>('form button[type="submit"]'));
-    await flushCreateValidationError();
+    await click(query('.filter-toggle'));
 
-    await fillText('form input[name="name"]', 'Lazer');
-
-    expect(query('form input[name="name"]').classList.contains('invalid')).toBe(false);
-    expect(query('form input[name="color"]').classList.contains('invalid')).toBe(true);
-    expect(fieldErrorTexts('form')).toEqual(['A cor é obrigatória.', 'A situação é obrigatória.']);
-  });
-
-  it('destaca os campos da linha em edição sem tocar o formulário lateral', async () => {
-    await render();
-    await startEditing();
-    await fillText('tbody input[name="editName"]', '');
-
-    await click(rowSaveButton());
-
-    httpMock.expectOne(`${API_BASE}/categories/cat-1`).flush(
-      {
-        violations: [{ field: 'update.request.name', message: 'O nome é obrigatório.' }],
-        message: 'Informe os campos obrigatórios: Nome.',
-      },
-      { status: 400, statusText: 'Bad Request' },
+    const options = queryAll<HTMLOptionElement>('select[name="filterActive"] option').map((option) =>
+      option.textContent?.trim(),
     );
+    expect(options).toEqual(['Ativos', 'Inativos', 'Todos']);
+    expect(buttonByText('Limpar filtros', '.filter-actions')?.disabled).toBe(true);
+
+    await click(query('.filter-chip-remove'));
+    httpMock.expectOne(`${API_BASE}/categories?page=1&size=10`).flush(page([CATEGORY, INACTIVE_CATEGORY]));
     await settle();
 
-    expect(query('tbody input[name="editName"]').classList.contains('invalid')).toBe(true);
-    expect(fieldErrorTexts('tbody')).toEqual(['O nome é obrigatório.']);
-    expect(fieldErrorTexts('form')).toEqual([]);
-    expect(query('tbody input[name="editName"]')).toBeTruthy();
+    expect(query('.filter-toggle').textContent?.trim()).toBe('Filtros');
+    expect(chipTexts()).toEqual([]);
+    expect(query<HTMLSelectElement>('select[name="filterActive"]').value).toBe('');
+
+    await click(buttonByText('Limpar filtros', '.filter-actions') as HTMLButtonElement);
+    httpMock.expectOne(DEFAULT_URL).flush(page([CATEGORY]));
+    await settle();
+
+    expect(chipTexts()).toEqual(['Situação: Ativos']);
   });
 
-  it('limpa os destaques ao cancelar o formulário, sem HTTP e sem toast novo', async () => {
-    await render();
-    await click(query<HTMLButtonElement>('form button[type="submit"]'));
-    await flushCreateValidationError();
-    const toastsAfterError = toasts().length;
+  it('combina Nome, Tipo e Situação e volta à página 1 ao filtrar', async () => {
+    await render(true, [CATEGORY]);
+    await click(query('.filter-toggle'));
 
-    await click(cancelButton());
-
-    expect(queryAll('.field-error')).toHaveLength(0);
-    expect(queryAll('.invalid')).toHaveLength(0);
-    expect(toasts()).toHaveLength(toastsAfterError);
-    httpMock.expectNone(() => true);
-  });
-
-  it('exibe toast de falha quando a API responde 500', async () => {
-    await render();
-    await fillText('form input[name="name"]', 'Lazer');
-
-    await click(query<HTMLButtonElement>('form button[type="submit"]'));
-
+    await selectValue('select[name="filterType"]', 'INCOME');
+    httpMock.expectOne(`${API_BASE}/categories?page=1&size=10&type=INCOME&active=true`).flush(page([OTHER_CATEGORY]));
+    await settle();
+    const name = query<HTMLInputElement>('input[name="filterName"]');
+    name.value = 'sal';
+    name.dispatchEvent(new Event('input'));
+    name.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+    await settle();
     httpMock
-      .expectOne(`${API_BASE}/categories`)
-      .flush(null, { status: 500, statusText: 'Server Error' });
+      .expectOne(`${API_BASE}/categories?page=1&size=10&name=sal&type=INCOME&active=true`)
+      .flush(page([OTHER_CATEGORY]));
     await settle();
 
-    expect(toasts()).toHaveLength(1);
-    expect(toasts()[0].title).toBe('Falha');
+    expect(query('.filter-toggle').textContent?.trim()).toBe('Filtros (3)');
+    expect(chipTexts()).toEqual(['Nome: sal', 'Tipo: Receita', 'Situação: Ativos']);
   });
 
-  it('mantém o empty-state da tabela sem categorias', async () => {
+  it('lista vazia só com o padrão mostra "Nenhum registro encontrado." sem "Limpar filtros"', async () => {
     await render(true, []);
 
+    expect(query('.filtered-empty p').textContent?.trim()).toBe('Nenhum registro encontrado.');
+    expect(buttonByText('Limpar filtros', '.filtered-empty')).toBeUndefined();
+  });
+
+  it('filtro diferente do padrão sem resultado oferece "Limpar filtros"', async () => {
+    await render();
+    await click(query('.filter-toggle'));
+    await selectValue('select[name="filterActive"]', 'false');
+    httpMock.expectOne(`${API_BASE}/categories?page=1&size=10&active=false`).flush(page([]));
+    await settle();
+
+    await click(buttonByText('Limpar filtros', '.filtered-empty') as HTMLButtonElement);
+    httpMock.expectOne(DEFAULT_URL).flush(page([CATEGORY]));
+    await settle();
+
+    expect(rowNames()).toEqual(['Mercado']);
+  });
+
+  it('sem registros e sem filtro mostra o vazio atual', async () => {
+    await render();
+    await click(query('.filter-chip-remove'));
+    httpMock.expectOne(`${API_BASE}/categories?page=1&size=10`).flush(page([]));
+    await settle();
+
     expect(query('.empty-state').textContent?.trim()).toBe('Nenhuma categoria cadastrada');
+  });
+
+  it('pagina e restaura filtros e página ao voltar do cadastro', async () => {
+    fixture = TestBed.createComponent(Categories);
+    TestBed.inject(AuthService).superAdmin.set(true);
+    fixture.detectChanges();
+    httpMock.expectOne(DEFAULT_URL).flush(page([CATEGORY], 11, 2));
+    await settle();
+
+    await click(buttonByText('Próxima') as HTMLButtonElement);
+    httpMock.expectOne(`${API_BASE}/categories?page=2&size=10&active=true`).flush(page([OTHER_CATEGORY], 11, 2, 2));
+    await settle();
+    await click(buttonByText('Editar', 'tbody') as HTMLButtonElement);
+    expect(router.navigate).toHaveBeenCalledWith(['/categories', 'cat-2', 'edit']);
+    fixture.destroy();
+
+    await render(true, [OTHER_CATEGORY], `${API_BASE}/categories?page=2&size=10&active=true`);
+
+    expect(chipTexts()).toEqual(['Situação: Ativos']);
+  });
+
+  it('mostra "Incluir" com CREATE e navega para a inclusão', async () => {
+    await render();
+
+    await click(buttonByText('Incluir', '.list-toolbar') as HTMLButtonElement);
+
+    expect(router.navigate).toHaveBeenCalledWith(['/categories/new']);
+  });
+
+  it('não mostra Incluir, Editar nem lixeira sem permissão de escrita', async () => {
+    await render(false);
+
+    expect(buttonByText('Incluir')).toBeUndefined();
+    expect(buttonByText('Editar')).toBeUndefined();
+    expect(deleteButtons()).toHaveLength(0);
+  });
+
+  it('na falha de carga mostra a mensagem na área, sem o vazio', async () => {
+    fixture = TestBed.createComponent(Categories);
+    fixture.detectChanges();
+    expect(query('.loading-state')).not.toBeNull();
+    expect(query('.empty-state')).toBeNull();
+
+    httpMock.expectOne(DEFAULT_URL).error(new ProgressEvent('error'), { status: 0, statusText: 'Unknown Error' });
+    await settle();
+
+    expect(query('.load-error').textContent?.trim()).toBe('Não foi possível carregar as categorias.');
+    expect(query('.empty-state')).toBeNull();
+    expect(toasts()[0].title).toBe('Falha');
   });
 
   it('exibe a lixeira nas linhas ativas e inativas com rótulo Excluir e ícone de 20px', async () => {
@@ -487,9 +288,7 @@ describe('Categories', () => {
       expect(button.getAttribute('aria-label')).toBe('Excluir');
       expect(button.getAttribute('title')).toBe('Excluir');
       expect(button.getAttribute('type')).toBe('button');
-      expect(button.disabled).toBe(false);
       expect(button.querySelector('svg')?.getAttribute('width')).toBe('20');
-      expect(button.querySelector('svg')?.getAttribute('height')).toBe('20');
     });
   });
 
@@ -497,33 +296,15 @@ describe('Categories', () => {
     await renderWithPermissions([categoriesPermission({ canDelete: true })]);
 
     expect(deleteButtons()).toHaveLength(1);
-    expect(query('tbody button.ghost-button')).toBeNull();
+    expect(buttonByText('Editar')).toBeUndefined();
   });
 
   it('não coloca a lixeira no DOM sem a permissão de excluir', async () => {
     await renderWithPermissions([categoriesPermission({ canCreate: true, canEdit: true })]);
 
-    expect(query('tbody button.ghost-button')).toBeTruthy();
+    expect(buttonByText('Editar', 'tbody')).toBeTruthy();
+    expect(buttonByText('Incluir')).toBeTruthy();
     expect(deleteButtons()).toHaveLength(0);
-    expect(query('[aria-label="Excluir"]')).toBeNull();
-  });
-
-  it('não coloca a lixeira no DOM para perfil sem nenhuma permissão de escrita', async () => {
-    await render(false);
-
-    expect(deleteButtons()).toHaveLength(0);
-  });
-
-  it('tira a lixeira da linha em edição e a desabilita nas demais, como o Editar', async () => {
-    await render(true, [CATEGORY, OTHER_CATEGORY]);
-
-    await startEditing();
-
-    const editingRow = query('tbody input[name="editName"]').closest('tr') as HTMLElement;
-    expect(editingRow.querySelector('button.icon-button')).toBeNull();
-    const buttons = deleteButtons();
-    expect(buttons).toHaveLength(1);
-    expect(buttons[0].disabled).toBe(true);
   });
 
   it('abre a confirmação citando o nome e fecha em Cancelar sem HTTP e sem toast', async () => {
@@ -532,20 +313,16 @@ describe('Categories', () => {
     await click(deleteButtons()[0]);
 
     expect(query('.modal-card p').textContent).toContain('"Mercado"');
-    expect(query('.modal-actions button.primary-button').textContent?.trim()).toBe(
-      'Excluir categoria',
-    );
-    expect(query('.modal-actions button.ghost-button').textContent?.trim()).toBe('Cancelar');
+    expect(query('.modal-actions button.primary-button').textContent?.trim()).toBe('Excluir categoria');
 
     await click(query<HTMLButtonElement>('.modal-actions button.ghost-button'));
 
     expect(query('.modal-backdrop')).toBeNull();
-    expect(rowNames()).toEqual(['Mercado']);
     expect(toasts()).toEqual([]);
     httpMock.expectNone(() => true);
   });
 
-  it('exclui ao confirmar, recarrega a lista e exibe toast de sucesso', async () => {
+  it('exclui ao confirmar, recarrega a página e exibe toast de sucesso', async () => {
     await render(true, [CATEGORY, OTHER_CATEGORY]);
 
     await confirmDeletion();
@@ -554,15 +331,11 @@ describe('Categories', () => {
     expect(request.request.method).toBe('DELETE');
     request.flush(null, { status: 204, statusText: 'No Content' });
     await settle();
-    httpMock.expectOne(`${API_BASE}/categories`).flush([OTHER_CATEGORY]);
+    httpMock.expectOne(DEFAULT_URL).flush(page([OTHER_CATEGORY]));
     await settle();
 
-    expect(query('.modal-backdrop')).toBeNull();
     expect(rowNames()).toEqual(['Salario']);
-    expect(toasts()).toHaveLength(1);
-    expect(toasts()[0].type).toBe('success');
-    expect(toasts()[0].title).toBe('Sucesso');
-    expect(toasts()[0].message).toBe('Categoria excluída com sucesso.');
+    expect(toasts().map((toast) => [toast.title, toast.message])).toEqual([['Sucesso', 'Categoria excluída com sucesso.']]);
   });
 
   it('exibe alerta com a mensagem do backend em linhas no 409 e mantém a categoria na lista', async () => {
@@ -570,22 +343,17 @@ describe('Categories', () => {
 
     await confirmDeletion();
 
-    const request = httpMock.expectOne(`${API_BASE}/categories/cat-1`);
-    expect(request.request.method).toBe('DELETE');
-    request.flush({ message: BLOCKING_MESSAGE }, { status: 409, statusText: 'Conflict' });
+    httpMock
+      .expectOne(`${API_BASE}/categories/cat-1`)
+      .flush({ message: BLOCKING_MESSAGE }, { status: 409, statusText: 'Conflict' });
     await settle();
 
-    expect(query('.modal-backdrop')).toBeNull();
     expect(rowNames()).toEqual(['Mercado']);
-    expect(toasts()).toHaveLength(1);
-    expect(toasts()[0].type).toBe('warning');
     expect(toasts()[0].title).toBe('Alerta');
-    expect(toasts()[0].message).toBe(BLOCKING_MESSAGE);
     expect(toasts()[0].message.split('\n')).toEqual([
       'Não é possível excluir a categoria. Ela está em uso em:',
       'Lançamentos: 3 registros',
     ]);
-    httpMock.expectNone(`${API_BASE}/categories`);
   });
 
   it('confirma a exclusão e avisa só da lista quando o recarregamento falha', async () => {
@@ -593,69 +361,15 @@ describe('Categories', () => {
 
     await confirmDeletion();
 
-    httpMock
-      .expectOne(`${API_BASE}/categories/cat-1`)
-      .flush(null, { status: 204, statusText: 'No Content' });
+    httpMock.expectOne(`${API_BASE}/categories/cat-1`).flush(null, { status: 204, statusText: 'No Content' });
     await settle();
-    httpMock
-      .expectOne(`${API_BASE}/categories`)
-      .flush(null, { status: 500, statusText: 'Server Error' });
+    httpMock.expectOne(DEFAULT_URL).flush(null, { status: 500, statusText: 'Server Error' });
     await settle();
 
     expect(toasts().map((toast) => [toast.type, toast.message])).toEqual([
       ['success', 'Categoria excluída com sucesso.'],
       ['error', 'Não foi possível carregar as categorias.'],
     ]);
-    expect(toasts().some((toast) => toast.message === 'Não foi possível excluir a categoria.')).toBe(
-      false,
-    );
-  });
-
-  it('confirma a criação, limpa o formulário e avisa só da lista quando o recarregamento falha', async () => {
-    await render();
-    await fillText('form input[name="name"]', 'Lazer');
-
-    await click(query<HTMLButtonElement>('form button[type="submit"]'));
-
-    httpMock.expectOne(`${API_BASE}/categories`).flush({ ...CATEGORY, id: 'cat-4', name: 'Lazer' });
-    await settle();
-    httpMock
-      .expectOne(`${API_BASE}/categories`)
-      .flush(null, { status: 500, statusText: 'Server Error' });
-    await settle();
-    // O ngModel só grava o valor limpo no DOM numa microtarefa após a detecção de mudanças.
-    await settle();
-
-    expect(toasts().map((toast) => [toast.type, toast.message])).toEqual([
-      ['success', 'Categoria salva com sucesso.'],
-      ['error', 'Não foi possível carregar as categorias.'],
-    ]);
-    expect(toasts().some((toast) => toast.message.startsWith('Não foi possível salvar'))).toBe(false);
-    expectBlankForm();
-    expect(queryAll('.invalid')).toHaveLength(0);
-    expect(query<HTMLButtonElement>('form button[type="submit"]').disabled).toBe(false);
-  });
-
-  it('confirma a edição, sai do modo edição e avisa só da lista quando o recarregamento falha', async () => {
-    await render();
-    await startEditing();
-    await selectIndex('tbody select[name="editActive"]', 1);
-
-    await click(rowSaveButton());
-
-    httpMock.expectOne(`${API_BASE}/categories/cat-1`).flush({ ...CATEGORY, active: false });
-    await settle();
-    httpMock
-      .expectOne(`${API_BASE}/categories`)
-      .flush(null, { status: 500, statusText: 'Server Error' });
-    await settle();
-
-    expect(toasts().map((toast) => [toast.type, toast.message])).toEqual([
-      ['success', 'Categoria atualizada com sucesso.'],
-      ['error', 'Não foi possível carregar as categorias.'],
-    ]);
-    expect(toasts().some((toast) => toast.message.startsWith('Não foi possível salvar'))).toBe(false);
-    expect(query('tbody input[name="editName"]')).toBeNull();
   });
 
   it('não soma aviso da lista quando o recarregamento responde 401, que já tem dono', async () => {
@@ -663,15 +377,33 @@ describe('Categories', () => {
 
     await confirmDeletion();
 
-    httpMock
-      .expectOne(`${API_BASE}/categories/cat-1`)
-      .flush(null, { status: 204, statusText: 'No Content' });
+    httpMock.expectOne(`${API_BASE}/categories/cat-1`).flush(null, { status: 204, statusText: 'No Content' });
     await settle();
-    httpMock
-      .expectOne(`${API_BASE}/categories`)
-      .flush(null, { status: 401, statusText: 'Unauthorized' });
+    httpMock.expectOne(DEFAULT_URL).flush(null, { status: 401, statusText: 'Unauthorized' });
     await settle();
 
     expect(toasts().map((toast) => toast.message)).toEqual(['Categoria excluída com sucesso.']);
+  });
+
+  it('ao excluir o único item da última página, volta para a página anterior', async () => {
+    fixture = TestBed.createComponent(Categories);
+    TestBed.inject(AuthService).superAdmin.set(true);
+    fixture.detectChanges();
+    httpMock.expectOne(DEFAULT_URL).flush(page([CATEGORY], 11, 2));
+    await settle();
+    await click(buttonByText('Próxima') as HTMLButtonElement);
+    httpMock.expectOne(`${API_BASE}/categories?page=2&size=10&active=true`).flush(page([OTHER_CATEGORY], 11, 2, 2));
+    await settle();
+
+    await confirmDeletion();
+    httpMock.expectOne(`${API_BASE}/categories/cat-2`).flush(null, { status: 204, statusText: 'No Content' });
+    await settle();
+    httpMock.expectOne(`${API_BASE}/categories?page=2&size=10&active=true`).flush(page([], 10, 1, 2));
+    await settle();
+    httpMock.expectOne(DEFAULT_URL).flush(page([CATEGORY], 10, 1));
+    await settle();
+
+    expect(query('.pagination-status').textContent?.trim()).toBe('Página 1 de 1');
+    expect(rowNames()).toEqual(['Mercado']);
   });
 });

@@ -2,6 +2,7 @@
 
 <section class="release-notes-list" [attr.aria-busy]="loading()">
   <p class="loading-state" *ngIf="loading()"></p>
+  <p class="load-error" role="alert" *ngIf="!loading() && loadError()">{{ loadError() }}</p>
 
   <article class="panel release-block" *ngFor="let version of versions(); trackBy: trackByVersion">
     <header class="panel-heading">

@@ -1,277 +1,143 @@
 <h2 class="page-title">Lançamentos</h2>
 
-<section class="content-grid">
-  <form
-    class="panel form-panel"
-    *ngIf="authService.can('TRANSACTIONS', 'CREATE')"
-    #createForm
-    (ngSubmit)="saveTransaction()"
+<section class="panel table-panel">
+  <div class="panel-heading">
+    <h3>Últimos lançamentos</h3>
+    <span>{{ list.totalItems() }}</span>
+  </div>
+
+  <app-filter-panel
+    [activeCount]="list.activeCount()"
+    [chips]="chips()"
+    [canClear]="list.differsFromDefault()"
+    (remove)="list.remove($event)"
+    (clear)="list.clear()"
   >
-    <div class="panel-heading">
-      <h3>Novo lançamento</h3>
-    </div>
-    <label>
-      Data
-      <input
-        type="date"
-        name="transactionDate"
-        [(ngModel)]="transactionForm.transactionDate"
-        required
-        [class.invalid]="fieldErrors.invalid('transactionDate')"
-        (input)="fieldErrors.clear('transactionDate')"
-      />
-      <small class="field-error" *ngIf="fieldErrors.invalid('transactionDate')">
-        {{ fieldErrors.message('transactionDate') }}
-      </small>
-    </label>
+    <button
+      toolbarAction
+      *ngIf="authService.can('TRANSACTIONS', 'CREATE')"
+      type="button"
+      class="primary-button"
+      (click)="create()"
+    >
+      Incluir
+    </button>
+
     <label>
       Descrição
       <input
-        name="description"
-        [(ngModel)]="transactionForm.description"
-        maxlength="255"
-        required
-        [class.invalid]="fieldErrors.invalid('description')"
-        (input)="fieldErrors.clear('description')"
+        name="filterDescription"
+        [(ngModel)]="list.filters.description"
+        (change)="list.apply()"
+        (keydown.enter)="list.apply()"
       />
-      <small class="field-error" *ngIf="fieldErrors.invalid('description')">
-        {{ fieldErrors.message('description') }}
-      </small>
     </label>
     <label>
-      Valor
-      <input
-        type="number"
-        name="amount"
-        [(ngModel)]="transactionForm.amount"
-        min="0.01"
-        step="0.01"
-        required
-        [class.invalid]="fieldErrors.invalid('amount')"
-        (input)="fieldErrors.clear('amount')"
-      />
-      <small class="field-error" *ngIf="fieldErrors.invalid('amount')">{{ fieldErrors.message('amount') }}</small>
+      Tipo
+      <select name="filterType" [(ngModel)]="list.filters.type" (change)="onFilterTypeChange()">
+        <option value="">Todos</option>
+        <option value="EXPENSE">Despesa</option>
+        <option value="INCOME">Receita</option>
+      </select>
     </label>
-    <div class="two-cols">
-      <label>
-        Tipo
-        <select
-          name="type"
-          [(ngModel)]="transactionForm.type"
-          (ngModelChange)="onTypeChange()"
-          [class.invalid]="fieldErrors.invalid('type')"
-          (change)="fieldErrors.clear('type')"
-        >
-          <option value="EXPENSE">Despesa</option>
-          <option value="INCOME">Receita</option>
-        </select>
-        <small class="field-error" *ngIf="fieldErrors.invalid('type')">{{ fieldErrors.message('type') }}</small>
-      </label>
-      <label *ngIf="transactionForm.type !== 'INCOME'">
-        Status
-        <select
-          name="status"
-          [(ngModel)]="transactionForm.status"
-          [class.invalid]="fieldErrors.invalid('status')"
-          (change)="fieldErrors.clear('status')"
-        >
-          <option value="PENDING">Pendente</option>
-          <option value="PAID">Pago</option>
-        </select>
-        <small class="field-error" *ngIf="fieldErrors.invalid('status')">{{ fieldErrors.message('status') }}</small>
-      </label>
-    </div>
     <label>
       Categoria
-      <select
-        name="categoryId"
-        [(ngModel)]="transactionForm.categoryId"
-        required
-        [class.invalid]="fieldErrors.invalid('categoryId')"
-        (change)="fieldErrors.clear('categoryId')"
-      >
-        <option value="">Selecione</option>
-        <option *ngFor="let category of filteredCategories()" [value]="category.id">{{ category.name }}</option>
+      <select name="filterCategoryId" [(ngModel)]="list.filters.categoryId" (change)="list.apply()">
+        <option value="">Todas</option>
+        <option *ngFor="let category of filterCategories()" [value]="category.id">
+          {{ categoryOptionLabel(category) }}
+        </option>
       </select>
-      <small class="field-error" *ngIf="fieldErrors.invalid('categoryId')">
-        {{ fieldErrors.message('categoryId') }}
-      </small>
     </label>
-    <div class="two-cols form-actions">
-      <button class="primary-button" type="submit" [disabled]="saving()">Salvar</button>
-      <button class="ghost-button" type="button" (click)="clearTransactionForm()">Cancelar</button>
-    </div>
-  </form>
+    <label>
+      Status
+      <select name="filterStatus" [(ngModel)]="list.filters.status" (change)="list.apply()">
+        <option value="">Todos</option>
+        <option value="PENDING">Pendente</option>
+        <option value="PAID">Pago</option>
+        <option value="CANCELED">Cancelado</option>
+      </select>
+    </label>
+    <label>
+      Data de
+      <input type="date" name="filterStartDate" [(ngModel)]="list.filters.startDate" (change)="list.apply()" />
+    </label>
+    <label>
+      Data até
+      <input type="date" name="filterEndDate" [(ngModel)]="list.filters.endDate" (change)="list.apply()" />
+    </label>
+  </app-filter-panel>
 
-  <section class="panel table-panel">
-    <div class="panel-heading">
-      <h3>Últimos lançamentos</h3>
-      <span>{{ transactions().length }}</span>
-    </div>
-    <div class="table-wrap" [attr.aria-busy]="loading()">
-      <table class="fixed-layout">
-        <colgroup>
-          <col class="col-date" />
-          <col />
-          <col class="col-category" />
-          <col class="col-status" />
-          <col class="col-amount" />
-          <col class="col-actions" />
-        </colgroup>
-        <thead>
-          <tr>
-            <th>Data</th>
-            <th>Descrição</th>
-            <th>Categoria</th>
-            <th>Status</th>
-            <th class="amount-cell">Valor</th>
-            <th><span class="sr-only">Ações</span></th>
-          </tr>
-        </thead>
-        <tbody>
-          <ng-container *ngFor="let transaction of transactions()">
-            <tr *ngIf="editingId() !== transaction.id">
-              <td data-label="Data">{{ transaction.transactionDate }}</td>
-              <td data-label="Descrição">{{ transaction.description }}</td>
-              <td data-label="Categoria">{{ categoryName(transaction.categoryId) }}</td>
-              <td data-label="Status"><span [class]="statusPillClass(transaction.status)">{{ statusLabel(transaction.status) }}</span></td>
-              <td
-                data-label="Valor"
-                class="amount-cell"
-                [class.income]="transaction.type === 'INCOME'"
-                [class.expense]="transaction.type === 'EXPENSE'"
-              >
-                {{ signedMoney(transaction) }}
-              </td>
-              <td class="row-actions">
-                <button
-                  *ngIf="authService.can('TRANSACTIONS', 'EDIT')"
-                  type="button"
-                  class="ghost-button"
-                  [disabled]="editingId() !== null"
-                  (click)="startEdit(transaction)"
-                >
-                  Editar
-                </button>
-                <button
-                  *ngIf="authService.can('TRANSACTIONS', 'DELETE')"
-                  type="button"
-                  class="danger-button"
-                  (click)="cancelTransaction(transaction)"
-                >
-                  Cancelar
-                </button>
-              </td>
-            </tr>
-            <tr *ngIf="editingId() === transaction.id">
-              <td data-label="Data">
-                <input
-                  type="date"
-                  name="editDate"
-                  [(ngModel)]="editForm.transactionDate"
-                  [class.invalid]="editFieldErrors.invalid('transactionDate')"
-                  (input)="editFieldErrors.clear('transactionDate')"
-                />
-                <small class="field-error" *ngIf="editFieldErrors.invalid('transactionDate')">
-                  {{ editFieldErrors.message('transactionDate') }}
-                </small>
-              </td>
-              <td data-label="Descrição">
-                <input
-                  name="editDescription"
-                  [(ngModel)]="editForm.description"
-                  maxlength="255"
-                  [class.invalid]="editFieldErrors.invalid('description')"
-                  (input)="editFieldErrors.clear('description')"
-                />
-                <small class="field-error" *ngIf="editFieldErrors.invalid('description')">
-                  {{ editFieldErrors.message('description') }}
-                </small>
-              </td>
-              <td data-label="Categoria">
-                <select
-                  name="editCategoryId"
-                  [(ngModel)]="editForm.categoryId"
-                  (ngModelChange)="onEditCategoryIdChange()"
-                  required
-                  [class.invalid]="editFieldErrors.invalid('categoryId')"
-                  (change)="editFieldErrors.clear('categoryId')"
-                >
-                  <option value="">Selecione</option>
-                  <option *ngIf="editPreselectedInactiveCategory() as inactiveCategory" [value]="inactiveCategory.id">
-                    {{ inactiveCategory.name }} (Inativo)
-                  </option>
-                  <option *ngFor="let category of editCategories()" [value]="category.id">{{ category.name }}</option>
-                </select>
-                <small class="field-error" *ngIf="editFieldErrors.invalid('categoryId')">
-                  {{ editFieldErrors.message('categoryId') }}
-                </small>
-              </td>
-              <td data-label="Status">
-                <div class="two-cols">
-                  <select
-                    name="editType"
-                    [(ngModel)]="editForm.type"
-                    (ngModelChange)="onEditTypeChange()"
-                    [class.invalid]="editFieldErrors.invalid('type')"
-                    (change)="editFieldErrors.clear('type')"
-                  >
-                    <option value="EXPENSE">Despesa</option>
-                    <option value="INCOME">Receita</option>
-                  </select>
-                  <select
-                    name="editStatus"
-                    *ngIf="editForm.type !== 'INCOME'"
-                    [(ngModel)]="editForm.status"
-                    [class.invalid]="editFieldErrors.invalid('status')"
-                    (change)="editFieldErrors.clear('status')"
-                  >
-                    <option value="PENDING">Pendente</option>
-                    <option value="PAID">Pago</option>
-                  </select>
-                </div>
-                <small class="field-error" *ngIf="editFieldErrors.invalid('type')">
-                  {{ editFieldErrors.message('type') }}
-                </small>
-                <small class="field-error" *ngIf="editFieldErrors.invalid('status')">
-                  {{ editFieldErrors.message('status') }}
-                </small>
-              </td>
-              <td data-label="Valor">
-                <input
-                  type="number"
-                  name="editAmount"
-                  [(ngModel)]="editForm.amount"
-                  min="0.01"
-                  step="0.01"
-                  [class.invalid]="editFieldErrors.invalid('amount')"
-                  (input)="editFieldErrors.clear('amount')"
-                />
-                <small class="field-error" *ngIf="editFieldErrors.invalid('amount')">
-                  {{ editFieldErrors.message('amount') }}
-                </small>
-              </td>
-              <td class="row-actions">
-                <button type="button" class="primary-button" [disabled]="saving()" (click)="saveEdit(transaction)">
-                  Salvar
-                </button>
-                <button type="button" class="danger-button" (click)="requestExit()">Sair</button>
-              </td>
-            </tr>
-          </ng-container>
-        </tbody>
-      </table>
-      <p class="loading-state" *ngIf="loading()"></p>
-      <p class="empty-state" *ngIf="!loading() && !transactions().length">Sem lançamentos cadastrados</p>
-    </div>
-  </section>
+  <div class="table-wrap" [attr.aria-busy]="list.loading()">
+    <table class="fixed-layout" *ngIf="list.items().length">
+      <colgroup>
+        <col class="col-date" />
+        <col />
+        <col class="col-category" />
+        <col class="col-status" />
+        <col class="col-amount" />
+        <col class="col-actions" />
+      </colgroup>
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Descrição</th>
+          <th>Categoria</th>
+          <th>Status</th>
+          <th class="amount-cell">Valor</th>
+          <th><span class="sr-only">Ações</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let transaction of list.items()">
+          <td data-label="Data">{{ transaction.transactionDate }}</td>
+          <td data-label="Descrição">{{ transaction.description }}</td>
+          <td data-label="Categoria">{{ categoryName(transaction.categoryId) }}</td>
+          <td data-label="Status">
+            <span [class]="statusPillClass(transaction.status)">{{ statusLabel(transaction.status) }}</span>
+          </td>
+          <td
+            data-label="Valor"
+            class="amount-cell"
+            [class.income]="transaction.type === 'INCOME'"
+            [class.expense]="transaction.type === 'EXPENSE'"
+          >
+            {{ signedMoney(transaction) }}
+          </td>
+          <td class="row-actions">
+            <button
+              *ngIf="authService.can('TRANSACTIONS', 'EDIT')"
+              type="button"
+              class="ghost-button"
+              (click)="edit(transaction)"
+            >
+              Editar
+            </button>
+            <button
+              *ngIf="authService.can('TRANSACTIONS', 'DELETE')"
+              type="button"
+              class="danger-button"
+              [disabled]="saving()"
+              (click)="cancelTransaction(transaction)"
+            >
+              Cancelar
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <app-list-feedback
+      [loading]="list.loading()"
+      [error]="list.loadError()"
+      [empty]="!list.items().length"
+      [filtered]="list.activeCount() > 0"
+      [canClear]="list.differsFromDefault()"
+      (clear)="list.clear()"
+    >
+      <p class="empty-state">Sem lançamentos cadastrados</p>
+    </app-list-feedback>
+  </div>
+
+  <app-pagination [page]="list.page()" [totalPages]="list.totalPages()" (pageChange)="list.goTo($event)" />
 </section>
-
-<app-confirm-dialog
-  *ngIf="confirmingExit()"
-  message="Deseja sair sem salvar?"
-  cancelLabel="Continuar editando"
-  confirmLabel="Sair sem salvar"
-  (cancel)="confirmExitNo()"
-  (confirm)="confirmExitYes()"
-/>

@@ -2,12 +2,14 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { Action, API_BASE, AuthResponse, MeResponse, PermissionEntry, Screen } from '../models';
+import { ListStateService } from './list-state.service';
 
 const TOKEN_KEY = 'financeos_token';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly http = inject(HttpClient);
+  private readonly listState = inject(ListStateService);
 
   readonly token = signal<string | null>(localStorage.getItem(TOKEN_KEY));
   readonly superAdmin = signal(false);
@@ -30,6 +32,7 @@ export class AuthService {
     this.superAdmin.set(false);
     this.permissions.set([]);
     this.me.set(null);
+    this.listState.clear();
     this.profileLoaded = false;
     this.profilePromise = null;
   }

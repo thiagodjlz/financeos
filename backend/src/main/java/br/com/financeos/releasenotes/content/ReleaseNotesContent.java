@@ -38,12 +38,16 @@ public final class ReleaseNotesContent {
                         + "teste removidas do ambiente publicado.",
                 "Botão \"Voltar ao topo\" nas telas longas: aparece ao rolar a página e leva de volta ao início.",
                 "Tela de Categorias: botão Excluir em cada linha. Remove de vez a categoria sem lançamentos e, "
-                        + "se ela estiver em uso, avisa quantos lançamentos a usam.");
+                        + "se ela estiver em uso, avisa quantos lançamentos a usam.",
+                "Lançamentos, Categorias, Usuários e Perfis: Incluir e Editar abrem o cadastro numa tela "
+                        + "própria, e as listas mostram 10 registros por página, com botão Filtros para buscar.",
+                "Quando uma tela não consegue carregar, o aviso aparece no lugar do conteúdo, em vez de uma "
+                        + "lista vazia.");
 
         addIfPresent(categories, Kind.FIX,
                 "Contraste da borda dos campos de formulário corrigido, visível sob luz forte ou baixa visão.",
                 "Tela de Usuários: não é mais possível desativar a própria conta nem trocar o próprio perfil "
-                        + "ao editar a sua linha.");
+                        + "ao editar o seu cadastro.");
 
         return new ReleaseNoteVersion("1.0.2", List.copyOf(categories));
     }

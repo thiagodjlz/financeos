@@ -10,6 +10,8 @@ const CATEGORY_LABELS: Record<ReleaseNoteCategoryKind, string> = {
   FIX: 'Correções',
 };
 
+const LOAD_FALLBACK = 'Não foi possível carregar as novidades por versão.';
+
 @Component({
   selector: 'app-release-notes',
   imports: [CommonModule],
@@ -21,6 +23,7 @@ export class ReleaseNotes implements OnInit {
   private readonly toast = inject(ToastService);
 
   protected readonly loading = signal(false);
+  protected readonly loadError = signal<string | null>(null);
   protected readonly content = this.releaseNotesService.content;
 
   // O backend ja devolve as versoes ordenadas da mais recente para a mais antiga: o componente
@@ -37,7 +40,8 @@ export class ReleaseNotes implements OnInit {
     try {
       await this.releaseNotesService.load();
     } catch (err) {
-      this.toast.fromHttpError(err, 'Não foi possível carregar as novidades por versão.');
+      this.loadError.set(LOAD_FALLBACK);
+      this.toast.fromHttpError(err, LOAD_FALLBACK);
     } finally {
       this.loading.set(false);
     }

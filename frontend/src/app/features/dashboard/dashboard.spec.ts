@@ -200,6 +200,31 @@ describe('Dashboard', () => {
     expect(toasts()[0].message).toBe(NETWORK_ERROR_MESSAGE);
   });
 
+  it('na falha de carga mostra a mensagem na área, sem o vazio do detalhamento', async () => {
+    summaryRequest().flush(null, { status: 500, statusText: 'Server Error' });
+    flushPeriods();
+    await settle();
+
+    expect(one('.load-error')?.textContent?.trim()).toBe('Não foi possível carregar o resumo.');
+    expect(one('.load-error')?.getAttribute('role')).toBe('alert');
+    expect(all('.empty-state')).toHaveLength(0);
+  });
+
+  it('durante a carga mostra o .loading-state com aria-busy e nenhum .empty-state', async () => {
+    const request = summaryRequest();
+
+    expect(all('.loading-state').length).toBeGreaterThan(0);
+    expect(one('.category-section')?.getAttribute('aria-busy')).toBe('true');
+    expect(all('.empty-state')).toHaveLength(0);
+
+    request.flush(payload(evolution()));
+    flushPeriods();
+    await settle();
+
+    expect(all('.loading-state')).toHaveLength(0);
+    expect(one('.load-error')).toBeNull();
+  });
+
   it('não exibe toast quando a carga responde 200', async () => {
     summaryRequest().flush({
       period: { year: 2026, month: 7, startDate: '2026-07-01', endDate: '2026-07-31' },

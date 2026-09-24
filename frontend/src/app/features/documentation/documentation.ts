@@ -42,6 +42,8 @@ function filterArea(area: DocumentationArea, term: string): DocumentationArea | 
   return sections.length ? { ...area, sections } : null;
 }
 
+const LOAD_FALLBACK = 'Não foi possível carregar a documentação.';
+
 @Component({
   selector: 'app-documentation',
   imports: [CommonModule, FormsModule],
@@ -53,6 +55,7 @@ export class Documentation implements OnInit {
   private readonly toast = inject(ToastService);
 
   protected readonly loading = signal(false);
+  protected readonly loadError = signal<string | null>(null);
   protected readonly search = signal('');
   protected readonly selectedAreaId = signal<string | null>(null);
 
@@ -90,7 +93,8 @@ export class Documentation implements OnInit {
     try {
       await this.documentationService.load();
     } catch (err) {
-      this.toast.fromHttpError(err, 'Não foi possível carregar a documentação.');
+      this.loadError.set(LOAD_FALLBACK);
+      this.toast.fromHttpError(err, LOAD_FALLBACK);
     } finally {
       this.loading.set(false);
     }

@@ -1,34 +1,40 @@
 import { CommonModule } from '@angular/common';
-import { Component, ElementRef, OnInit, ViewChild, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ConfirmDialog } from '../../core/confirm-dialog/confirm-dialog';
-import { FieldErrorState, focusFirstInvalidField } from '../../core/field-errors';
+import { Router } from '@angular/router';
+import { FilterPanel } from '../../core/filter-panel/filter-panel';
 import { money, transactionStatusLabel } from '../../core/formatters';
-import { Category, Transaction, TransactionStatus, TransactionType } from '../../core/models';
+import { ListFeedback } from '../../core/list-feedback/list-feedback';
+import { Category, Transaction, TransactionStatus } from '../../core/models';
+import { FilterChip, PagedList } from '../../core/paged-list';
+import { Pagination } from '../../core/pagination/pagination';
 import { AuthService } from '../../core/services/auth.service';
 import { CategoryService } from '../../core/services/category.service';
+import { ListStateService } from '../../core/services/list-state.service';
 import { ToastService } from '../../core/services/toast.service';
 import { TransactionService } from '../../core/services/transaction.service';
 
-const LOAD_FALLBACK = 'Não foi possível carregar os lançamentos.';
-const SAVE_FALLBACK = 'Não foi possível salvar o lançamento. Revise os campos e tente novamente.';
+export const TRANSACTIONS_LOAD_FALLBACK = 'Não foi possível carregar os lançamentos.';
 
-const FIELDS = ['transactionDate', 'description', 'amount', 'type', 'status', 'categoryId'] as const;
+const DEFAULT_FILTERS = {
+  description: '',
+  categoryId: '',
+  type: '',
+  status: '',
+  startDate: '',
+  endDate: '',
+};
 
-function newTransactionForm() {
-  return {
-    transactionDate: new Date().toISOString().slice(0, 10),
-    description: '',
-    amount: 0,
-    type: 'EXPENSE' as TransactionType,
-    status: 'PENDING' as TransactionStatus | null,
-    categoryId: '',
-  };
+const TYPE_LABELS: Record<string, string> = { EXPENSE: 'Despesa', INCOME: 'Receita' };
+
+function shortDate(value: string): string {
+  const [year, month, day] = value.split('-');
+  return day && month && year ? `${day}/${month}/${year}` : value;
 }
 
 @Component({
   selector: 'app-transactions',
-  imports: [CommonModule, FormsModule, ConfirmDialog],
+  imports: [CommonModule, FormsModule, FilterPanel, ListFeedback, Pagination],
   templateUrl: './transactions.html',
   styleUrl: './transactions.scss',
 })
@@ -36,107 +42,94 @@ export class Transactions implements OnInit {
   private readonly transactionService = inject(TransactionService);
   private readonly categoryService = inject(CategoryService);
   private readonly toast = inject(ToastService);
+  private readonly router = inject(Router);
   protected readonly authService = inject(AuthService);
 
-  @ViewChild('createForm') private createForm?: ElementRef<HTMLFormElement>;
+  protected readonly list = new PagedList({
+    key: 'transactions',
+    defaults: DEFAULT_FILTERS,
+    fetch: async (filters, page) => {
+      const [result] = await Promise.all([this.transactionService.list(filters, page), this.loadCategories()]);
+      return result;
+    },
+    loadErrorMessage: TRANSACTIONS_LOAD_FALLBACK,
+    state: inject(ListStateService),
+    toast: this.toast,
+  });
 
-  protected readonly loading = signal(false);
   protected readonly saving = signal(false);
+  protected readonly categories = signal<Category[]>([]);
+  private readonly categoriesLoaded = signal(false);
+  private categoriesRequest: Promise<void> | null = null;
 
-  protected readonly fieldErrors = new FieldErrorState(FIELDS);
-  protected readonly editFieldErrors = new FieldErrorState(FIELDS);
+  protected readonly chips = computed<FilterChip[]>(() => {
+    const applied = this.list.applied();
+    const chips: FilterChip[] = [];
 
-  protected readonly transactions = this.transactionService.transactions;
-  protected readonly categories = this.categoryService.categories;
-  protected readonly filteredCategories = signal<Category[]>([]);
+    if (applied.description.trim()) {
+      chips.push({ key: 'description', label: `Descrição: ${applied.description.trim()}` });
+    }
+    if (applied.categoryId) {
+      const name = this.categoriesLoaded() ? this.categoryName(applied.categoryId) : '…';
+      chips.push({ key: 'categoryId', label: `Categoria: ${name}` });
+    }
+    if (applied.type) {
+      chips.push({ key: 'type', label: `Tipo: ${TYPE_LABELS[applied.type] ?? applied.type}` });
+    }
+    if (applied.status) {
+      chips.push({ key: 'status', label: `Status: ${transactionStatusLabel(applied.status as TransactionStatus)}` });
+    }
+    if (applied.startDate) {
+      chips.push({ key: 'startDate', label: `Data de: ${shortDate(applied.startDate)}` });
+    }
+    if (applied.endDate) {
+      chips.push({ key: 'endDate', label: `Data até: ${shortDate(applied.endDate)}` });
+    }
 
-  protected transactionForm = newTransactionForm();
-
-  private readonly categoriesByType = new Map<TransactionType, Category[]>();
-
-  protected readonly editingId = signal<string | null>(null);
-  protected readonly editCategories = signal<Category[]>([]);
-  protected readonly editPreselectedInactiveCategory = signal<Category | null>(null);
-  protected readonly confirmingExit = signal(false);
-
-  protected editForm = {
-    transactionDate: '',
-    description: '',
-    amount: 0,
-    type: 'EXPENSE' as TransactionType,
-    status: 'PENDING' as TransactionStatus | null,
-    categoryId: '',
-  };
-
-  private editSnapshot: typeof this.editForm | null = null;
+    return chips;
+  });
 
   ngOnInit(): void {
-    void this.loadData();
+    void this.list.load();
   }
 
-  protected async loadData(): Promise<void> {
-    this.loading.set(true);
+  // Catálogo completo, inclusive inativas: dá o nome da categoria em cada linha e as opções do filtro.
+  // Faz parte da carga da listagem: as linhas só aparecem com ele, senão sairiam "Sem categoria" até
+  // ele chegar. Falhou, cai no erro de carga da listagem e a próxima carga tenta de novo.
+  private loadCategories(): Promise<void> {
+    this.categoriesRequest ??= this.categoryService.options().then(
+      (categories) => {
+        this.categories.set(categories);
+        this.categoriesLoaded.set(true);
+      },
+      (err: unknown) => {
+        this.categoriesRequest = null;
+        throw err;
+      },
+    );
+    return this.categoriesRequest;
+  }
 
-    try {
-      await Promise.all([
-        this.transactionService.refresh(),
-        this.categoryService.refresh(),
-        this.loadCategoriesForType(this.transactionForm.type),
-      ]);
-    } catch (err) {
-      this.toast.fromHttpError(err, LOAD_FALLBACK);
-    } finally {
-      this.loading.set(false);
+  protected filterCategories(): Category[] {
+    const type = this.list.filters.type;
+    return type ? this.categories().filter((category) => category.type === type) : this.categories();
+  }
+
+  protected onFilterTypeChange(): void {
+    const category = this.categories().find((item) => item.id === this.list.filters.categoryId);
+    if (category && this.list.filters.type && category.type !== this.list.filters.type) {
+      this.list.filters.categoryId = '';
     }
+
+    this.list.apply();
   }
 
-  protected async onTypeChange(): Promise<void> {
-    await this.loadCategoriesForType(this.transactionForm.type);
-
-    if (!this.filteredCategories().some((category) => category.id === this.transactionForm.categoryId)) {
-      this.transactionForm.categoryId = '';
-    }
+  protected create(): void {
+    void this.router.navigate(['/transactions/new']);
   }
 
-  private async loadCategoriesForType(type: TransactionType): Promise<void> {
-    this.filteredCategories.set(await this.cacheCategoriesForType(type));
-  }
-
-  protected clearTransactionForm(): void {
-    this.transactionForm = newTransactionForm();
-    this.fieldErrors.reset();
-    this.filteredCategories.set(this.categoriesByType.get(this.transactionForm.type) ?? this.filteredCategories());
-  }
-
-  private async cacheCategoriesForType(type: TransactionType): Promise<Category[]> {
-    const categories = await this.categoryService.listByType(type);
-    this.categoriesByType.set(type, categories);
-    return categories;
-  }
-
-  protected async saveTransaction(): Promise<void> {
-    this.saving.set(true);
-    this.fieldErrors.reset();
-
-    try {
-      await this.transactionService.create({
-        ...this.transactionForm,
-        amount: Number(this.transactionForm.amount),
-        status: this.transactionForm.type === 'INCOME' ? null : this.transactionForm.status,
-        categoryId: this.emptyToNull(this.transactionForm.categoryId),
-      });
-      await this.transactionService.refresh();
-
-      this.transactionForm.description = '';
-      this.transactionForm.amount = 0;
-      this.toast.success('Lançamento salvo com sucesso.');
-    } catch (err) {
-      const errors = this.fieldErrors.apply(err);
-      this.toast.fromHttpError(err, SAVE_FALLBACK);
-      focusFirstInvalidField(this.createForm?.nativeElement, errors);
-    } finally {
-      this.saving.set(false);
-    }
+  protected edit(transaction: Transaction): void {
+    void this.router.navigate(['/transactions', transaction.id, 'edit']);
   }
 
   protected async cancelTransaction(transaction: Transaction): Promise<void> {
@@ -144,17 +137,23 @@ export class Transactions implements OnInit {
 
     try {
       await this.transactionService.cancel(transaction.id);
-      await this.transactionService.refresh();
-      this.toast.success('Lançamento cancelado com sucesso.');
     } catch (err) {
       this.toast.fromHttpError(err, 'Não foi possível cancelar o lançamento.');
-    } finally {
       this.saving.set(false);
+      return;
     }
+
+    this.toast.success('Lançamento cancelado com sucesso.');
+    await this.list.load(true);
+    this.saving.set(false);
   }
 
   protected categoryName(id: string | null): string {
     return this.categories().find((category) => category.id === id)?.name ?? 'Sem categoria';
+  }
+
+  protected categoryOptionLabel(category: Category): string {
+    return category.active ? category.name : `${category.name} (Inativo)`;
   }
 
   protected formatMoney(value: number | null | undefined): string {
@@ -179,110 +178,5 @@ export class Transactions implements OnInit {
   protected signedMoney(transaction: Transaction): string {
     const sign = transaction.type === 'EXPENSE' ? '- ' : '+ ';
     return `${sign}${money(transaction.amount)}`;
-  }
-
-  protected startEdit(transaction: Transaction): void {
-    if (this.editingId() !== null) {
-      return;
-    }
-
-    this.editForm = {
-      transactionDate: transaction.transactionDate,
-      description: transaction.description,
-      amount: transaction.amount,
-      type: transaction.type,
-      status: transaction.status,
-      categoryId: transaction.categoryId ?? '',
-    };
-    this.editSnapshot = { ...this.editForm };
-    this.editFieldErrors.reset();
-    this.confirmingExit.set(false);
-    this.editingId.set(transaction.id);
-    this.updatePreselectedInactiveCategory(transaction.categoryId);
-    void this.loadCategoriesForEdit(transaction.type);
-  }
-
-  protected onEditCategoryIdChange(): void {
-    const preselected = this.editPreselectedInactiveCategory();
-    if (preselected && preselected.id !== this.editForm.categoryId) {
-      this.editPreselectedInactiveCategory.set(null);
-    }
-  }
-
-  protected async onEditTypeChange(): Promise<void> {
-    await this.loadCategoriesForEdit(this.editForm.type);
-    this.editPreselectedInactiveCategory.set(null);
-
-    if (!this.editCategories().some((category) => category.id === this.editForm.categoryId)) {
-      this.editForm.categoryId = '';
-    }
-  }
-
-  private updatePreselectedInactiveCategory(categoryId: string | null): void {
-    const category = this.categories().find((item) => item.id === categoryId);
-    this.editPreselectedInactiveCategory.set(category && !category.active ? category : null);
-  }
-
-  private async loadCategoriesForEdit(type: TransactionType): Promise<void> {
-    this.editCategories.set(await this.cacheCategoriesForType(type));
-  }
-
-  protected isEditDirty(): boolean {
-    if (!this.editSnapshot) {
-      return false;
-    }
-
-    return JSON.stringify(this.editForm) !== JSON.stringify(this.editSnapshot);
-  }
-
-  protected async saveEdit(transaction: Transaction): Promise<void> {
-    this.saving.set(true);
-    this.editFieldErrors.reset();
-
-    try {
-      await this.transactionService.update(transaction.id, {
-        ...this.editForm,
-        amount: Number(this.editForm.amount),
-        status: this.editForm.type === 'INCOME' ? null : this.editForm.status,
-        categoryId: this.emptyToNull(this.editForm.categoryId),
-      });
-      await this.transactionService.refresh();
-      this.exitEditDiscarding();
-      this.toast.success('Lançamento atualizado com sucesso.');
-    } catch (err) {
-      this.editFieldErrors.apply(err);
-      this.toast.fromHttpError(err, SAVE_FALLBACK);
-    } finally {
-      this.saving.set(false);
-    }
-  }
-
-  protected requestExit(): void {
-    if (!this.isEditDirty()) {
-      this.exitEditDiscarding();
-      return;
-    }
-
-    this.confirmingExit.set(true);
-  }
-
-  protected async confirmExitYes(): Promise<void> {
-    await this.transactionService.refresh();
-    this.exitEditDiscarding();
-  }
-
-  protected confirmExitNo(): void {
-    this.confirmingExit.set(false);
-  }
-
-  private exitEditDiscarding(): void {
-    this.editingId.set(null);
-    this.confirmingExit.set(false);
-    this.editSnapshot = null;
-    this.editFieldErrors.reset();
-  }
-
-  private emptyToNull(value: string): string | null {
-    return value ? value : null;
   }
 }
