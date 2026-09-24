@@ -174,6 +174,42 @@ class DocumentationContentTest {
         assertTrue(highlight.contains("Você não pode alterar o próprio perfil."), highlight);
     }
 
+    private static final Pattern PROFILE_RULE_TECHNICAL_TERM = Pattern.compile(
+            "\\b(banco|migração|migration|API|nulo|null|profile|Flyway|V5|V6)\\b",
+            Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE | Pattern.UNICODE_CHARACTER_CLASS);
+
+    @Test
+    void shouldDescribeProfileRequirementAndUsersWithoutProfileInUsersBusinessRules() {
+        List<String> items = CONTENT.areas().stream()
+                .filter(area -> "Usuários".equals(area.title()))
+                .findFirst()
+                .orElseThrow()
+                .sections().stream()
+                .filter(section -> "Regras de negócio".equals(section.title()))
+                .flatMap(section -> section.blocks().stream())
+                .flatMap(block -> Stream.concat(
+                        block.items().stream(), Stream.ofNullable(block.text())))
+                .toList();
+
+        items.forEach(item -> {
+            assertFalse(item.contains("não existe pessoa cadastrada sem um"), item);
+            assertFalse(item.contains("precisa de um perfil: não existe"), item);
+        });
+
+        String requirement = items.stream()
+                .filter(item -> item.contains("Todo cadastro e toda alteração") && item.contains("perfil"))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Sem o item de perfil obrigatório no cadastro e na alteração"));
+
+        String withoutProfile = items.stream()
+                .filter(item -> item.contains("Perfil") && item.contains("-") && item.contains("outra pessoa"))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Sem o item que explica o - na coluna Perfil"));
+
+        List.of(requirement, withoutProfile).forEach(item -> assertFalse(
+                PROFILE_RULE_TECHNICAL_TERM.matcher(item).find(), "Termo técnico exibido: " + item));
+    }
+
     @Test
     void shouldDescribeDefinitiveCategoryDeletion() {
         String published = String.join("\n", displayedTexts());

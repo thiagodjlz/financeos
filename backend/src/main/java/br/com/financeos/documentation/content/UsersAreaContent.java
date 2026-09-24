@@ -73,7 +73,11 @@ final class UsersAreaContent {
                 DocumentationBlock.list(
                         "O e-mail é único no sistema. Ao repetir um e-mail já usado, o cadastro é recusado com "
                                 + "E-mail já cadastrado.",
-                        "Todo usuário precisa de um perfil: não existe pessoa cadastrada sem um.",
+                        "Todo cadastro e toda alteração de usuário exigem um perfil; sem ele, a gravação é "
+                                + "recusada com O perfil é obrigatório.",
+                        "Pessoas cadastradas antes de o sistema ter perfis podem estar sem perfil e aparecem com "
+                                + "um traço (-) na coluna Perfil. Elas passam a ter um perfil quando outra pessoa "
+                                + "com permissão na tela de Usuários alterar o cadastro delas.",
                         "O perfil escolhido precisa existir no sistema; caso contrário o cadastro é recusado com "
                                 + "Perfil informado não existe.",
                         "A senha tem de 8 a 72 caracteres.",
