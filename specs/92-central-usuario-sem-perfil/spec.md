@@ -4,7 +4,7 @@ url: https://github.com/thiagodjlz/financeos/issues/92
 title: "Central de Documentação afirma que não existe usuário sem perfil"
 domains: [documentation, users]
 target: main
-stage: validated
+stage: pr-open
 branch: feature/issue-92-central-usuario-sem-perfil
 created: 2026-09-24
 ---
