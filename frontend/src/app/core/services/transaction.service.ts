@@ -1,16 +1,21 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { API_BASE, Transaction } from '../models';
+import { API_BASE, ListFilters, Page, Transaction } from '../models';
+import { pageParams } from './page-params';
 
 @Injectable({ providedIn: 'root' })
 export class TransactionService {
   private readonly http = inject(HttpClient);
 
-  readonly transactions = signal<Transaction[]>([]);
+  list(filters: ListFilters, page: number): Promise<Page<Transaction>> {
+    return firstValueFrom(
+      this.http.get<Page<Transaction>>(`${API_BASE}/transactions`, { params: pageParams(filters, page) }),
+    );
+  }
 
-  async refresh(): Promise<void> {
-    this.transactions.set(await firstValueFrom(this.http.get<Transaction[]>(`${API_BASE}/transactions`)));
+  get(id: string): Promise<Transaction> {
+    return firstValueFrom(this.http.get<Transaction>(`${API_BASE}/transactions/${id}`));
   }
 
   create(payload: Partial<Transaction>): Promise<Transaction> {

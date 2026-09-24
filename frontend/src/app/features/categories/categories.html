@@ -1,217 +1,134 @@
 <h2 class="page-title">Categorias</h2>
 
-<section class="content-grid">
-  <form class="panel form-panel" *ngIf="authService.can('CATEGORIES', 'CREATE')" #createForm (ngSubmit)="save()">
-    <div class="panel-heading">
-      <h3>Nova categoria</h3>
-    </div>
+<section class="panel table-panel">
+  <div class="panel-heading">
+    <h3>Últimos registros</h3>
+    <span>{{ list.totalItems() }}</span>
+  </div>
+
+  <app-filter-panel
+    [activeCount]="list.activeCount()"
+    [chips]="chips()"
+    [canClear]="list.differsFromDefault()"
+    (remove)="list.remove($event)"
+    (clear)="list.clear()"
+  >
+    <button
+      toolbarAction
+      *ngIf="authService.can('CATEGORIES', 'CREATE')"
+      type="button"
+      class="primary-button"
+      (click)="create()"
+    >
+      Incluir
+    </button>
+
     <label>
       Nome
-      <input
-        name="name"
-        [(ngModel)]="form.name"
-        required
-        [class.invalid]="fieldErrors.invalid('name')"
-        (input)="fieldErrors.clear('name')"
-      />
-      <small class="field-error" *ngIf="fieldErrors.invalid('name')">{{ fieldErrors.message('name') }}</small>
+      <input name="filterName" [(ngModel)]="list.filters.name" (change)="list.apply()" (keydown.enter)="list.apply()" />
     </label>
     <label>
       Tipo
-      <select
-        name="type"
-        [(ngModel)]="form.type"
-        [class.invalid]="fieldErrors.invalid('type')"
-        (change)="fieldErrors.clear('type')"
-      >
+      <select name="filterType" [(ngModel)]="list.filters.type" (change)="list.apply()">
+        <option value="">Todos</option>
         <option value="EXPENSE">Despesa</option>
         <option value="INCOME">Receita</option>
       </select>
-      <small class="field-error" *ngIf="fieldErrors.invalid('type')">{{ fieldErrors.message('type') }}</small>
-    </label>
-    <label>
-      Cor
-      <input
-        type="color"
-        name="color"
-        [(ngModel)]="form.color"
-        [class.invalid]="fieldErrors.invalid('color')"
-        (input)="fieldErrors.clear('color')"
-      />
-      <small class="field-error" *ngIf="fieldErrors.invalid('color')">{{ fieldErrors.message('color') }}</small>
     </label>
     <label>
       Situação
-      <select
-        name="active"
-        [(ngModel)]="form.active"
-        [class.invalid]="fieldErrors.invalid('active')"
-        (change)="fieldErrors.clear('active')"
-      >
-        <option [ngValue]="true">Ativo</option>
-        <option [ngValue]="false">Inativo</option>
+      <select name="filterActive" [(ngModel)]="list.filters.active" (change)="list.apply()">
+        <option value="true">Ativos</option>
+        <option value="false">Inativos</option>
+        <option value="">Todos</option>
       </select>
-      <small class="field-error" *ngIf="fieldErrors.invalid('active')">{{ fieldErrors.message('active') }}</small>
     </label>
-    <div class="two-cols form-actions">
-      <button class="primary-button" type="submit" [disabled]="saving()">Salvar</button>
-      <button class="ghost-button" type="button" (click)="cancel()">Cancelar</button>
-    </div>
-  </form>
+  </app-filter-panel>
 
-  <section class="panel table-panel">
-    <div class="panel-heading">
-      <h3>Últimos registros</h3>
-      <span>{{ categories().length }}</span>
-    </div>
-    <div class="table-wrap" [attr.aria-busy]="loading()">
-      <table class="fixed-layout">
-        <colgroup>
-          <col />
-          <col class="col-type" />
-          <col class="col-situation" />
-          <col class="col-actions" />
-        </colgroup>
-        <thead>
-          <tr>
-            <th>Nome</th>
-            <th>Tipo</th>
-            <th>Situação</th>
-            <th><span class="sr-only">Ações</span></th>
-          </tr>
-        </thead>
-        <tbody>
-          <ng-container *ngFor="let category of categories()">
-            <tr *ngIf="editingId() !== category.id">
-              <td data-label="Nome">
-                <div class="category-name">
-                  <span class="category-dot" *ngIf="category.color" [style.background]="category.color"></span>
-                  {{ category.name }}
-                </div>
-              </td>
-              <td data-label="Tipo">{{ category.type === 'EXPENSE' ? 'Despesa' : 'Receita' }}</td>
-              <td data-label="Situação">
-                <span class="status-pill" [class.pill-income]="category.active" [class.pill-neutral]="!category.active">
-                  {{ category.active ? 'Ativo' : 'Inativo' }}
-                </span>
-              </td>
-              <td class="row-actions">
-                <button
-                  *ngIf="authService.can('CATEGORIES', 'EDIT')"
-                  type="button"
-                  class="ghost-button"
-                  [disabled]="editingId() !== null"
-                  (click)="startEdit(category)"
-                >
-                  Editar
-                </button>
-                <button
-                  *ngIf="authService.can('CATEGORIES', 'DELETE')"
-                  type="button"
-                  class="icon-button"
-                  aria-label="Excluir"
-                  title="Excluir"
-                  [disabled]="editingId() !== null"
-                  (click)="requestDelete(category)"
-                >
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.8"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    aria-hidden="true"
-                  >
-                    <path d="M4 7h16" />
-                    <path d="M9 7V4.5h6V7" />
-                    <path d="M6 7l1 12.5h10L18 7" />
-                    <path d="M10 11v5" />
-                    <path d="M14 11v5" />
-                  </svg>
-                </button>
-              </td>
-            </tr>
-            <tr *ngIf="editingId() === category.id">
-              <td data-label="Nome">
-                <div class="inline-name-fields">
-                  <input
-                    name="editName"
-                    [(ngModel)]="editForm.name"
-                    required
-                    [class.invalid]="editFieldErrors.invalid('name')"
-                    (input)="editFieldErrors.clear('name')"
-                  />
-                  <input
-                    type="color"
-                    name="editColor"
-                    title="Cor"
-                    [(ngModel)]="editForm.color"
-                    [class.invalid]="editFieldErrors.invalid('color')"
-                    (input)="editFieldErrors.clear('color')"
-                  />
-                </div>
-                <small class="field-error" *ngIf="editFieldErrors.invalid('name')">
-                  {{ editFieldErrors.message('name') }}
-                </small>
-                <small class="field-error" *ngIf="editFieldErrors.invalid('color')">
-                  {{ editFieldErrors.message('color') }}
-                </small>
-              </td>
-              <td data-label="Tipo">
-                <select
-                  name="editType"
-                  [(ngModel)]="editForm.type"
-                  [class.invalid]="editFieldErrors.invalid('type')"
-                  (change)="editFieldErrors.clear('type')"
-                >
-                  <option value="EXPENSE">Despesa</option>
-                  <option value="INCOME">Receita</option>
-                </select>
-                <small class="field-error" *ngIf="editFieldErrors.invalid('type')">
-                  {{ editFieldErrors.message('type') }}
-                </small>
-              </td>
-              <td data-label="Situação">
-                <select
-                  name="editActive"
-                  [(ngModel)]="editForm.active"
-                  [class.invalid]="editFieldErrors.invalid('active')"
-                  (change)="editFieldErrors.clear('active')"
-                >
-                  <option [ngValue]="true">Ativo</option>
-                  <option [ngValue]="false">Inativo</option>
-                </select>
-                <small class="field-error" *ngIf="editFieldErrors.invalid('active')">
-                  {{ editFieldErrors.message('active') }}
-                </small>
-              </td>
-              <td class="row-actions">
-                <button type="button" class="primary-button" [disabled]="saving()" (click)="saveEdit(category)">
-                  Salvar
-                </button>
-                <button type="button" class="danger-button" (click)="requestExit()">Sair</button>
-              </td>
-            </tr>
-          </ng-container>
-        </tbody>
-      </table>
-      <p class="loading-state" *ngIf="loading()"></p>
-      <p class="empty-state" *ngIf="!loading() && !categories().length">Nenhuma categoria cadastrada</p>
-    </div>
-  </section>
+  <div class="table-wrap" [attr.aria-busy]="list.loading()">
+    <table class="fixed-layout" *ngIf="list.items().length">
+      <colgroup>
+        <col />
+        <col class="col-type" />
+        <col class="col-situation" />
+        <col class="col-actions" />
+      </colgroup>
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>Tipo</th>
+          <th>Situação</th>
+          <th><span class="sr-only">Ações</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let category of list.items()">
+          <td data-label="Nome">
+            <div class="category-name">
+              <span class="category-dot" *ngIf="category.color" [style.background]="category.color"></span>
+              {{ category.name }}
+            </div>
+          </td>
+          <td data-label="Tipo">{{ category.type === 'EXPENSE' ? 'Despesa' : 'Receita' }}</td>
+          <td data-label="Situação">
+            <span class="status-pill" [class.pill-income]="category.active" [class.pill-neutral]="!category.active">
+              {{ category.active ? 'Ativo' : 'Inativo' }}
+            </span>
+          </td>
+          <td class="row-actions">
+            <button
+              *ngIf="authService.can('CATEGORIES', 'EDIT')"
+              type="button"
+              class="ghost-button"
+              (click)="edit(category)"
+            >
+              Editar
+            </button>
+            <button
+              *ngIf="authService.can('CATEGORIES', 'DELETE')"
+              type="button"
+              class="icon-button"
+              aria-label="Excluir"
+              title="Excluir"
+              (click)="requestDelete(category)"
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M4 7h16" />
+                <path d="M9 7V4.5h6V7" />
+                <path d="M6 7l1 12.5h10L18 7" />
+                <path d="M10 11v5" />
+                <path d="M14 11v5" />
+              </svg>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <app-list-feedback
+      [loading]="list.loading()"
+      [error]="list.loadError()"
+      [empty]="!list.items().length"
+      [filtered]="list.activeCount() > 0"
+      [canClear]="list.differsFromDefault()"
+      (clear)="list.clear()"
+    >
+      <p class="empty-state">Nenhuma categoria cadastrada</p>
+    </app-list-feedback>
+  </div>
+
+  <app-pagination [page]="list.page()" [totalPages]="list.totalPages()" (pageChange)="list.goTo($event)" />
 </section>
-
-<app-confirm-dialog
-  *ngIf="confirmingExit()"
-  message="Deseja sair sem salvar?"
-  cancelLabel="Continuar editando"
-  confirmLabel="Sair sem salvar"
-  (cancel)="confirmExitNo()"
-  (confirm)="confirmExitYes()"
-/>
 
 <app-confirm-dialog
   *ngIf="deletingCategory() as category"

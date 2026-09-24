@@ -24,9 +24,29 @@ export const routes: Routes = [
         loadComponent: () => import('./features/transactions/transactions').then((m) => m.Transactions),
       },
       {
+        path: 'transactions/new',
+        canActivate: [permissionGuard('TRANSACTIONS', 'CREATE')],
+        loadComponent: () => import('./features/transactions/transaction-form').then((m) => m.TransactionForm),
+      },
+      {
+        path: 'transactions/:id/edit',
+        canActivate: [permissionGuard('TRANSACTIONS', 'EDIT')],
+        loadComponent: () => import('./features/transactions/transaction-form').then((m) => m.TransactionForm),
+      },
+      {
         path: 'categories',
         canActivate: [permissionGuard('CATEGORIES', 'VIEW')],
         loadComponent: () => import('./features/categories/categories').then((m) => m.Categories),
+      },
+      {
+        path: 'categories/new',
+        canActivate: [permissionGuard('CATEGORIES', 'CREATE')],
+        loadComponent: () => import('./features/categories/category-form').then((m) => m.CategoryForm),
+      },
+      {
+        path: 'categories/:id/edit',
+        canActivate: [permissionGuard('CATEGORIES', 'EDIT')],
+        loadComponent: () => import('./features/categories/category-form').then((m) => m.CategoryForm),
       },
       {
         path: 'users',
@@ -34,9 +54,29 @@ export const routes: Routes = [
         loadComponent: () => import('./features/users/users').then((m) => m.Users),
       },
       {
+        path: 'users/new',
+        canActivate: [permissionGuard('USERS', 'CREATE')],
+        loadComponent: () => import('./features/users/user-form').then((m) => m.UserForm),
+      },
+      {
+        path: 'users/:id/edit',
+        canActivate: [permissionGuard('USERS', 'EDIT')],
+        loadComponent: () => import('./features/users/user-form').then((m) => m.UserForm),
+      },
+      {
         path: 'profiles',
         canActivate: [permissionGuard('PROFILES', 'VIEW')],
         loadComponent: () => import('./features/profiles/profiles').then((m) => m.Profiles),
+      },
+      {
+        path: 'profiles/new',
+        canActivate: [permissionGuard('PROFILES', 'CREATE')],
+        loadComponent: () => import('./features/profiles/profile-form').then((m) => m.ProfileForm),
+      },
+      {
+        path: 'profiles/:id/edit',
+        canActivate: [permissionGuard('PROFILES', 'EDIT')],
+        loadComponent: () => import('./features/profiles/profile-form').then((m) => m.ProfileForm),
       },
       {
         path: 'documentation',

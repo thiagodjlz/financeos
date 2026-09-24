@@ -1,5 +1,18 @@
 export const API_BASE = '/api';
 
+// Limite do backend: o GET paginado responde 400 a size acima disso.
+export const PAGE_SIZE = 10;
+
+export interface Page<T> {
+  items: T[];
+  totalItems: number;
+  totalPages: number;
+  page: number;
+  size: number;
+}
+
+export type ListFilters = Record<string, string>;
+
 export type TransactionType = 'INCOME' | 'EXPENSE';
 export type TransactionStatus = 'PENDING' | 'PAID' | 'CANCELED';
 

@@ -1,178 +1,80 @@
 import { CommonModule } from '@angular/common';
-import { Component, ElementRef, OnInit, ViewChild, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { ConfirmDialog } from '../../core/confirm-dialog/confirm-dialog';
-import { FieldErrorState, focusFirstInvalidField } from '../../core/field-errors';
-import { classifyHttpError } from '../../core/http-error';
-import { Category, TransactionType } from '../../core/models';
+import { FilterPanel } from '../../core/filter-panel/filter-panel';
+import { ListFeedback } from '../../core/list-feedback/list-feedback';
+import { Category } from '../../core/models';
+import { FilterChip, PagedList } from '../../core/paged-list';
+import { Pagination } from '../../core/pagination/pagination';
 import { AuthService } from '../../core/services/auth.service';
 import { CategoryService } from '../../core/services/category.service';
+import { ListStateService } from '../../core/services/list-state.service';
 import { ToastService } from '../../core/services/toast.service';
 
 const LOAD_FALLBACK = 'Não foi possível carregar as categorias.';
-const SAVE_FALLBACK = 'Não foi possível salvar a categoria. Revise os campos e tente novamente.';
 const DELETE_FALLBACK = 'Não foi possível excluir a categoria.';
 
-const FIELDS = ['name', 'type', 'color', 'active'] as const;
+// Situação padrão "Ativos": conta em "Filtros (N)" e gera rótulo; remover o rótulo significa "Todos".
+const DEFAULT_FILTERS = { name: '', type: '', active: 'true' };
 
-function newCategoryForm() {
-  return {
-    name: '',
-    type: 'EXPENSE' as TransactionType,
-    color: '#2f7d62',
-    active: true,
-  };
-}
+const TYPE_LABELS: Record<string, string> = { EXPENSE: 'Despesa', INCOME: 'Receita' };
+const SITUATION_LABELS: Record<string, string> = { true: 'Ativos', false: 'Inativos' };
 
 @Component({
   selector: 'app-categories',
-  imports: [CommonModule, FormsModule, ConfirmDialog],
+  imports: [CommonModule, FormsModule, ConfirmDialog, FilterPanel, ListFeedback, Pagination],
   templateUrl: './categories.html',
   styleUrl: './categories.scss',
 })
 export class Categories implements OnInit {
   private readonly categoryService = inject(CategoryService);
   private readonly toast = inject(ToastService);
+  private readonly router = inject(Router);
   protected readonly authService = inject(AuthService);
 
-  @ViewChild('createForm') private createForm?: ElementRef<HTMLFormElement>;
+  protected readonly list = new PagedList({
+    key: 'categories',
+    defaults: DEFAULT_FILTERS,
+    fetch: (filters, page) => this.categoryService.list(filters, page),
+    loadErrorMessage: LOAD_FALLBACK,
+    state: inject(ListStateService),
+    toast: this.toast,
+  });
 
-  protected readonly loading = signal(false);
-  protected readonly saving = signal(false);
-
-  protected readonly categories = this.categoryService.categories;
-
-  protected readonly fieldErrors = new FieldErrorState(FIELDS);
-  protected readonly editFieldErrors = new FieldErrorState(FIELDS);
-
-  protected form = newCategoryForm();
-
-  protected readonly editingId = signal<string | null>(null);
-  protected readonly confirmingExit = signal(false);
   protected readonly deletingCategory = signal<Category | null>(null);
 
-  protected editForm = newCategoryForm();
+  protected readonly chips = computed<FilterChip[]>(() => {
+    const applied = this.list.applied();
+    const chips: FilterChip[] = [];
 
-  private editSnapshot: typeof this.editForm | null = null;
+    if (applied.name.trim()) {
+      chips.push({ key: 'name', label: `Nome: ${applied.name.trim()}` });
+    }
+    if (applied.type) {
+      chips.push({ key: 'type', label: `Tipo: ${TYPE_LABELS[applied.type] ?? applied.type}` });
+    }
+    if (applied.active) {
+      chips.push({ key: 'active', label: `Situação: ${SITUATION_LABELS[applied.active] ?? applied.active}` });
+    }
+
+    return chips;
+  });
 
   ngOnInit(): void {
-    void this.loadData();
+    void this.list.load();
   }
 
-  protected async loadData(): Promise<void> {
-    this.loading.set(true);
-
-    try {
-      await this.categoryService.refresh();
-    } catch (err) {
-      this.toast.fromHttpError(err, LOAD_FALLBACK);
-    } finally {
-      this.loading.set(false);
-    }
+  protected create(): void {
+    void this.router.navigate(['/categories/new']);
   }
 
-  protected cancel(): void {
-    this.form = newCategoryForm();
-    this.fieldErrors.reset();
-  }
-
-  protected async save(): Promise<void> {
-    this.saving.set(true);
-    this.fieldErrors.reset();
-
-    try {
-      await this.categoryService.create({
-        name: this.form.name,
-        type: this.form.type,
-        color: this.emptyToNull(this.form.color),
-        active: this.form.active,
-      });
-    } catch (err) {
-      const errors = this.fieldErrors.apply(err);
-      this.toast.fromHttpError(err, SAVE_FALLBACK);
-      focusFirstInvalidField(this.createForm?.nativeElement, errors);
-      this.saving.set(false);
-      return;
-    }
-
-    this.form = newCategoryForm();
-    this.toast.success('Categoria salva com sucesso.');
-    await this.refreshAfterChange();
-    this.saving.set(false);
-  }
-
-  protected startEdit(category: Category): void {
-    if (this.editingId() !== null) {
-      return;
-    }
-
-    this.editForm = {
-      name: category.name,
-      type: category.type,
-      color: category.color ?? '#2f7d62',
-      active: category.active,
-    };
-    this.editSnapshot = { ...this.editForm };
-    this.editFieldErrors.reset();
-    this.confirmingExit.set(false);
-    this.editingId.set(category.id);
-  }
-
-  protected isEditDirty(): boolean {
-    if (!this.editSnapshot) {
-      return false;
-    }
-
-    return JSON.stringify(this.editForm) !== JSON.stringify(this.editSnapshot);
-  }
-
-  protected async saveEdit(category: Category): Promise<void> {
-    this.saving.set(true);
-    this.editFieldErrors.reset();
-
-    try {
-      await this.categoryService.update(category.id, {
-        name: this.editForm.name,
-        type: this.editForm.type,
-        color: this.emptyToNull(this.editForm.color),
-        active: this.editForm.active,
-      });
-    } catch (err) {
-      this.editFieldErrors.apply(err);
-      this.toast.fromHttpError(err, SAVE_FALLBACK);
-      this.saving.set(false);
-      return;
-    }
-
-    this.exitEditDiscarding();
-    this.toast.success('Categoria atualizada com sucesso.');
-    await this.refreshAfterChange();
-    this.saving.set(false);
-  }
-
-  protected requestExit(): void {
-    if (!this.isEditDirty()) {
-      this.exitEditDiscarding();
-      return;
-    }
-
-    this.confirmingExit.set(true);
-  }
-
-  protected async confirmExitYes(): Promise<void> {
-    await this.categoryService.refresh();
-    this.exitEditDiscarding();
-  }
-
-  protected confirmExitNo(): void {
-    this.confirmingExit.set(false);
+  protected edit(category: Category): void {
+    void this.router.navigate(['/categories', category.id, 'edit']);
   }
 
   protected requestDelete(category: Category): void {
-    if (this.editingId() !== null) {
-      return;
-    }
-
     this.deletingCategory.set(category);
   }
 
@@ -196,33 +98,10 @@ export class Categories implements OnInit {
     }
 
     this.toast.success('Categoria excluída com sucesso.');
-    await this.refreshAfterChange();
+    await this.list.load(true);
   }
 
   protected deleteMessage(category: Category): string {
     return `Deseja excluir a categoria "${category.name}"? A exclusão não pode ser desfeita.`;
-  }
-
-  // A operação já foi gravada quando o recarregamento falha: o aviso tem de falar da lista, nunca
-  // da operação, senão o usuário repete um cadastro ou uma exclusão que já aconteceu.
-  private async refreshAfterChange(): Promise<void> {
-    try {
-      await this.categoryService.refresh();
-    } catch (err) {
-      if (classifyHttpError(err, LOAD_FALLBACK)) {
-        this.toast.error(LOAD_FALLBACK);
-      }
-    }
-  }
-
-  private exitEditDiscarding(): void {
-    this.editingId.set(null);
-    this.confirmingExit.set(false);
-    this.editSnapshot = null;
-    this.editFieldErrors.reset();
-  }
-
-  private emptyToNull(value: string): string | null {
-    return value ? value : null;
   }
 }

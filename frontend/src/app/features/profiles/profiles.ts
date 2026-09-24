@@ -1,145 +1,57 @@
 import { CommonModule } from '@angular/common';
-import { Component, ElementRef, OnInit, ViewChild, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { FieldErrorState, focusFirstInvalidField } from '../../core/field-errors';
-import { PermissionEntry, Profile, Screen } from '../../core/models';
+import { Router } from '@angular/router';
+import { FilterPanel } from '../../core/filter-panel/filter-panel';
+import { ListFeedback } from '../../core/list-feedback/list-feedback';
+import { Profile } from '../../core/models';
+import { FilterChip, PagedList } from '../../core/paged-list';
+import { Pagination } from '../../core/pagination/pagination';
 import { AuthService } from '../../core/services/auth.service';
+import { ListStateService } from '../../core/services/list-state.service';
 import { ProfileService } from '../../core/services/profile.service';
 import { ToastService } from '../../core/services/toast.service';
 
-const SCREENS: { code: Screen; label: string; viewOnly?: boolean }[] = [
-  { code: 'DASHBOARD', label: 'Resumo' },
-  { code: 'TRANSACTIONS', label: 'Lançamentos' },
-  { code: 'CATEGORIES', label: 'Categorias' },
-  { code: 'USERS', label: 'Usuários' },
-  { code: 'PROFILES', label: 'Perfis' },
-  { code: 'DOCUMENTATION', label: 'Documentação', viewOnly: true },
-  { code: 'RELEASE_NOTES', label: 'Novidades por versão', viewOnly: true },
-];
-
-function blankPermissions(): PermissionEntry[] {
-  return SCREENS.map((screen) => ({
-    screen: screen.code,
-    canView: false,
-    canCreate: false,
-    canEdit: false,
-    canDelete: false,
-  }));
-}
+const LOAD_FALLBACK = 'Não foi possível carregar os perfis.';
 
 @Component({
   selector: 'app-profiles',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, FilterPanel, ListFeedback, Pagination],
   templateUrl: './profiles.html',
   styleUrl: './profiles.scss',
 })
 export class Profiles implements OnInit {
   private readonly profileService = inject(ProfileService);
   private readonly toast = inject(ToastService);
+  private readonly router = inject(Router);
   protected readonly authService = inject(AuthService);
 
-  @ViewChild('profileForm') private profileForm?: ElementRef<HTMLFormElement>;
+  protected readonly list = new PagedList({
+    key: 'profiles',
+    defaults: { name: '' },
+    fetch: (filters, page) => this.profileService.list(filters, page),
+    loadErrorMessage: LOAD_FALLBACK,
+    state: inject(ListStateService),
+    toast: this.toast,
+  });
 
-  protected readonly screens = SCREENS;
-  protected readonly loading = signal(false);
   protected readonly saving = signal(false);
-  protected readonly editingId = signal<string | null>(null);
 
-  // A matriz de permissões não recebe destaque por campo: a violação de `permissions`/`screen`
-  // fica só no toast (decisão DEC-3 da issue #45).
-  protected readonly fieldErrors = new FieldErrorState(['name']);
-
-  protected readonly profiles = this.profileService.profiles;
-
-  protected name = '';
-  protected permissions: PermissionEntry[] = blankPermissions();
-
-  private editSnapshot: { name: string; permissions: PermissionEntry[] } | null = null;
+  protected readonly chips = computed<FilterChip[]>(() => {
+    const name = this.list.applied().name.trim();
+    return name ? [{ key: 'name', label: `Nome: ${name}` }] : [];
+  });
 
   ngOnInit(): void {
-    void this.loadData();
+    void this.list.load();
   }
 
-  protected async loadData(): Promise<void> {
-    this.loading.set(true);
-
-    try {
-      await this.profileService.refresh();
-    } catch (err) {
-      this.toast.fromHttpError(err, 'Não foi possível carregar os perfis.');
-    } finally {
-      this.loading.set(false);
-    }
+  protected create(): void {
+    void this.router.navigate(['/profiles/new']);
   }
 
   protected edit(profile: Profile): void {
-    this.editingId.set(profile.id);
-    this.name = profile.name;
-    this.permissions = SCREENS.map((screen) => {
-      const existing = profile.permissions.find((permission) => permission.screen === screen.code);
-      return existing
-        ? { ...existing }
-        : { screen: screen.code, canView: false, canCreate: false, canEdit: false, canDelete: false };
-    });
-    this.editSnapshot = { name: this.name, permissions: this.clonePermissions(this.permissions) };
-    this.fieldErrors.reset();
-  }
-
-  protected cancel(): void {
-    const snapshot = this.editSnapshot;
-    this.fieldErrors.reset();
-
-    if (snapshot && this.isDirty()) {
-      this.name = snapshot.name;
-      this.permissions = this.clonePermissions(snapshot.permissions);
-      return;
-    }
-
-    this.editingId.set(null);
-    this.editSnapshot = null;
-    this.resetForm();
-  }
-
-  private isDirty(): boolean {
-    if (!this.editSnapshot) {
-      return false;
-    }
-
-    return (
-      JSON.stringify({ name: this.name, permissions: this.permissions }) !== JSON.stringify(this.editSnapshot)
-    );
-  }
-
-  private clonePermissions(permissions: PermissionEntry[]): PermissionEntry[] {
-    return permissions.map((permission) => ({ ...permission }));
-  }
-
-  protected async save(): Promise<void> {
-    this.saving.set(true);
-    this.fieldErrors.reset();
-
-    try {
-      const id = this.editingId();
-      const payload = { name: this.name, permissions: this.permissions };
-
-      if (id) {
-        await this.profileService.update(id, payload);
-      } else {
-        await this.profileService.create(payload);
-      }
-
-      await this.profileService.refresh();
-      this.editingId.set(null);
-      this.editSnapshot = null;
-      this.resetForm();
-      this.toast.success(id ? 'Perfil atualizado com sucesso.' : 'Perfil salvo com sucesso.');
-    } catch (err) {
-      const errors = this.fieldErrors.apply(err);
-      this.toast.fromHttpError(err, 'Não foi possível salvar o perfil. Revise os campos e tente novamente.');
-      focusFirstInvalidField(this.profileForm?.nativeElement, errors);
-    } finally {
-      this.saving.set(false);
-    }
+    void this.router.navigate(['/profiles', profile.id, 'edit']);
   }
 
   protected async remove(profile: Profile): Promise<void> {
@@ -147,25 +59,14 @@ export class Profiles implements OnInit {
 
     try {
       await this.profileService.delete(profile.id);
-      await this.profileService.refresh();
-      this.toast.success('Perfil excluído com sucesso.');
     } catch (err) {
       this.toast.fromHttpError(err, 'Não foi possível excluir o perfil.');
-    } finally {
       this.saving.set(false);
+      return;
     }
-  }
 
-  protected screenLabel(screen: Screen): string {
-    return this.screens.find((item) => item.code === screen)?.label ?? screen;
-  }
-
-  protected isViewOnly(screen: Screen): boolean {
-    return this.screens.find((item) => item.code === screen)?.viewOnly === true;
-  }
-
-  private resetForm(): void {
-    this.name = '';
-    this.permissions = blankPermissions();
+    this.toast.success('Perfil excluído com sucesso.');
+    await this.list.load(true);
+    this.saving.set(false);
   }
 }

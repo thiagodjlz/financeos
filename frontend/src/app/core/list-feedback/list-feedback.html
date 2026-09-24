@@ -1,0 +1,16 @@
+@if (loading()) {
+  <p class="loading-state"><span class="sr-only">Carregando...</span></p>
+} @else if (error()) {
+  <p class="load-error" role="alert">{{ error() }}</p>
+} @else if (empty()) {
+  @if (filtered()) {
+    <div class="empty-state filtered-empty">
+      <p>Nenhum registro encontrado.</p>
+      @if (canClear()) {
+        <button type="button" class="ghost-button" (click)="clear.emit()">Limpar filtros</button>
+      }
+    </div>
+  } @else {
+    <ng-content />
+  }
+}

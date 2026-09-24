@@ -1,102 +1,83 @@
 <h2 class="page-title">Perfis</h2>
 
-<section class="profiles-grid">
-  <form
-    class="panel form-panel"
-    *ngIf="authService.can('PROFILES', 'CREATE') || editingId()"
-    #profileForm
-    (ngSubmit)="save()"
+<section class="panel table-panel">
+  <div class="panel-heading">
+    <h3>Perfis</h3>
+    <span>{{ list.totalItems() }}</span>
+  </div>
+
+  <app-filter-panel
+    [activeCount]="list.activeCount()"
+    [chips]="chips()"
+    [canClear]="list.differsFromDefault()"
+    (remove)="list.remove($event)"
+    (clear)="list.clear()"
   >
-    <div class="panel-heading">
-      <h3>{{ editingId() ? 'Editar perfil' : 'Novo perfil' }}</h3>
-    </div>
-    <label class="name-field">
+    <button
+      toolbarAction
+      *ngIf="authService.can('PROFILES', 'CREATE')"
+      type="button"
+      class="primary-button"
+      (click)="create()"
+    >
+      Incluir
+    </button>
+
+    <label>
       Nome
-      <input
-        name="name"
-        [(ngModel)]="name"
-        required
-        [class.invalid]="fieldErrors.invalid('name')"
-        (input)="fieldErrors.clear('name')"
-      />
-      <small class="field-error" *ngIf="fieldErrors.invalid('name')">{{ fieldErrors.message('name') }}</small>
+      <input name="filterName" [(ngModel)]="list.filters.name" (change)="list.apply()" (keydown.enter)="list.apply()" />
     </label>
+  </app-filter-panel>
 
-    <div class="table-wrap">
-      <table class="permissions-table">
-        <thead>
-          <tr>
-            <th>Tela</th>
-            <th class="perm-col">Ver</th>
-            <th class="perm-col">Incluir</th>
-            <th class="perm-col">Alterar</th>
-            <th class="perm-col">Excluir</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let permission of permissions">
-            <td class="screen-cell">{{ screenLabel(permission.screen) }}</td>
-            <td class="checkbox-cell" data-label="Ver">
-              <label class="perm-switch">
-                <input type="checkbox" [(ngModel)]="permission.canView" [name]="permission.screen + '-view'" />
-                <span class="perm-switch-label">Ver {{ screenLabel(permission.screen) }}</span>
-              </label>
-            </td>
-            <td class="checkbox-cell" *ngIf="!isViewOnly(permission.screen)" data-label="Incluir">
-              <label class="perm-switch">
-                <input type="checkbox" [(ngModel)]="permission.canCreate" [name]="permission.screen + '-create'" />
-                <span class="perm-switch-label">Incluir em {{ screenLabel(permission.screen) }}</span>
-              </label>
-            </td>
-            <td class="checkbox-cell" *ngIf="!isViewOnly(permission.screen)" data-label="Alterar">
-              <label class="perm-switch">
-                <input type="checkbox" [(ngModel)]="permission.canEdit" [name]="permission.screen + '-edit'" />
-                <span class="perm-switch-label">Alterar em {{ screenLabel(permission.screen) }}</span>
-              </label>
-            </td>
-            <td class="checkbox-cell" *ngIf="!isViewOnly(permission.screen)" data-label="Excluir">
-              <label class="perm-switch">
-                <input type="checkbox" [(ngModel)]="permission.canDelete" [name]="permission.screen + '-delete'" />
-                <span class="perm-switch-label">Excluir em {{ screenLabel(permission.screen) }}</span>
-              </label>
-            </td>
-            <!-- Células vazias sem data-label de propósito: no modo cartão de 680px o rótulo global
-                 viria de attr(data-label) e anunciaria ações que esta linha não oferece. -->
-            <td class="checkbox-cell" *ngIf="isViewOnly(permission.screen)"></td>
-            <td class="checkbox-cell" *ngIf="isViewOnly(permission.screen)"></td>
-            <td class="checkbox-cell" *ngIf="isViewOnly(permission.screen)"></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+  <div class="table-wrap" [attr.aria-busy]="list.loading()">
+    <table class="fixed-layout" *ngIf="list.items().length">
+      <colgroup>
+        <col />
+        <col class="col-actions" />
+      </colgroup>
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th><span class="sr-only">Ações</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let profile of list.items()">
+          <td data-label="Nome">{{ profile.name }}</td>
+          <td class="row-actions">
+            <button
+              *ngIf="authService.can('PROFILES', 'EDIT')"
+              type="button"
+              class="ghost-button"
+              (click)="edit(profile)"
+            >
+              Editar
+            </button>
+            <button
+              *ngIf="authService.can('PROFILES', 'DELETE')"
+              type="button"
+              class="ghost-button"
+              [disabled]="saving()"
+              (click)="remove(profile)"
+            >
+              Excluir
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
 
-    <div class="two-cols form-actions">
-      <button class="primary-button" type="submit" [disabled]="saving()">Salvar</button>
-      <button class="ghost-button" type="button" (click)="cancel()">Cancelar</button>
-    </div>
-  </form>
+    <app-list-feedback
+      [loading]="list.loading()"
+      [error]="list.loadError()"
+      [empty]="!list.items().length"
+      [filtered]="list.activeCount() > 0"
+      [canClear]="list.differsFromDefault()"
+      (clear)="list.clear()"
+    >
+      <p class="empty-state">Nenhum perfil cadastrado</p>
+    </app-list-feedback>
+  </div>
 
-  <section class="panel table-panel">
-    <div class="panel-heading">
-      <h3>Perfis</h3>
-      <span>{{ profiles().length }}</span>
-    </div>
-    <div class="compact-list" [attr.aria-busy]="loading()">
-      <div class="list-row" *ngFor="let profile of profiles()">
-        <div>
-          <strong>{{ profile.name }}</strong>
-        </div>
-        <div class="row-actions">
-          <button *ngIf="authService.can('PROFILES', 'EDIT')" type="button" class="ghost-button" (click)="edit(profile)">
-            Editar
-          </button>
-          <button *ngIf="authService.can('PROFILES', 'DELETE')" type="button" class="ghost-button" (click)="remove(profile)">
-            Excluir
-          </button>
-        </div>
-      </div>
-      <p class="loading-state" *ngIf="loading()"></p>
-      <p class="empty-state" *ngIf="!loading() && !profiles().length">Nenhum perfil cadastrado</p>
-    </div>
-  </section>
+  <app-pagination [page]="list.page()" [totalPages]="list.totalPages()" (pageChange)="list.goTo($event)" />
 </section>

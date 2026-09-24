@@ -1,9 +1,3 @@
-label span {
-  color: var(--text-muted);
-  font-weight: 400;
-  text-transform: none;
-}
-
 table {
   min-width: 960px;
 }
@@ -14,11 +8,6 @@ col.col-profile {
 
 col.col-status {
   width: 140px;
-}
-
-.inline-email-fields {
-  display: grid;
-  gap: 6px;
 }
 
 @media (max-width: 680px) {

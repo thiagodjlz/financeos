@@ -8,6 +8,8 @@ import java.util.UUID;
 
 import br.com.financeos.shared.AccessControl;
 import br.com.financeos.shared.Action;
+import br.com.financeos.shared.ListParams;
+import br.com.financeos.shared.PageResponse;
 import br.com.financeos.users.AppUserRepository;
 import io.quarkus.security.Authenticated;
 import jakarta.transaction.Transactional;
@@ -22,8 +24,10 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
 
 @Path("/profiles")
 @Produces(MediaType.APPLICATION_JSON)
@@ -49,11 +53,30 @@ public class ProfileResource {
     }
 
     @GET
-    public List<ProfileResponse> list() {
+    public PageResponse<ProfileResponse> list(@Context UriInfo uriInfo) {
         accessControl.require(Screen.PROFILES, Action.VIEW);
-        return repository.list("order by name").stream()
-                .map(profile -> ProfileResponse.from(profile, resolvePermissions(profile.id)))
+        ListParams params = ListParams.from(uriInfo);
+        String name = ListParams.text(uriInfo, "name");
+
+        return PageResponse.of(repository.search(name), params, this::toResponse);
+    }
+
+    @GET
+    @Path("/options")
+    public List<ProfileResponse> options() {
+        accessControl.require(Screen.PROFILES, Action.VIEW);
+        return repository.list("order by name, id").stream()
+                .map(this::toResponse)
                 .toList();
+    }
+
+    @GET
+    @Path("/{id}")
+    public ProfileResponse get(@PathParam("id") UUID id) {
+        accessControl.require(Screen.PROFILES, Action.VIEW);
+        return repository.findByIdOptional(id)
+                .map(this::toResponse)
+                .orElseThrow(NotFoundException::new);
     }
 
     @POST
@@ -129,6 +152,10 @@ public class ProfileResource {
             permission.canDelete = writable && entry.canDelete();
             permissionRepository.persist(permission);
         }
+    }
+
+    private ProfileResponse toResponse(Profile profile) {
+        return ProfileResponse.from(profile, resolvePermissions(profile.id));
     }
 
     private List<PermissionEntry> resolvePermissions(UUID profileId) {

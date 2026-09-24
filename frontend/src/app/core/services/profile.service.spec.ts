@@ -18,16 +18,24 @@ describe('ProfileService', () => {
 
   afterEach(() => httpMock.verify());
 
-  it('populates the profiles signal from GET /profiles', async () => {
-    const refreshPromise = service.refresh();
+  it('lista uma página via GET /profiles e todos os perfis via /profiles/options', async () => {
+    const listPromise = service.list({ name: 'adm' }, 1);
+    httpMock.expectOne(`${API_BASE}/profiles?page=1&size=10&name=adm`).flush({ items: [], totalItems: 0, totalPages: 0, page: 1, size: 10 });
+    await expect(listPromise).resolves.toMatchObject({ totalPages: 0 });
 
-    const req = httpMock.expectOne(`${API_BASE}/profiles`);
-    expect(req.request.method).toBe('GET');
-    req.flush([{ id: 'p1', name: 'Administrador', active: true, permissions: [] }]);
+    const optionsPromise = service.options();
+    httpMock
+      .expectOne(`${API_BASE}/profiles/options`)
+      .flush([{ id: 'p1', name: 'Administrador', active: true, permissions: [] }]);
+    await expect(optionsPromise).resolves.toHaveLength(1);
+  });
 
-    await refreshPromise;
-    expect(service.profiles()).toHaveLength(1);
-    expect(service.profiles()[0].name).toBe('Administrador');
+  it('busca um perfil via GET /profiles/{id}', async () => {
+    const getPromise = service.get('p1');
+
+    httpMock.expectOne(`${API_BASE}/profiles/p1`).flush({ id: 'p1', name: 'Administrador' });
+
+    await expect(getPromise).resolves.toMatchObject({ id: 'p1' });
   });
 
   it('creates a profile via POST /profiles', async () => {

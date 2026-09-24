@@ -1,6 +1,5 @@
 package br.com.financeos.transactions;
 
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -8,6 +7,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+import br.com.financeos.shared.TextSearch;
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -15,49 +15,45 @@ import jakarta.enterprise.context.ApplicationScoped;
 @ApplicationScoped
 public class TransactionRepository implements PanacheRepositoryBase<FinancialTransaction, UUID> {
 
-    public List<FinancialTransaction> listByFilters(
-            UUID userId,
-            TransactionType type,
-            TransactionStatus status,
-            LocalDate startDate,
-            LocalDate endDate,
-            UUID categoryId) {
-
+    public PanacheQuery<FinancialTransaction> search(UUID userId, TransactionFilter filter) {
         Map<String, Object> params = new HashMap<>();
         List<String> filters = new ArrayList<>();
 
         filters.add("userId = :userId");
         params.put("userId", userId);
 
-        if (type != null) {
-            filters.add("type = :type");
-            params.put("type", type);
+        if (filter.description() != null) {
+            filters.add(TextSearch.condition("description", "description"));
+            params.put("description", TextSearch.containsPattern(filter.description()));
         }
 
-        if (status != null) {
-            filters.add("status = :status");
-            params.put("status", status);
-        }
-
-        if (startDate != null) {
-            filters.add("transactionDate >= :startDate");
-            params.put("startDate", startDate);
-        }
-
-        if (endDate != null) {
-            filters.add("transactionDate <= :endDate");
-            params.put("endDate", endDate);
-        }
-
-        if (categoryId != null) {
+        if (filter.categoryId() != null) {
             filters.add("categoryId = :categoryId");
-            params.put("categoryId", categoryId);
+            params.put("categoryId", filter.categoryId());
         }
 
-        String query = String.join(" and ", filters) + " order by transactionDate desc, createdAt desc";
-        PanacheQuery<FinancialTransaction> transactions = find(query, params);
+        if (filter.type() != null) {
+            filters.add("type = :type");
+            params.put("type", filter.type());
+        }
 
-        return transactions.list();
+        if (filter.status() != null) {
+            filters.add("status = :status");
+            params.put("status", filter.status());
+        }
+
+        if (filter.startDate() != null) {
+            filters.add("transactionDate >= :startDate");
+            params.put("startDate", filter.startDate());
+        }
+
+        if (filter.endDate() != null) {
+            filters.add("transactionDate <= :endDate");
+            params.put("endDate", filter.endDate());
+        }
+
+        String query = String.join(" and ", filters) + " order by transactionDate desc, createdAt desc, id";
+        return find(query, params);
     }
 
     public Optional<FinancialTransaction> findByUserAndId(UUID userId, UUID id) {

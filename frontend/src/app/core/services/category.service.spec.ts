@@ -18,18 +18,34 @@ describe('CategoryService', () => {
 
   afterEach(() => httpMock.verify());
 
-  it('populates the categories signal from GET /categories', async () => {
-    const refreshPromise = service.refresh();
+  it('lista uma página via GET /categories com os filtros', async () => {
+    const listPromise = service.list({ name: 'mer', type: '', active: 'true' }, 1);
 
-    const req = httpMock.expectOne(`${API_BASE}/categories`);
+    const req = httpMock.expectOne(`${API_BASE}/categories?page=1&size=10&name=mer&active=true`);
     expect(req.request.method).toBe('GET');
-    req.flush([
-      { id: '1', parentId: null, name: 'Mercado', type: 'EXPENSE', color: '#000', active: true },
-    ]);
+    req.flush({ items: [], totalItems: 0, totalPages: 0, page: 1, size: 10 });
 
-    await refreshPromise;
-    expect(service.categories()).toHaveLength(1);
-    expect(service.categories()[0].name).toBe('Mercado');
+    await expect(listPromise).resolves.toMatchObject({ totalItems: 0 });
+  });
+
+  it('busca o catálogo completo e o dropdown por tipo em /categories/options', async () => {
+    const optionsPromise = service.options();
+    httpMock.expectOne(`${API_BASE}/categories/options`).flush([
+      { id: '1', parentId: null, name: 'Mercado', type: 'EXPENSE', color: '#000', active: false },
+    ]);
+    await expect(optionsPromise).resolves.toHaveLength(1);
+
+    const byTypePromise = service.listByType('INCOME');
+    httpMock.expectOne(`${API_BASE}/categories/options?type=INCOME`).flush([]);
+    await expect(byTypePromise).resolves.toEqual([]);
+  });
+
+  it('busca uma categoria via GET /categories/{id}', async () => {
+    const getPromise = service.get('1');
+
+    httpMock.expectOne(`${API_BASE}/categories/1`).flush({ id: '1', active: false });
+
+    await expect(getPromise).resolves.toMatchObject({ id: '1', active: false });
   });
 
   it('creates a category via POST /categories', async () => {

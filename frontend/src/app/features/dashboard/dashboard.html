@@ -20,6 +20,8 @@
   </div>
 </header>
 
+<p class="load-error" role="alert" *ngIf="!loading() && loadError()">{{ loadError() }}</p>
+
 <section class="metric-grid">
   <div class="metric-card">
     <div class="metric-head">
@@ -227,7 +229,7 @@
           </div>
         </div>
         <p class="loading-state" *ngIf="loading()"></p>
-        <p class="empty-state" *ngIf="!loading() && !categoriesByType('INCOME').length">Sem dados no período</p>
+        <p class="empty-state" *ngIf="!loading() && !loadError() && !categoriesByType('INCOME').length">Sem dados no período</p>
       </div>
     </div>
     <div class="category-section" [attr.aria-busy]="loading()">
@@ -246,7 +248,7 @@
           </div>
         </div>
         <p class="loading-state" *ngIf="loading()"></p>
-        <p class="empty-state" *ngIf="!loading() && !categoriesByType('EXPENSE').length">Sem dados no período</p>
+        <p class="empty-state" *ngIf="!loading() && !loadError() && !categoriesByType('EXPENSE').length">Sem dados no período</p>
       </div>
     </div>
     <div class="panel-footer">

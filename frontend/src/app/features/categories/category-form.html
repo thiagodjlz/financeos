@@ -1,0 +1,70 @@
+<h2 class="page-title">{{ id ? 'Editar categoria' : 'Nova categoria' }}</h2>
+
+<div class="form-page" [attr.aria-busy]="loading()">
+  <p class="loading-state" *ngIf="loading()"><span class="sr-only">Carregando...</span></p>
+  <p class="load-error" role="alert" *ngIf="!loading() && loadError()">{{ loadError() }}</p>
+
+  <form class="panel form-panel" *ngIf="!loading() && !loadError()" #categoryForm (ngSubmit)="save()">
+    <label>
+      Nome
+      <input
+        name="name"
+        [(ngModel)]="form.name"
+        required
+        [class.invalid]="fieldErrors.invalid('name')"
+        (input)="fieldErrors.clear('name')"
+      />
+      <small class="field-error" *ngIf="fieldErrors.invalid('name')">{{ fieldErrors.message('name') }}</small>
+    </label>
+    <label>
+      Tipo
+      <select
+        name="type"
+        [(ngModel)]="form.type"
+        [class.invalid]="fieldErrors.invalid('type')"
+        (change)="fieldErrors.clear('type')"
+      >
+        <option value="EXPENSE">Despesa</option>
+        <option value="INCOME">Receita</option>
+      </select>
+      <small class="field-error" *ngIf="fieldErrors.invalid('type')">{{ fieldErrors.message('type') }}</small>
+    </label>
+    <label>
+      Cor
+      <input
+        type="color"
+        name="color"
+        [(ngModel)]="form.color"
+        [class.invalid]="fieldErrors.invalid('color')"
+        (input)="fieldErrors.clear('color')"
+      />
+      <small class="field-error" *ngIf="fieldErrors.invalid('color')">{{ fieldErrors.message('color') }}</small>
+    </label>
+    <label>
+      Situação
+      <select
+        name="active"
+        [(ngModel)]="form.active"
+        [class.invalid]="fieldErrors.invalid('active')"
+        (change)="fieldErrors.clear('active')"
+      >
+        <option [ngValue]="true">Ativo</option>
+        <option [ngValue]="false">Inativo</option>
+      </select>
+      <small class="field-error" *ngIf="fieldErrors.invalid('active')">{{ fieldErrors.message('active') }}</small>
+    </label>
+    <div class="two-cols form-actions">
+      <button class="primary-button" type="submit" [disabled]="saving()">Salvar</button>
+      <button class="ghost-button" type="button" (click)="requestCancel()">Cancelar</button>
+    </div>
+  </form>
+</div>
+
+<app-confirm-dialog
+  *ngIf="confirmingExit()"
+  message="Deseja sair sem salvar?"
+  cancelLabel="Continuar editando"
+  confirmLabel="Sair sem salvar"
+  (cancel)="keepEditing()"
+  (confirm)="confirmExit()"
+/>

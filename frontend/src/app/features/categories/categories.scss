@@ -1,8 +1,3 @@
-input[type='color'] {
-  height: 42px;
-  padding: 4px;
-}
-
 col.col-type {
   width: 140px;
 }
@@ -48,36 +43,9 @@ col.col-situation {
   border-radius: var(--radius-pill);
 }
 
-.inline-name-fields {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 44px;
-  gap: 6px;
-  align-items: center;
-
-  input[type='color'] {
-    height: 34px;
-    padding: 2px;
-  }
-}
-
-@media (max-width: 680px) {
-  .inline-name-fields {
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
-}
-
 @media (max-width: 480px) {
   .row-actions .icon-button {
     width: var(--touch-target);
     height: var(--touch-target);
-  }
-
-  .inline-name-fields {
-    grid-template-columns: minmax(0, 1fr) var(--touch-target);
-
-    input[type='color'] {
-      height: var(--touch-target);
-      padding: 3px;
-    }
   }
 }

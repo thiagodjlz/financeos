@@ -130,7 +130,10 @@ class CategoryResourceTest {
                 .when().get("/categories")
                 .then()
                 .statusCode(200)
-                .body("size()", greaterThanOrEqualTo(11));
+                .body("items.size()", equalTo(10))
+                .body("totalItems", greaterThanOrEqualTo(11))
+                .body("page", equalTo(1))
+                .body("size", equalTo(10));
     }
 
     @Test
@@ -188,7 +191,7 @@ class CategoryResourceTest {
 
         assertNull(findCategory(UUID.fromString(id)));
         given()
-                .when().get("/categories")
+                .when().get("/categories/options")
                 .then()
                 .statusCode(200)
                 .body("id", not(hasItem(id)));
@@ -205,7 +208,7 @@ class CategoryResourceTest {
 
         assertNull(findCategory(category.id));
         given()
-                .when().get("/categories")
+                .when().get("/categories/options")
                 .then()
                 .statusCode(200)
                 .body("id", not(hasItem(category.id.toString())));
@@ -330,7 +333,7 @@ class CategoryResourceTest {
                 .when().get("/categories")
                 .then()
                 .statusCode(200)
-                .body("[0]", not(hasKey("icon")));
+                .body("items[0]", not(hasKey("icon")));
 
         given()
                 .when().get("/categories/{id}", id)
@@ -707,15 +710,184 @@ class CategoryResourceTest {
                 .statusCode(201);
 
         given()
-                .when().get("/categories?type=EXPENSE")
+                .when().get("/categories/options?type=EXPENSE")
                 .then()
                 .statusCode(200)
                 .body("name", org.hamcrest.Matchers.not(org.hamcrest.Matchers.hasItem(categoryName)));
 
         given()
-                .when().get("/categories")
+                .when().get("/categories/options")
                 .then()
                 .statusCode(200)
                 .body("name", hasItem(categoryName));
+    }
+
+    private void createNamedCategory(String name, CategoryType type, boolean active) {
+        QuarkusTransaction.requiringNew().run(() -> {
+            Category category = new Category();
+            category.name = name;
+            category.type = type;
+            category.color = "#F59E0B";
+            category.active = active;
+            repository.persist(category);
+        });
+    }
+
+    @Test
+    void shouldPaginateCategoriesWithTotals() {
+        String prefix = "Teste Lazer Pagina " + UUID.randomUUID();
+        for (int i = 1; i <= 11; i++) {
+            createNamedCategory(prefix + " %02d".formatted(i), CategoryType.EXPENSE, true);
+        }
+
+        given()
+                .queryParam("name", prefix)
+                .queryParam("size", 10)
+                .when().get("/categories")
+                .then()
+                .statusCode(200)
+                .body("items.size()", equalTo(10))
+                .body("items[0].name", equalTo(prefix + " 01"))
+                .body("totalItems", equalTo(11))
+                .body("totalPages", equalTo(2))
+                .body("page", equalTo(1));
+
+        given()
+                .queryParam("name", prefix)
+                .queryParam("size", 10)
+                .queryParam("page", 2)
+                .when().get("/categories")
+                .then()
+                .statusCode(200)
+                .body("items.size()", equalTo(1))
+                .body("items[0].name", equalTo(prefix + " 11"))
+                .body("totalItems", equalTo(11))
+                .body("totalPages", equalTo(2));
+
+        given()
+                .queryParam("name", prefix)
+                .queryParam("page", 3)
+                .when().get("/categories")
+                .then()
+                .statusCode(200)
+                .body("items.size()", equalTo(0))
+                .body("totalItems", equalTo(11))
+                .body("totalPages", equalTo(2))
+                .body("page", equalTo(3));
+    }
+
+    @Test
+    void shouldReturnEmptyPageFarBeyondTheLast() {
+        given()
+                .queryParam("page", 999999999)
+                .when().get("/categories")
+                .then()
+                .statusCode(200)
+                .body("items.size()", equalTo(0))
+                .body("totalItems", greaterThanOrEqualTo(11));
+    }
+
+    @Test
+    void shouldCombineNameTypeAndSituationFilters() {
+        String prefix = "Teste Lazer Filtro " + UUID.randomUUID();
+        createNamedCategory(prefix + " alvo", CategoryType.INCOME, false);
+        createNamedCategory(prefix + " ativa", CategoryType.INCOME, true);
+        createNamedCategory(prefix + " despesa", CategoryType.EXPENSE, false);
+
+        given()
+                .queryParam("name", prefix)
+                .queryParam("type", "INCOME")
+                .queryParam("active", "false")
+                .when().get("/categories")
+                .then()
+                .statusCode(200)
+                .body("totalItems", equalTo(1))
+                .body("items[0].name", equalTo(prefix + " alvo"));
+
+        given()
+                .queryParam("name", prefix)
+                .when().get("/categories")
+                .then()
+                .statusCode(200)
+                .body("totalItems", equalTo(3));
+    }
+
+    @Test
+    void shouldSearchNameIgnoringCaseAndAccents() {
+        String suffix = UUID.randomUUID().toString();
+        createNamedCategory("Teste Lazer Açaí " + suffix, CategoryType.EXPENSE, true);
+
+        given()
+                .queryParam("name", "TESTE lazer acai " + suffix)
+                .when().get("/categories")
+                .then()
+                .statusCode(200)
+                .body("totalItems", equalTo(1))
+                .body("items[0].name", equalTo("Teste Lazer Açaí " + suffix));
+
+        given()
+                .queryParam("name", "Lazer 100% " + suffix)
+                .when().get("/categories")
+                .then()
+                .statusCode(200)
+                .body("totalItems", equalTo(0));
+    }
+
+    @Test
+    void shouldRejectMalformedListParametersInPortuguese() {
+        assertBadListRequest("size", "11", "O tamanho da página deve ser um número entre 1 e 10.");
+        assertBadListRequest("size", "0", "O tamanho da página deve ser um número entre 1 e 10.");
+        assertBadListRequest("size", "", "O tamanho da página deve ser um número entre 1 e 10.");
+        assertBadListRequest("size", "dez", "O tamanho da página deve ser um número entre 1 e 10.");
+        assertBadListRequest("page", "0", "A página deve ser um número inteiro maior ou igual a 1.");
+        assertBadListRequest("page", "-1", "A página deve ser um número inteiro maior ou igual a 1.");
+        assertBadListRequest("page", "abc", "A página deve ser um número inteiro maior ou igual a 1.");
+        assertBadListRequest("page", "1.5", "A página deve ser um número inteiro maior ou igual a 1.");
+        assertBadListRequest("type", "XYZ", "O tipo informado é inválido.");
+        assertBadListRequest("active", "talvez", "A situação informada é inválida.");
+
+        given()
+                .queryParam("type", "XYZ")
+                .when().get("/categories/options")
+                .then()
+                .statusCode(400)
+                .body("message", equalTo("O tipo informado é inválido."));
+    }
+
+    private static void assertBadListRequest(String param, String value, String message) {
+        given()
+                .queryParam(param, value)
+                .when().get("/categories")
+                .then()
+                .statusCode(400)
+                .body("message", equalTo(message));
+    }
+
+    @Test
+    void shouldListEveryCategoryInOptionsBeyondOnePage() {
+        given()
+                .when().get("/categories/options")
+                .then()
+                .statusCode(200)
+                .body("size()", greaterThanOrEqualTo(11));
+
+        given()
+                .when().get("/categories/options?type=EXPENSE")
+                .then()
+                .statusCode(200)
+                .body("type", not(hasItem("INCOME")))
+                .body("active", not(hasItem(false)));
+    }
+
+    @Test
+    void shouldReturnInactiveCategoryById() {
+        Category category = createCategory(false, null);
+
+        given()
+                .when().get("/categories/{id}", category.id)
+                .then()
+                .statusCode(200)
+                .body("name", equalTo(category.name))
+                .body("active", equalTo(false));
     }
 }

@@ -1,7 +1,8 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { API_BASE, AppUserSummary } from '../models';
+import { API_BASE, AppUserSummary, ListFilters, Page } from '../models';
+import { pageParams } from './page-params';
 
 export interface UserCreatePayload {
   name: string;
@@ -22,10 +23,14 @@ export interface UserUpdatePayload {
 export class UserService {
   private readonly http = inject(HttpClient);
 
-  readonly users = signal<AppUserSummary[]>([]);
+  list(filters: ListFilters, page: number): Promise<Page<AppUserSummary>> {
+    return firstValueFrom(
+      this.http.get<Page<AppUserSummary>>(`${API_BASE}/users`, { params: pageParams(filters, page) }),
+    );
+  }
 
-  async refresh(): Promise<void> {
-    this.users.set(await firstValueFrom(this.http.get<AppUserSummary[]>(`${API_BASE}/users`)));
+  get(id: string): Promise<AppUserSummary> {
+    return firstValueFrom(this.http.get<AppUserSummary>(`${API_BASE}/users/${id}`));
   }
 
   create(payload: UserCreatePayload): Promise<AppUserSummary> {

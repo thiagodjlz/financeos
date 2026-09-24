@@ -120,4 +120,21 @@ class ReleaseNotesContentTest {
                 .flatMap(c -> c.items().stream())
                 .anyMatch(item -> item.contains("Voltar ao topo")));
     }
+
+    @Test
+    void shouldAnnounceRegistrationScreensWithFiltersAndPaginationAsImprovementIn102() {
+        ReleaseNoteVersion v102 = VERSIONS.get(0);
+
+        List<String> improvements = v102.categories().stream()
+                .filter(c -> c.kind() == ReleaseNoteCategory.Kind.IMPROVEMENT)
+                .flatMap(c -> c.items().stream())
+                .toList();
+
+        assertEquals("1.0.2", v102.version());
+        assertEquals(1, improvements.stream()
+                .filter(item -> item.contains("tela própria") && item.contains("Filtros")
+                        && item.contains("por página"))
+                .count());
+        assertTrue(improvements.stream().anyMatch(item -> item.contains("não consegue carregar")));
+    }
 }

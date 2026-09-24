@@ -209,4 +209,46 @@ class DocumentationContentTest {
             }
         })));
     }
+
+    private static final List<String> REGISTRATION_AREAS =
+            List.of("Lançamentos", "Categorias", "Usuários", "Perfis");
+
+    private static final Pattern INLINE_EDITING_OR_SIDE_FORM = Pattern.compile(
+            "à esquerda|à direita|na própria linha|na linha da tabela|ali mesmo na tabela|formulário lateral"
+                    + "|Sair \\(linha\\)|Salvar \\(linha\\)");
+
+    private static String areaText(DocumentationArea area) {
+        List<String> texts = new ArrayList<>();
+        texts.add(area.summary());
+        area.sections().forEach(section -> section.blocks().forEach(block -> {
+            if (block.text() != null) {
+                texts.add(block.text());
+            }
+            texts.addAll(block.items());
+            if (block.table() != null) {
+                block.table().rows().forEach(texts::addAll);
+            }
+        }));
+        return String.join("\n", texts);
+    }
+
+    @Test
+    void shouldNotDescribeSideFormNorInlineEditingInAnyArea() {
+        CONTENT.areas().forEach(area -> assertFalse(
+                INLINE_EDITING_OR_SIDE_FORM.matcher(areaText(area)).find(),
+                area.title() + " ainda descreve formulário lateral ou edição na linha"));
+    }
+
+    @Test
+    void shouldDescribeIncludeEditFiltersAndPaginationInRegistrationAreas() {
+        CONTENT.areas().stream()
+                .filter(area -> REGISTRATION_AREAS.contains(area.title()))
+                .forEach(area -> {
+                    String text = areaText(area);
+
+                    List.of("Incluir", "Editar", "tela própria", "Filtros", "Anterior", "Próxima", "por página")
+                            .forEach(expected -> assertTrue(text.contains(expected),
+                                    area.title() + " sem mencionar " + expected));
+                });
+    }
 }

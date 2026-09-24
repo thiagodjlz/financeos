@@ -1,31 +1,20 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { API_BASE, Category, Transaction } from '../../core/models';
+import { Router, provideRouter } from '@angular/router';
+import { API_BASE, Category, Page, Transaction } from '../../core/models';
 import { AuthService } from '../../core/services/auth.service';
+import { ListStateService } from '../../core/services/list-state.service';
 import { ToastService } from '../../core/services/toast.service';
 import { Transactions } from './transactions';
 
-const EXPENSE_CATEGORIES: Category[] = [
-  {
-    id: 'cat-expense',
-    parentId: null,
-    name: 'Mercado',
-    type: 'EXPENSE',
-    color: null,
-    active: true,
-  },
-];
+const LIST_URL = `${API_BASE}/transactions`;
+const OPTIONS_URL = `${API_BASE}/categories/options`;
 
-const INCOME_CATEGORIES: Category[] = [
-  {
-    id: 'cat-income',
-    parentId: null,
-    name: 'Salario',
-    type: 'INCOME',
-    color: null,
-    active: true,
-  },
+const CATEGORIES: Category[] = [
+  { id: 'cat-expense', parentId: null, name: 'Mercado', type: 'EXPENSE', color: null, active: true },
+  { id: 'cat-income', parentId: null, name: 'Salário', type: 'INCOME', color: null, active: true },
+  { id: 'cat-old', parentId: null, name: 'Antiga', type: 'EXPENSE', color: null, active: false },
 ];
 
 const TRANSACTION: Transaction = {
@@ -39,83 +28,66 @@ const TRANSACTION: Transaction = {
   source: 'MANUAL',
 };
 
-const TODAY = new Date().toISOString().slice(0, 10);
+function page(items: Transaction[], totalItems = items.length, totalPages = items.length ? 1 : 0, current = 1): Page<Transaction> {
+  return { items, totalItems, totalPages, page: current, size: 10 };
+}
 
 describe('Transactions', () => {
   let fixture: ComponentFixture<Transactions>;
   let httpMock: HttpTestingController;
   let toastService: ToastService;
+  let router: Router;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [Transactions],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
     }).compileComponents();
 
     httpMock = TestBed.inject(HttpTestingController);
     toastService = TestBed.inject(ToastService);
+    router = TestBed.inject(Router);
+    vi.spyOn(router, 'navigate').mockResolvedValue(true);
   });
 
   afterEach(() => httpMock.verify());
 
-  async function render(superAdmin = true): Promise<void> {
+  function create(superAdmin = true): void {
     fixture = TestBed.createComponent(Transactions);
     TestBed.inject(AuthService).superAdmin.set(superAdmin);
     fixture.detectChanges();
-    httpMock.expectOne(`${API_BASE}/transactions`).flush([TRANSACTION]);
-    httpMock
-      .expectOne(`${API_BASE}/categories`)
-      .flush([...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES]);
-    httpMock.expectOne(`${API_BASE}/categories?type=EXPENSE`).flush(EXPENSE_CATEGORIES);
+  }
+
+  async function render(
+    result: Page<Transaction> = page([TRANSACTION]),
+    superAdmin = true,
+    listUrl = `${LIST_URL}?page=1&size=10`,
+    categories: Category[] = CATEGORIES,
+  ): Promise<void> {
+    create(superAdmin);
+    httpMock.expectOne(listUrl).flush(result);
+    httpMock.expectOne(OPTIONS_URL).flush(categories);
     await settle();
   }
 
   async function settle(): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve));
     await fixture.whenStable();
     fixture.detectChanges();
     await fixture.whenStable();
+    fixture.detectChanges();
   }
 
   function query<T extends HTMLElement>(selector: string): T {
     return fixture.nativeElement.querySelector(selector) as T;
   }
 
-  function value(selector: string): string {
-    return query<HTMLInputElement>(selector).value;
+  function queryAll<T extends HTMLElement>(selector: string): T[] {
+    return Array.from(fixture.nativeElement.querySelectorAll(selector)) as T[];
   }
 
-  function toasts() {
-    return toastService.toasts();
-  }
-
-  function rowButtonByText(text: string): HTMLButtonElement | undefined {
-    return (
-      Array.from(fixture.nativeElement.querySelectorAll('tbody .row-actions button')) as HTMLButtonElement[]
-    ).find((button) => button.textContent?.trim() === text);
-  }
-
-  function categoryOptions(): string[] {
-    return Array.from(
-      fixture.nativeElement.querySelectorAll('form select[name="categoryId"] option'),
-    ).map((option) => (option as HTMLOptionElement).textContent?.trim() ?? '');
-  }
-
-  function cancelButton(): HTMLButtonElement {
-    return query<HTMLButtonElement>('form button.ghost-button');
-  }
-
-  async function fillText(selector: string, text: string): Promise<void> {
-    const input = query<HTMLInputElement>(selector);
-    input.value = text;
-    input.dispatchEvent(new Event('input'));
-    await settle();
-  }
-
-  async function selectValue(selector: string, optionValue: string): Promise<void> {
-    const select = query<HTMLSelectElement>(selector);
-    select.value = optionValue;
-    select.dispatchEvent(new Event('change'));
-    await settle();
+  function buttonByText(text: string, scope = ''): HTMLButtonElement | undefined {
+    return queryAll<HTMLButtonElement>(`${scope} button`).find((button) => button.textContent?.trim() === text);
   }
 
   async function click(element: HTMLElement): Promise<void> {
@@ -123,376 +95,278 @@ describe('Transactions', () => {
     await settle();
   }
 
-  async function submitForm(): Promise<void> {
-    await click(query<HTMLButtonElement>('form button[type="submit"]'));
+  async function openFilters(): Promise<void> {
+    await click(query('.filter-toggle'));
   }
 
-  async function startEditing(): Promise<void> {
-    await click(rowButtonByText('Editar') as HTMLButtonElement);
-    httpMock.expectOne(`${API_BASE}/categories?type=EXPENSE`).flush(EXPENSE_CATEGORIES);
+  async function selectValue(selector: string, value: string): Promise<void> {
+    const select = query<HTMLSelectElement>(selector);
+    select.value = value;
+    select.dispatchEvent(new Event('change'));
     await settle();
   }
 
-  function queryAll<T extends HTMLElement>(selector: string): T[] {
-    return Array.from(fixture.nativeElement.querySelectorAll(selector)) as T[];
+  function chipTexts(): string[] {
+    return queryAll('.filter-chip span').map((chip) => chip.textContent?.trim() ?? '');
   }
 
-  function fieldErrorTexts(scope: string): string[] {
-    return queryAll(`${scope} .field-error`).map((element) => element.textContent?.trim() ?? '');
-  }
-
-  async function flushCreateValidationError(): Promise<void> {
-    httpMock.expectOne(`${API_BASE}/transactions`).flush(
-      {
-        violations: [
-          { field: 'create.request.description', message: 'A descrição é obrigatória.' },
-          { field: 'create.request.amount', message: 'O valor deve ser maior que zero.' },
-          { field: 'create.request.categoryId', message: 'A categoria é obrigatória.' },
-        ],
-        message: 'Informe os campos obrigatórios: Descrição, Categoria. O valor deve ser maior que zero.',
-      },
-      { status: 400, statusText: 'Bad Request' },
-    );
-    await settle();
-  }
-
-  function expectInitialForm(): void {
-    expect(value('form input[name="transactionDate"]')).toBe(TODAY);
-    expect(value('form input[name="description"]')).toBe('');
-    expect(value('form input[name="amount"]')).toBe('0');
-    expect(value('form select[name="type"]')).toBe('EXPENSE');
-    expect(value('form select[name="status"]')).toBe('PENDING');
-    expect(value('form select[name="categoryId"]')).toBe('');
-    expect(categoryOptions()).toEqual(['Selecione', 'Mercado']);
-  }
-
-  it('exibe o botão Cancelar ao lado de Salvar no formulário de novo lançamento', async () => {
+  it('lista a primeira página em tabela, sem formulário nem campo na linha', async () => {
     await render();
-
-    const button = cancelButton();
-    expect(query('form .panel-heading h3').textContent?.trim()).toBe('Novo lançamento');
-    expect(button).toBeTruthy();
-    expect(button.textContent?.trim()).toBe('Cancelar');
-    expect(button.getAttribute('type')).toBe('button');
-  });
-
-  it('não renderiza o formulário nem o botão Cancelar sem permissão', async () => {
-    await render(false);
 
     expect(query('form')).toBeNull();
+    expect(queryAll('tbody input, tbody select')).toHaveLength(0);
+    const cells = queryAll('tbody tr td');
+    expect(cells.map((cell) => cell.getAttribute('data-label'))).toEqual([
+      'Data',
+      'Descrição',
+      'Categoria',
+      'Status',
+      'Valor',
+      null,
+    ]);
+    expect(cells[2].textContent?.trim()).toBe('Mercado');
+    expect(query('.panel-heading span').textContent?.trim()).toBe('1');
   });
 
-  it('limpa o formulário e repõe o dropdown de Despesa sem nova requisição', async () => {
+  it('mostra "Incluir" com CREATE e "Editar" com EDIT, navegando para o cadastro', async () => {
     await render();
-    await selectValue('form select[name="type"]', 'INCOME');
-    httpMock.expectOne(`${API_BASE}/categories?type=INCOME`).flush(INCOME_CATEGORIES);
-    await settle();
-    await fillText('form input[name="transactionDate"]', '2026-01-15');
-    await fillText('form input[name="description"]', 'Bonus');
-    await fillText('form input[name="amount"]', '250');
-    await selectValue('form select[name="categoryId"]', 'cat-income');
 
-    await click(cancelButton());
+    const include = buttonByText('Incluir', '.list-toolbar') as HTMLButtonElement;
+    expect(include.classList.contains('primary-button')).toBe(true);
+    await click(include);
+    expect(router.navigate).toHaveBeenCalledWith(['/transactions/new']);
 
-    httpMock.expectNone(() => true);
-    expect(toasts()).toEqual([]);
-    expectInitialForm();
+    await click(buttonByText('Editar', 'tbody') as HTMLButtonElement);
+    expect(router.navigate).toHaveBeenCalledWith(['/transactions', 'transaction-1', 'edit']);
   });
 
-  it('não dispara requisição ao cancelar e mantém o estágio único', async () => {
-    await render();
-    await fillText('form input[name="description"]', 'Feira');
+  it('esconde "Incluir", "Editar" e "Cancelar" sem as permissões', async () => {
+    TestBed.inject(AuthService).permissions.set([
+      { screen: 'TRANSACTIONS', canView: true, canCreate: false, canEdit: false, canDelete: false },
+    ]);
+    await render(page([TRANSACTION]), false);
 
-    await click(cancelButton());
-    await click(cancelButton());
-
-    httpMock.expectNone(() => true);
-    expect(toasts()).toEqual([]);
-    expect(query('form .panel-heading h3').textContent?.trim()).toBe('Novo lançamento');
-    expectInitialForm();
+    expect(buttonByText('Incluir')).toBeUndefined();
+    expect(buttonByText('Editar')).toBeUndefined();
+    expect(buttonByText('Cancelar')).toBeUndefined();
   });
 
-  it('mantém o botão Cancelar da tabela cancelando o lançamento', async () => {
+  it('mantém o "Cancelar" da linha cancelando o lançamento e recarregando a página', async () => {
     await render();
 
-    await click(rowButtonByText('Cancelar') as HTMLButtonElement);
+    await click(buttonByText('Cancelar', 'tbody') as HTMLButtonElement);
 
-    const request = httpMock.expectOne(`${API_BASE}/transactions/transaction-1`);
+    const request = httpMock.expectOne(`${LIST_URL}/transaction-1`);
     expect(request.request.method).toBe('DELETE');
     request.flush(null);
     await settle();
-    httpMock.expectOne(`${API_BASE}/transactions`).flush([TRANSACTION]);
+    httpMock.expectOne(`${LIST_URL}?page=1&size=10`).flush(page([{ ...TRANSACTION, status: 'CANCELED' }]));
     await settle();
 
-    expect(toasts()).toHaveLength(1);
-    expect(toasts()[0].title).toBe('Sucesso');
-    expect(toasts()[0].message).toBe('Lançamento cancelado com sucesso.');
-  });
-
-  it('exibe toast de sucesso ao criar o lançamento', async () => {
-    await render();
-    await fillText('form input[name="description"]', 'Feira');
-    await fillText('form input[name="amount"]', '120');
-
-    await submitForm();
-
-    const request = httpMock.expectOne(`${API_BASE}/transactions`);
-    expect(request.request.method).toBe('POST');
-    request.flush(TRANSACTION);
-    await settle();
-    httpMock.expectOne(`${API_BASE}/transactions`).flush([TRANSACTION]);
-    await settle();
-
-    expect(toasts()).toHaveLength(1);
-    expect(toasts()[0].title).toBe('Sucesso');
-    expect(toasts()[0].message).toBe('Lançamento salvo com sucesso.');
-  });
-
-  it('exibe toast de sucesso ao salvar a edição inline', async () => {
-    await render();
-    await startEditing();
-    await fillText('tbody input[name="editDescription"]', 'Feira grande');
-
-    await click(query<HTMLButtonElement>('tbody .row-actions button.primary-button'));
-
-    const request = httpMock.expectOne(`${API_BASE}/transactions/transaction-1`);
-    expect(request.request.method).toBe('PUT');
-    request.flush({ ...TRANSACTION, description: 'Feira grande' });
-    await settle();
-    httpMock
-      .expectOne(`${API_BASE}/transactions`)
-      .flush([{ ...TRANSACTION, description: 'Feira grande' }]);
-    await settle();
-
-    expect(toasts()).toHaveLength(1);
-    expect(toasts()[0].title).toBe('Sucesso');
-    expect(toasts()[0].message).toBe('Lançamento atualizado com sucesso.');
-  });
-
-  it('exibe o 400 agregado do backend como alerta, com o texto recebido', async () => {
-    await render();
-
-    await submitForm();
-
-    httpMock.expectOne(`${API_BASE}/transactions`).flush(
-      {
-        violations: [
-          { field: 'create.request.description', message: 'A descrição é obrigatória.' },
-          { field: 'create.request.amount', message: 'O valor é obrigatório.' },
-        ],
-        message: 'Informe os campos obrigatórios: Descrição, Valor.',
-      },
-      { status: 400, statusText: 'Bad Request' },
-    );
-    await settle();
-
-    expect(toasts()).toHaveLength(1);
-    expect(toasts()[0].title).toBe('Alerta');
-    expect(toasts()[0].message).toBe('Informe os campos obrigatórios: Descrição, Valor.');
-  });
-
-  it('exibe o limite de valor como alerta quando o backend recusa amount zero', async () => {
-    await render();
-    await fillText('form input[name="description"]', 'Feira');
-
-    await submitForm();
-
-    httpMock.expectOne(`${API_BASE}/transactions`).flush(
-      {
-        violations: [
-          { field: 'create.request.amount', message: 'O valor deve ser maior que zero.' },
-        ],
-        message: 'O valor deve ser maior que zero.',
-      },
-      { status: 400, statusText: 'Bad Request' },
-    );
-    await settle();
-
-    expect(toasts()[0].title).toBe('Alerta');
-    expect(toasts()[0].message).toBe('O valor deve ser maior que zero.');
-  });
-
-  it('exibe o 400 de regra de negócio como alerta com a mensagem do corpo', async () => {
-    await render();
-    await fillText('form input[name="description"]', 'Feira');
-    await fillText('form input[name="amount"]', '120');
-
-    await submitForm();
-
-    httpMock
-      .expectOne(`${API_BASE}/transactions`)
-      .flush({ message: 'Categoria informada não existe.' }, { status: 400, statusText: 'Bad Request' });
-    await settle();
-
-    expect(toasts()[0].title).toBe('Alerta');
-    expect(toasts()[0].message).toBe('Categoria informada não existe.');
-  });
-
-  it('exibe falha no 500 e na queda de rede', async () => {
-    await render();
-    await fillText('form input[name="description"]', 'Feira');
-    await fillText('form input[name="amount"]', '120');
-
-    await submitForm();
-    httpMock
-      .expectOne(`${API_BASE}/transactions`)
-      .flush(null, { status: 500, statusText: 'Server Error' });
-    await settle();
-
-    expect(toasts()[0].title).toBe('Falha');
-
-    await submitForm();
-    httpMock
-      .expectOne(`${API_BASE}/transactions`)
-      .error(new ProgressEvent('error'), { status: 0, statusText: 'Unknown Error' });
-    await settle();
-
-    expect(toasts().map((toast) => toast.title)).toEqual(['Falha', 'Falha']);
-  });
-
-  it('oferece o placeholder Selecione no lugar de "Sem categoria" nos dois dropdowns', async () => {
-    await render();
-    await settle();
-
-    expect(categoryOptions()).toEqual(['Selecione', 'Mercado']);
-
-    await startEditing();
-    await settle();
-
-    expect(
-      queryAll<HTMLOptionElement>('tbody select[name="editCategoryId"] option').map(
-        (option) => option.textContent?.trim() ?? '',
-      ),
-    ).toEqual(['Selecione', 'Mercado']);
-  });
-
-  it('dispara o POST com o placeholder selecionado e destaca o campo Categoria no 400', async () => {
-    await render();
-    await fillText('form input[name="description"]', 'Feira');
-    await fillText('form input[name="amount"]', '120');
-
-    await submitForm();
-
-    const request = httpMock.expectOne(`${API_BASE}/transactions`);
-    expect(request.request.method).toBe('POST');
-    expect(request.request.body.categoryId).toBeNull();
-    request.flush(
-      {
-        violations: [{ field: 'create.request.categoryId', message: 'A categoria é obrigatória.' }],
-        message: 'Informe os campos obrigatórios: Categoria.',
-      },
-      { status: 400, statusText: 'Bad Request' },
-    );
-    await settle();
-
-    expect(query('form select[name="categoryId"]').classList.contains('invalid')).toBe(true);
-    expect(fieldErrorTexts('form')).toEqual(['A categoria é obrigatória.']);
-    expect(toasts()[0].title).toBe('Alerta');
-    expect(toasts()[0].message).toBe('Informe os campos obrigatórios: Categoria.');
-  });
-
-  it('destaca cada campo do 400 com legenda e limpa apenas o campo editado', async () => {
-    await render();
-
-    await submitForm();
-    await flushCreateValidationError();
-
-    expect(query('form input[name="description"]').classList.contains('invalid')).toBe(true);
-    expect(query('form input[name="amount"]').classList.contains('invalid')).toBe(true);
-    expect(query('form select[name="categoryId"]').classList.contains('invalid')).toBe(true);
-    expect(query('form input[name="transactionDate"]').classList.contains('invalid')).toBe(false);
-    expect(fieldErrorTexts('form')).toEqual([
-      'A descrição é obrigatória.',
-      'O valor deve ser maior que zero.',
-      'A categoria é obrigatória.',
+    expect(toastService.toasts().map((toast) => [toast.title, toast.message])).toEqual([
+      ['Sucesso', 'Lançamento cancelado com sucesso.'],
     ]);
-
-    await fillText('form input[name="amount"]', '120');
-
-    expect(query('form input[name="amount"]').classList.contains('invalid')).toBe(false);
-    expect(fieldErrorTexts('form')).toEqual(['A descrição é obrigatória.', 'A categoria é obrigatória.']);
+    expect(queryAll('tbody tr td')[3].textContent?.trim()).toBe('Cancelado');
   });
 
-  it('foca o primeiro campo inválido na ordem visual do formulário', async () => {
-    await render();
-
-    await submitForm();
-
-    httpMock.expectOne(`${API_BASE}/transactions`).flush(
-      {
-        violations: [
-          { field: 'create.request.categoryId', message: 'A categoria é obrigatória.' },
-          { field: 'create.request.description', message: 'A descrição é obrigatória.' },
-          { field: 'create.request.transactionDate', message: 'A data é obrigatória.' },
-        ],
-        message: 'Informe os campos obrigatórios: Descrição, Data, Categoria.',
-      },
-      { status: 400, statusText: 'Bad Request' },
-    );
+  it('pagina mantendo os filtros e desabilita os botões nas pontas', async () => {
+    await render(page([TRANSACTION], 11, 2));
+    await openFilters();
+    await selectValue('select[name="filterType"]', 'EXPENSE');
+    httpMock.expectOne(`${LIST_URL}?page=1&size=10&type=EXPENSE`).flush(page([TRANSACTION], 11, 2));
     await settle();
 
-    expect((document.activeElement as HTMLElement).getAttribute('name')).toBe('transactionDate');
-  });
+    expect(query('.pagination-status').textContent?.trim()).toBe('Página 1 de 2');
+    expect((buttonByText('Anterior') as HTMLButtonElement).disabled).toBe(true);
 
-  it('destaca os campos da linha em edição sem tocar o formulário lateral', async () => {
-    await render();
-    await startEditing();
-    await fillText('tbody input[name="editDescription"]', '');
-
-    await click(query<HTMLButtonElement>('tbody .row-actions button.primary-button'));
-
-    httpMock.expectOne(`${API_BASE}/transactions/transaction-1`).flush(
-      {
-        violations: [{ field: 'update.request.description', message: 'A descrição é obrigatória.' }],
-        message: 'Informe os campos obrigatórios: Descrição.',
-      },
-      { status: 400, statusText: 'Bad Request' },
-    );
+    await click(buttonByText('Próxima') as HTMLButtonElement);
+    httpMock.expectOne(`${LIST_URL}?page=2&size=10&type=EXPENSE`).flush(page([TRANSACTION], 11, 2, 2));
     await settle();
 
-    expect(query('tbody input[name="editDescription"]').classList.contains('invalid')).toBe(true);
-    expect(fieldErrorTexts('tbody')).toEqual(['A descrição é obrigatória.']);
-    expect(fieldErrorTexts('form')).toEqual([]);
+    expect(query('.pagination-status').textContent?.trim()).toBe('Página 2 de 2');
+    expect((buttonByText('Próxima') as HTMLButtonElement).disabled).toBe(true);
   });
 
-  it('limpa os destaques ao cancelar o formulário, sem HTTP e sem toast novo', async () => {
-    await render();
-    await submitForm();
-    await flushCreateValidationError();
-    const toastsAfterError = toasts().length;
+  it('aplica filtros em E, mostra "Filtros (N)" com rótulos e remove um rótulo reaplicando os demais', async () => {
+    await render(page([TRANSACTION], 11, 2));
+    await openFilters();
 
-    await click(cancelButton());
+    const description = query<HTMLInputElement>('input[name="filterDescription"]');
+    description.value = 'feira';
+    description.dispatchEvent(new Event('input'));
+    description.dispatchEvent(new Event('change'));
+    await settle();
+    httpMock.expectOne(`${LIST_URL}?page=1&size=10&description=feira`).flush(page([TRANSACTION]));
+    await settle();
 
-    expect(queryAll('.field-error')).toHaveLength(0);
-    expect(queryAll('.invalid')).toHaveLength(0);
-    expect(toasts()).toHaveLength(toastsAfterError);
-    httpMock.expectNone(() => true);
-  });
+    await selectValue('select[name="filterStatus"]', 'PENDING');
+    httpMock.expectOne(`${LIST_URL}?page=1&size=10&description=feira&status=PENDING`).flush(page([TRANSACTION]));
+    await settle();
 
-  it('mantém "Sem categoria" na tabela para lançamentos legados sem categoria', async () => {
-    fixture = TestBed.createComponent(Transactions);
-    TestBed.inject(AuthService).superAdmin.set(true);
-    fixture.detectChanges();
+    await selectValue('select[name="filterCategoryId"]', 'cat-expense');
     httpMock
-      .expectOne(`${API_BASE}/transactions`)
-      .flush([{ ...TRANSACTION, categoryId: null }]);
-    httpMock.expectOne(`${API_BASE}/categories`).flush([...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES]);
-    httpMock.expectOne(`${API_BASE}/categories?type=EXPENSE`).flush(EXPENSE_CATEGORIES);
+      .expectOne(`${LIST_URL}?page=1&size=10&description=feira&categoryId=cat-expense&status=PENDING`)
+      .flush(page([TRANSACTION]));
     await settle();
 
-    const cells = queryAll('tbody tr td');
-    expect(cells[2].textContent?.trim()).toBe('Sem categoria');
+    expect(query('.filter-toggle').textContent?.trim()).toBe('Filtros (3)');
+    expect(chipTexts()).toEqual(['Descrição: feira', 'Categoria: Mercado', 'Status: Pendente']);
+
+    await click(queryAll('.filter-chip-remove')[0]);
+    httpMock
+      .expectOne(`${LIST_URL}?page=1&size=10&categoryId=cat-expense&status=PENDING`)
+      .flush(page([TRANSACTION]));
+    await settle();
+
+    expect(chipTexts()).toEqual(['Categoria: Mercado', 'Status: Pendente']);
+    expect(query<HTMLInputElement>('input[name="filterDescription"]').value).toBe('');
   });
 
-  it('abre o modal ao sair da edição com alteração pendente, sem HTTP e sem toast', async () => {
+  it('filtra Status por Pendente, Pago e Cancelado, sem padrão', async () => {
     await render();
-    await startEditing();
-    await fillText('tbody input[name="editDescription"]', 'Alterado');
+    await openFilters();
 
-    await click(query<HTMLButtonElement>('tbody .row-actions button.danger-button'));
+    const options = queryAll<HTMLOptionElement>('select[name="filterStatus"] option').map((option) =>
+      option.textContent?.trim(),
+    );
+    expect(options).toEqual(['Todos', 'Pendente', 'Pago', 'Cancelado']);
+    expect(query('.filter-toggle').textContent?.trim()).toBe('Filtros');
+  });
 
-    expect(query('.modal-card p').textContent?.trim()).toBe('Deseja sair sem salvar?');
-    expect(toasts()).toEqual([]);
-    httpMock.expectNone(() => true);
+  it('restaura filtros e página ao voltar do cadastro', async () => {
+    await render(page([TRANSACTION], 11, 2));
+    await openFilters();
+    await selectValue('select[name="filterType"]', 'EXPENSE');
+    httpMock.expectOne(`${LIST_URL}?page=1&size=10&type=EXPENSE`).flush(page([TRANSACTION], 11, 2));
+    await settle();
+    await click(buttonByText('Próxima') as HTMLButtonElement);
+    httpMock.expectOne(`${LIST_URL}?page=2&size=10&type=EXPENSE`).flush(page([TRANSACTION], 11, 2, 2));
+    await settle();
+    fixture.destroy();
+
+    await render(page([TRANSACTION], 11, 2, 2), true, `${LIST_URL}?page=2&size=10&type=EXPENSE`);
+
+    expect(query('.pagination-status').textContent?.trim()).toBe('Página 2 de 2');
+    expect(chipTexts()).toEqual(['Tipo: Despesa']);
+  });
+
+  it('mostra o .loading-state durante a carga, sem .empty-state', async () => {
+    create();
+
+    expect(query('.loading-state')).not.toBeNull();
+    expect(query('.table-wrap').getAttribute('aria-busy')).toBe('true');
+    expect(query('.empty-state')).toBeNull();
+
+    httpMock.expectOne(`${LIST_URL}?page=1&size=10`).flush(page([]));
+    httpMock.expectOne(OPTIONS_URL).flush(CATEGORIES);
+    await settle();
+
+    expect(query('.loading-state')).toBeNull();
+    expect(query('.empty-state').textContent?.trim()).toBe('Sem lançamentos cadastrados');
+  });
+
+  it('com filtro sem resultado mostra "Nenhum registro encontrado." e "Limpar filtros" volta ao padrão', async () => {
+    await render();
+    await openFilters();
+    await selectValue('select[name="filterType"]', 'INCOME');
+    httpMock.expectOne(`${LIST_URL}?page=1&size=10&type=INCOME`).flush(page([]));
+    await settle();
+
+    expect(query('.filtered-empty p').textContent?.trim()).toBe('Nenhum registro encontrado.');
+
+    await click(buttonByText('Limpar filtros', '.filtered-empty') as HTMLButtonElement);
+    httpMock.expectOne(`${LIST_URL}?page=1&size=10`).flush(page([TRANSACTION]));
+    await settle();
+
+    expect(query('.filter-toggle').textContent?.trim()).toBe('Filtros');
+    expect(queryAll('tbody tr')).toHaveLength(1);
+  });
+
+  it('na falha de carga mostra a mensagem na área, no lugar do vazio, além do toast', async () => {
+    create();
+    httpMock.expectOne(`${LIST_URL}?page=1&size=10`).flush(null, { status: 500, statusText: 'Server Error' });
+    httpMock.expectOne(OPTIONS_URL).flush(CATEGORIES);
+    await settle();
+
+    expect(query('.load-error').textContent?.trim()).toBe('Não foi possível carregar os lançamentos.');
+    expect(query('.empty-state')).toBeNull();
+    expect(query('.pagination')).toBeNull();
+    expect(toastService.toasts()[0].title).toBe('Falha');
+  });
+
+  it('resolve o nome da categoria com mais de 10 categorias e mantém "Sem categoria" nos legados', async () => {
+    const many: Category[] = Array.from({ length: 12 }, (_, index) => ({
+      id: `cat-${index + 1}`,
+      parentId: null,
+      name: `Categoria ${index + 1}`,
+      type: 'EXPENSE',
+      color: null,
+      active: true,
+    }));
+
+    await render(
+      page([{ ...TRANSACTION, categoryId: 'cat-12' }, { ...TRANSACTION, id: 'legacy', categoryId: null }]),
+      true,
+      `${LIST_URL}?page=1&size=10`,
+      many,
+    );
+
+    const categoryCells = queryAll('tbody td[data-label="Categoria"]').map((cell) => cell.textContent?.trim());
+    expect(categoryCells).toEqual(['Categoria 12', 'Sem categoria']);
+  });
+
+  it('oferece no filtro todas as categorias do tipo, marcando as inativas', async () => {
+    await render();
+    await openFilters();
+    await selectValue('select[name="filterType"]', 'EXPENSE');
+    httpMock.expectOne(`${LIST_URL}?page=1&size=10&type=EXPENSE`).flush(page([TRANSACTION]));
+    await settle();
+
+    const options = queryAll<HTMLOptionElement>('select[name="filterCategoryId"] option').map((option) =>
+      option.textContent?.trim(),
+    );
+    expect(options).toEqual(['Todas', 'Mercado', 'Antiga (Inativo)']);
+  });
+
+  it('com a listagem respondendo antes do catálogo, segura as linhas e o rótulo até ele chegar', async () => {
+    TestBed.inject(ListStateService).set('transactions', {
+      filters: { description: '', categoryId: 'cat-expense', type: '', status: '', startDate: '', endDate: '' },
+      page: 1,
+    });
+    create();
+    httpMock.expectOne(`${LIST_URL}?page=1&size=10&categoryId=cat-expense`).flush(page([TRANSACTION]));
+    await settle();
+
+    expect(query('.loading-state')).not.toBeNull();
+    expect(queryAll('tbody tr')).toHaveLength(0);
+    expect(chipTexts()).toEqual(['Categoria: …']);
+    expect(fixture.nativeElement.textContent).not.toContain('Sem categoria');
+
+    httpMock.expectOne(OPTIONS_URL).flush(CATEGORIES);
+    await settle();
+
+    expect(query('.loading-state')).toBeNull();
+    expect(query('tbody td[data-label="Categoria"]').textContent?.trim()).toBe('Mercado');
+    expect(chipTexts()).toEqual(['Categoria: Mercado']);
+  });
+
+  it('na falha do catálogo mostra o erro de carga no lugar das linhas e tenta de novo na próxima carga', async () => {
+    create();
+    httpMock.expectOne(`${LIST_URL}?page=1&size=10`).flush(page([TRANSACTION]));
+    httpMock.expectOne(OPTIONS_URL).flush(null, { status: 500, statusText: 'Server Error' });
+    await settle();
+
+    expect(query('.load-error').textContent?.trim()).toBe('Não foi possível carregar os lançamentos.');
+    expect(queryAll('tbody tr')).toHaveLength(0);
+    expect(toastService.toasts()).toHaveLength(1);
+
+    await openFilters();
+    await selectValue('select[name="filterType"]', 'EXPENSE');
+    httpMock.expectOne(`${LIST_URL}?page=1&size=10&type=EXPENSE`).flush(page([TRANSACTION]));
+    httpMock.expectOne(OPTIONS_URL).flush(CATEGORIES);
+    await settle();
+
+    expect(query('.load-error')).toBeNull();
+    expect(query('tbody td[data-label="Categoria"]').textContent?.trim()).toBe('Mercado');
   });
 });

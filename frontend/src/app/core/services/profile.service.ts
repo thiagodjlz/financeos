@@ -1,7 +1,8 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { API_BASE, PermissionEntry, Profile } from '../models';
+import { API_BASE, ListFilters, Page, PermissionEntry, Profile } from '../models';
+import { pageParams } from './page-params';
 
 export interface ProfilePayload {
   name: string;
@@ -12,10 +13,17 @@ export interface ProfilePayload {
 export class ProfileService {
   private readonly http = inject(HttpClient);
 
-  readonly profiles = signal<Profile[]>([]);
+  list(filters: ListFilters, page: number): Promise<Page<Profile>> {
+    return firstValueFrom(this.http.get<Page<Profile>>(`${API_BASE}/profiles`, { params: pageParams(filters, page) }));
+  }
 
-  async refresh(): Promise<void> {
-    this.profiles.set(await firstValueFrom(this.http.get<Profile[]>(`${API_BASE}/profiles`)));
+  get(id: string): Promise<Profile> {
+    return firstValueFrom(this.http.get<Profile>(`${API_BASE}/profiles/${id}`));
+  }
+
+  // Todos os perfis, sem paginar: dropdown de Perfil e nome do perfil nas linhas de Usuários.
+  options(): Promise<Profile[]> {
+    return firstValueFrom(this.http.get<Profile[]>(`${API_BASE}/profiles/options`));
   }
 
   create(payload: ProfilePayload): Promise<Profile> {

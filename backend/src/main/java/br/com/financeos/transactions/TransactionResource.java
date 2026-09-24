@@ -1,8 +1,6 @@
 package br.com.financeos.transactions;
 
 import java.net.URI;
-import java.time.LocalDate;
-import java.util.List;
 import java.util.UUID;
 
 import br.com.financeos.categories.Category;
@@ -11,6 +9,8 @@ import br.com.financeos.profiles.Screen;
 import br.com.financeos.shared.AccessControl;
 import br.com.financeos.shared.Action;
 import br.com.financeos.shared.CurrentUser;
+import br.com.financeos.shared.ListParams;
+import br.com.financeos.shared.PageResponse;
 import io.quarkus.security.Authenticated;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
@@ -23,10 +23,11 @@ import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
 
 @Path("/transactions")
 @Produces(MediaType.APPLICATION_JSON)
@@ -48,18 +49,18 @@ public class TransactionResource {
     }
 
     @GET
-    public List<TransactionResponse> list(
-            @QueryParam("type") TransactionType type,
-            @QueryParam("status") TransactionStatus status,
-            @QueryParam("startDate") LocalDate startDate,
-            @QueryParam("endDate") LocalDate endDate,
-            @QueryParam("categoryId") UUID categoryId) {
-
+    public PageResponse<TransactionResponse> list(@Context UriInfo uriInfo) {
         accessControl.require(Screen.TRANSACTIONS, Action.VIEW);
-        return repository.listByFilters(currentUser.id(), type, status, startDate, endDate, categoryId)
-                .stream()
-                .map(TransactionResponse::from)
-                .toList();
+        ListParams params = ListParams.from(uriInfo);
+        TransactionFilter filter = new TransactionFilter(
+                ListParams.text(uriInfo, "description"),
+                ListParams.uuid(uriInfo, "categoryId", "A categoria informada é inválida."),
+                ListParams.enumValue(uriInfo, "type", TransactionType.class, "O tipo informado é inválido."),
+                ListParams.enumValue(uriInfo, "status", TransactionStatus.class, "O status informado é inválido."),
+                ListParams.date(uriInfo, "startDate", "A data inicial informada é inválida."),
+                ListParams.date(uriInfo, "endDate", "A data final informada é inválida."));
+
+        return PageResponse.of(repository.search(currentUser.id(), filter), params, TransactionResponse::from);
     }
 
     @GET

@@ -18,16 +18,22 @@ describe('UserService', () => {
 
   afterEach(() => httpMock.verify());
 
-  it('populates the users signal from GET /users', async () => {
-    const refreshPromise = service.refresh();
+  it('lista uma página via GET /users com os filtros', async () => {
+    const listPromise = service.list({ name: '', email: 'ana', profileId: 'p1', active: 'false' }, 3);
 
-    const req = httpMock.expectOne(`${API_BASE}/users`);
+    const req = httpMock.expectOne(`${API_BASE}/users?page=3&size=10&email=ana&profileId=p1&active=false`);
     expect(req.request.method).toBe('GET');
-    req.flush([{ id: '1', name: 'Ana', email: 'ana@financeos.local', active: true, profileId: 'p1' }]);
+    req.flush({ items: [], totalItems: 0, totalPages: 0, page: 1, size: 10 });
 
-    await refreshPromise;
-    expect(service.users()).toHaveLength(1);
-    expect(service.users()[0].name).toBe('Ana');
+    await expect(listPromise).resolves.toMatchObject({ page: 1 });
+  });
+
+  it('busca um usuário via GET /users/{id}', async () => {
+    const getPromise = service.get('1');
+
+    httpMock.expectOne(`${API_BASE}/users/1`).flush({ id: '1', name: 'Ana' });
+
+    await expect(getPromise).resolves.toMatchObject({ name: 'Ana' });
   });
 
   it('creates a user via POST /users', async () => {
