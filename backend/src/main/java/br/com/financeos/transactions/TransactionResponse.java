@@ -8,6 +8,7 @@ import java.util.UUID;
 public record TransactionResponse(
         UUID id,
         UUID categoryId,
+        String categoryName,
         LocalDate transactionDate,
         String description,
         BigDecimal amount,
@@ -21,9 +22,14 @@ public record TransactionResponse(
         OffsetDateTime updatedAt) {
 
     public static TransactionResponse from(FinancialTransaction transaction) {
+        return from(transaction, transaction.categoryName);
+    }
+
+    public static TransactionResponse from(FinancialTransaction transaction, String categoryName) {
         return new TransactionResponse(
                 transaction.id,
                 transaction.categoryId,
+                categoryName,
                 transaction.transactionDate,
                 transaction.description,
                 transaction.amount,

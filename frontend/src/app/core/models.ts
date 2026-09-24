@@ -108,11 +108,13 @@ export interface AppUserSummary {
   email: string;
   active: boolean;
   profileId: string | null;
+  profileName: string | null;
 }
 
 export interface Transaction {
   id: string;
   categoryId: string | null;
+  categoryName: string | null;
   transactionDate: string;
   description: string;
   amount: number;

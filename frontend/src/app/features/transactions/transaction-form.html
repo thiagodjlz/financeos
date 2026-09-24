@@ -76,7 +76,16 @@
         <small class="field-error" *ngIf="fieldErrors.invalid('status')">{{ fieldErrors.message('status') }}</small>
       </label>
     </div>
-    <label>
+    <label *ngIf="categoryUnavailable()">
+      Categoria
+      <span class="field-notice">
+        Seu perfil não tem permissão para ver Categorias, por isso não é possível escolher a categoria.
+      </span>
+      <small class="field-error" *ngIf="fieldErrors.invalid('categoryId')">
+        {{ fieldErrors.message('categoryId') }}
+      </small>
+    </label>
+    <label *ngIf="!categoryUnavailable()">
       Categoria
       <select
         name="categoryId"

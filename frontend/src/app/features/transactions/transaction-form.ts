@@ -1,11 +1,12 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, ElementRef, OnInit, ViewChild, inject, signal } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ConfirmDialog } from '../../core/confirm-dialog/confirm-dialog';
 import { FieldErrorState, focusFirstInvalidField } from '../../core/field-errors';
 import { Category, Transaction, TransactionStatus, TransactionType } from '../../core/models';
+import { AuthService } from '../../core/services/auth.service';
 import { CategoryService } from '../../core/services/category.service';
 import { ToastService } from '../../core/services/toast.service';
 import { TransactionService } from '../../core/services/transaction.service';
@@ -48,6 +49,7 @@ export class TransactionForm implements OnInit {
   private readonly categoryService = inject(CategoryService);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
+  private readonly authService = inject(AuthService);
 
   @ViewChild('transactionForm') private formElement?: ElementRef<HTMLFormElement>;
 
@@ -61,6 +63,11 @@ export class TransactionForm implements OnInit {
   protected readonly categories = signal<Category[]>([]);
   // Categoria inativa já gravada no lançamento: entra como opção extra "(Inativo)" até o usuário trocar.
   protected readonly preselectedInactiveCategory = signal<Category | null>(null);
+  // O 403 cobre o perfil alterado durante a sessão: a tela ainda acha que pode, o servidor já não deixa.
+  private readonly categoriesDenied = signal(false);
+  protected readonly categoryUnavailable = computed(
+    () => !this.authService.can('CATEGORIES', 'VIEW') || this.categoriesDenied(),
+  );
 
   protected form = newTransactionForm();
   private snapshot = JSON.stringify(this.form);
@@ -97,7 +104,11 @@ export class TransactionForm implements OnInit {
   }
 
   private async resolveInactiveCategory(categoryId: string | null): Promise<void> {
-    if (!categoryId || this.categories().some((category) => category.id === categoryId)) {
+    if (
+      !categoryId ||
+      this.categoryUnavailable() ||
+      this.categories().some((category) => category.id === categoryId)
+    ) {
       return;
     }
 
@@ -110,9 +121,17 @@ export class TransactionForm implements OnInit {
   }
 
   private async loadCategoriesForType(type: TransactionType): Promise<void> {
+    if (this.categoryUnavailable()) {
+      return;
+    }
+
     try {
       this.categories.set(await this.categoryService.listByType(type));
     } catch (err) {
+      if (err instanceof HttpErrorResponse && err.status === 403) {
+        this.categoriesDenied.set(true);
+        return;
+      }
       this.toast.fromHttpError(err, LOAD_FALLBACK);
     }
   }

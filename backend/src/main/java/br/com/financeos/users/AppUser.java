@@ -4,6 +4,7 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.Formula;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
@@ -36,6 +37,9 @@ public class AppUser extends PanacheEntityBase {
 
     @Column(name = "profile_id")
     public UUID profileId;
+
+    @Formula("(select p.name from profiles p where p.id = profile_id)")
+    public String profileName;
 
     @Column(name = "super_admin", nullable = false)
     public boolean superAdmin = false;

@@ -26,7 +26,10 @@ const TRANSACTION: Transaction = {
   type: 'EXPENSE',
   status: 'PENDING',
   source: 'MANUAL',
+  categoryName: 'Mercado',
 };
+
+const LEGACY: Transaction = { ...TRANSACTION, id: 'legacy', categoryId: null, categoryName: null };
 
 function page(items: Transaction[], totalItems = items.length, totalPages = items.length ? 1 : 0, current = 1): Page<Transaction> {
   return { items, totalItems, totalPages, page: current, size: 10 };
@@ -52,10 +55,17 @@ describe('Transactions', () => {
 
   afterEach(() => httpMock.verify());
 
+  // Zoneless: o createComponent já roda o ngOnInit, que decide pela permissão se pede o catálogo.
   function create(superAdmin = true): void {
-    fixture = TestBed.createComponent(Transactions);
     TestBed.inject(AuthService).superAdmin.set(superAdmin);
+    fixture = TestBed.createComponent(Transactions);
     fixture.detectChanges();
+  }
+
+  function withoutCategoriesView(): void {
+    TestBed.inject(AuthService).permissions.set([
+      { screen: 'TRANSACTIONS', canView: true, canCreate: true, canEdit: true, canDelete: true },
+    ]);
   }
 
   async function render(
@@ -66,8 +76,18 @@ describe('Transactions', () => {
   ): Promise<void> {
     create(superAdmin);
     httpMock.expectOne(listUrl).flush(result);
-    httpMock.expectOne(OPTIONS_URL).flush(categories);
+    if (TestBed.inject(AuthService).can('CATEGORIES', 'VIEW')) {
+      httpMock.expectOne(OPTIONS_URL).flush(categories);
+    }
     await settle();
+  }
+
+  function categoryCells(): (string | undefined)[] {
+    return queryAll('tbody td[data-label="Categoria"]').map((cell) => cell.textContent?.trim());
+  }
+
+  function optionTexts(selector: string): (string | undefined)[] {
+    return queryAll<HTMLOptionElement>(`${selector} option`).map((option) => option.textContent?.trim());
   }
 
   async function settle(): Promise<void> {
@@ -294,27 +314,6 @@ describe('Transactions', () => {
     expect(toastService.toasts()[0].title).toBe('Falha');
   });
 
-  it('resolve o nome da categoria com mais de 10 categorias e mantém "Sem categoria" nos legados', async () => {
-    const many: Category[] = Array.from({ length: 12 }, (_, index) => ({
-      id: `cat-${index + 1}`,
-      parentId: null,
-      name: `Categoria ${index + 1}`,
-      type: 'EXPENSE',
-      color: null,
-      active: true,
-    }));
-
-    await render(
-      page([{ ...TRANSACTION, categoryId: 'cat-12' }, { ...TRANSACTION, id: 'legacy', categoryId: null }]),
-      true,
-      `${LIST_URL}?page=1&size=10`,
-      many,
-    );
-
-    const categoryCells = queryAll('tbody td[data-label="Categoria"]').map((cell) => cell.textContent?.trim());
-    expect(categoryCells).toEqual(['Categoria 12', 'Sem categoria']);
-  });
-
   it('oferece no filtro todas as categorias do tipo, marcando as inativas', async () => {
     await render();
     await openFilters();
@@ -328,45 +327,138 @@ describe('Transactions', () => {
     expect(options).toEqual(['Todas', 'Mercado', 'Antiga (Inativo)']);
   });
 
-  it('com a listagem respondendo antes do catálogo, segura as linhas e o rótulo até ele chegar', async () => {
+  it('sem permissão de ver Categorias lista as linhas e a paginação, sem erro de carga nem catálogo', async () => {
+    withoutCategoriesView();
+    create(false);
+    httpMock
+      .expectOne(`${LIST_URL}?page=1&size=10`)
+      .flush(page([TRANSACTION, { ...TRANSACTION, id: 'transaction-2' }, LEGACY], 23, 3));
+    httpMock.expectNone(OPTIONS_URL);
+    await settle();
+
+    expect(queryAll('tbody tr')).toHaveLength(3);
+    expect(query('.panel-heading span').textContent?.trim()).toBe('23');
+    expect(query('.pagination-status').textContent?.trim()).toBe('Página 1 de 3');
+    expect(query('.load-error')).toBeNull();
+    expect(toastService.toasts()).toHaveLength(0);
+    expect(categoryCells()).toEqual(['Mercado', 'Mercado', 'Sem categoria']);
+
+    await openFilters();
+    expect(query('select[name="filterCategoryId"]')).toBeNull();
+
+    await selectValue('select[name="filterType"]', 'EXPENSE');
+    httpMock.expectOne(`${LIST_URL}?page=1&size=10&type=EXPENSE`).flush(page([TRANSACTION]));
+    httpMock.expectNone(OPTIONS_URL);
+    await settle();
+
+    expect(chipTexts()).toEqual(['Tipo: Despesa']);
+    expect(queryAll('tbody tr')).toHaveLength(1);
+  });
+
+  it('mostra na coluna o nome vindo da linha, com ou sem o catálogo, e "Sem categoria" só no legado', async () => {
+    const rows = page([{ ...TRANSACTION, categoryId: 'cat-12', categoryName: 'Categoria 12' }, LEGACY]);
+
+    await render(rows);
+    expect(categoryCells()).toEqual(['Categoria 12', 'Sem categoria']);
+    fixture.destroy();
+
+    withoutCategoriesView();
+    await render(rows, false);
+    expect(categoryCells()).toEqual(['Categoria 12', 'Sem categoria']);
+  });
+
+  it('com o catálogo pendente, as linhas já saem com o nome certo e o rótulo espera por ele', async () => {
     TestBed.inject(ListStateService).set('transactions', {
       filters: { description: '', categoryId: 'cat-expense', type: '', status: '', startDate: '', endDate: '' },
       page: 1,
     });
     create();
-    httpMock.expectOne(`${LIST_URL}?page=1&size=10&categoryId=cat-expense`).flush(page([TRANSACTION]));
-    await settle();
-
-    expect(query('.loading-state')).not.toBeNull();
-    expect(queryAll('tbody tr')).toHaveLength(0);
-    expect(chipTexts()).toEqual(['Categoria: …']);
-    expect(fixture.nativeElement.textContent).not.toContain('Sem categoria');
-
-    httpMock.expectOne(OPTIONS_URL).flush(CATEGORIES);
+    httpMock.expectOne(`${LIST_URL}?page=1&size=10&categoryId=cat-expense`).flush(page([TRANSACTION, LEGACY]));
+    const options = httpMock.expectOne(OPTIONS_URL);
     await settle();
 
     expect(query('.loading-state')).toBeNull();
-    expect(query('tbody td[data-label="Categoria"]').textContent?.trim()).toBe('Mercado');
+    expect(categoryCells()).toEqual(['Mercado', 'Sem categoria']);
+    expect(chipTexts()).toEqual(['Categoria: …']);
+
+    options.flush(CATEGORIES);
+    await settle();
+
     expect(chipTexts()).toEqual(['Categoria: Mercado']);
+    expect(categoryCells()).toEqual(['Mercado', 'Sem categoria']);
   });
 
-  it('na falha do catálogo mostra o erro de carga no lugar das linhas e tenta de novo na próxima carga', async () => {
+  it('sem permissão de ver Categorias, o filtro de Categoria restaurado aparece como indisponível', async () => {
+    TestBed.inject(ListStateService).set('transactions', {
+      filters: { description: '', categoryId: 'cat-expense', type: '', status: '', startDate: '', endDate: '' },
+      page: 1,
+    });
+    withoutCategoriesView();
+    create(false);
+    httpMock.expectOne(`${LIST_URL}?page=1&size=10&categoryId=cat-expense`).flush(page([TRANSACTION]));
+    httpMock.expectNone(OPTIONS_URL);
+    await settle();
+
+    expect(chipTexts()).toEqual(['Categoria: indisponível']);
+
+    await click(queryAll('.filter-chip-remove')[0]);
+    httpMock.expectOne(`${LIST_URL}?page=1&size=10`).flush(page([TRANSACTION]));
+    await settle();
+
+    expect(chipTexts()).toEqual([]);
+  });
+
+  it('na falha do catálogo mantém as linhas, avisa uma vez, deixa o filtro sem opções e tenta de novo', async () => {
     create();
     httpMock.expectOne(`${LIST_URL}?page=1&size=10`).flush(page([TRANSACTION]));
     httpMock.expectOne(OPTIONS_URL).flush(null, { status: 500, statusText: 'Server Error' });
     await settle();
 
-    expect(query('.load-error').textContent?.trim()).toBe('Não foi possível carregar os lançamentos.');
-    expect(queryAll('tbody tr')).toHaveLength(0);
-    expect(toastService.toasts()).toHaveLength(1);
+    expect(query('.load-error')).toBeNull();
+    expect(categoryCells()).toEqual(['Mercado']);
+    expect(toastService.toasts().map((toast) => toast.title)).toEqual(['Falha']);
 
     await openFilters();
+    expect(optionTexts('select[name="filterCategoryId"]')).toEqual(['Todas']);
+
     await selectValue('select[name="filterType"]', 'EXPENSE');
     httpMock.expectOne(`${LIST_URL}?page=1&size=10&type=EXPENSE`).flush(page([TRANSACTION]));
     httpMock.expectOne(OPTIONS_URL).flush(CATEGORIES);
     await settle();
 
-    expect(query('.load-error')).toBeNull();
-    expect(query('tbody td[data-label="Categoria"]').textContent?.trim()).toBe('Mercado');
+    expect(optionTexts('select[name="filterCategoryId"]')).toEqual(['Todas', 'Mercado', 'Antiga (Inativo)']);
+    expect(toastService.toasts()).toHaveLength(1);
+  });
+
+  it('com a API fora, a listagem e o catálogo falhando juntos geram um único aviso', async () => {
+    create();
+    httpMock.expectOne(`${LIST_URL}?page=1&size=10`).error(new ProgressEvent('error'));
+    httpMock.expectOne(OPTIONS_URL).error(new ProgressEvent('error'));
+    await settle();
+
+    expect(query('.load-error').textContent?.trim()).toBe('Não foi possível carregar os lançamentos.');
+    expect(toastService.toasts()).toHaveLength(1);
+  });
+
+  it('com o catálogo negado pelo servidor, esconde o filtro de Categoria sem aviso e não insiste', async () => {
+    create();
+    httpMock.expectOne(`${LIST_URL}?page=1&size=10`).flush(page([TRANSACTION]));
+    httpMock
+      .expectOne(OPTIONS_URL)
+      .flush({ message: 'Você não tem permissão para realizar esta ação.' }, { status: 403, statusText: 'Forbidden' });
+    await settle();
+
+    expect(categoryCells()).toEqual(['Mercado']);
+    expect(toastService.toasts()).toHaveLength(0);
+
+    await openFilters();
+    expect(query('select[name="filterCategoryId"]')).toBeNull();
+
+    await selectValue('select[name="filterType"]', 'EXPENSE');
+    httpMock.expectOne(`${LIST_URL}?page=1&size=10&type=EXPENSE`).flush(page([TRANSACTION]));
+    httpMock.expectNone(OPTIONS_URL);
+    await settle();
+
+    expect(queryAll('tbody tr')).toHaveLength(1);
   });
 });

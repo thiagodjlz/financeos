@@ -3,6 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
 import { API_BASE, AppUserSummary, Profile } from '../../core/models';
+import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
 import { UserForm } from './user-form';
 
@@ -13,7 +14,18 @@ const PROFILES: Profile[] = Array.from({ length: 12 }, (_, index) => ({
   permissions: [],
 }));
 
-const USER: AppUserSummary = { id: 'u1', name: 'Ana', email: 'ana@financeos.local', active: true, profileId: 'p12' };
+const USER: AppUserSummary = {
+  id: 'u1',
+  name: 'Ana',
+  email: 'ana@financeos.local',
+  active: true,
+  profileId: 'p12',
+  profileName: 'Perfil 12',
+};
+
+const NO_PERMISSION_NOTICE = 'Seu perfil não tem permissão para ver Perfis, por isso não é possível escolher o perfil.';
+
+type ProfilesAccess = 'allowed' | 'noPermission' | 'forbidden';
 
 describe('UserForm', () => {
   let fixture: ComponentFixture<UserForm>;
@@ -21,7 +33,8 @@ describe('UserForm', () => {
   let toastService: ToastService;
   let router: Router;
 
-  async function setup(id: string | null): Promise<void> {
+  // Zoneless: o createComponent já roda o ngOnInit, então a permissão precisa estar posta antes dele.
+  async function setup(id: string | null, access: ProfilesAccess = 'allowed'): Promise<void> {
     await TestBed.configureTestingModule({
       imports: [UserForm],
       providers: [
@@ -36,14 +49,25 @@ describe('UserForm', () => {
     toastService = TestBed.inject(ToastService);
     router = TestBed.inject(Router);
     vi.spyOn(router, 'navigate').mockResolvedValue(true);
+    const auth = TestBed.inject(AuthService);
+    auth.superAdmin.set(access !== 'noPermission');
+    auth.permissions.set([{ screen: 'USERS', canView: true, canCreate: true, canEdit: true, canDelete: true }]);
     fixture = TestBed.createComponent(UserForm);
     fixture.detectChanges();
-    httpMock.expectOne(`${API_BASE}/profiles/options`).flush(PROFILES);
+    if (access === 'allowed') {
+      httpMock.expectOne(`${API_BASE}/profiles/options`).flush(PROFILES);
+    } else if (access === 'forbidden') {
+      httpMock
+        .expectOne(`${API_BASE}/profiles/options`)
+        .flush({ message: 'Você não tem permissão para realizar esta ação.' }, { status: 403, statusText: 'Forbidden' });
+    } else {
+      httpMock.expectNone(`${API_BASE}/profiles/options`);
+    }
     await settle();
   }
 
-  async function renderEdit(user: AppUserSummary = USER): Promise<void> {
-    await setup(user.id);
+  async function renderEdit(user: AppUserSummary = USER, access: ProfilesAccess = 'allowed'): Promise<void> {
+    await setup(user.id, access);
     httpMock.expectOne(`${API_BASE}/users/${user.id}`).flush(user);
     await settle();
   }
@@ -245,4 +269,55 @@ describe('UserForm', () => {
     expect(toasts().map((toast) => [toast.title, toast.message])).toEqual([['Alerta', 'Usuário não encontrado.']]);
     expect(router.navigate).toHaveBeenCalledWith(['/users']);
   });
+
+  function fieldErrors(): string[] {
+    return (Array.from(fixture.nativeElement.querySelectorAll('.field-error')) as HTMLElement[]).map(
+      (error) => error.textContent?.trim() ?? '',
+    );
+  }
+
+  for (const access of ['noPermission', 'forbidden'] as const) {
+    const scenario = access === 'noPermission' ? 'sem permissão de ver Perfis' : 'com os perfis negados pelo servidor (403)';
+
+    it(`${scenario}, a inclusão mostra o aviso no lugar do Perfil, sem toast, e o 400 segue com a legenda`, async () => {
+      await setup(null, access);
+
+      expect(labels()).toEqual(['Nome', 'E-mail', 'Senha', 'Perfil']);
+      expect(query('select[name="profileId"]')).toBeNull();
+      expect(query('.field-notice').textContent?.trim()).toBe(NO_PERMISSION_NOTICE);
+      expect(toasts()).toEqual([]);
+
+      await click(button('Salvar'));
+      httpMock.expectOne(`${API_BASE}/users`).flush(
+        {
+          violations: [{ field: 'create.request.profileId', message: 'O perfil é obrigatório.' }],
+          message: 'Informe os campos obrigatórios: Perfil.',
+        },
+        { status: 400, statusText: 'Bad Request' },
+      );
+      await settle();
+
+      expect(fieldErrors()).toEqual(['O perfil é obrigatório.']);
+      expect(router.navigate).not.toHaveBeenCalled();
+    });
+
+    it(`${scenario}, a edição mantém o perfil gravado no PUT, sem toast`, async () => {
+      await renderEdit(USER, access);
+
+      expect(query('select[name="profileId"]')).toBeNull();
+      expect(query('.field-notice').textContent?.trim()).toBe(NO_PERMISSION_NOTICE);
+      expect(toasts()).toEqual([]);
+
+      await fillText('input[name="name"]', 'Ana Paula');
+      await click(button('Salvar'));
+
+      const request = httpMock.expectOne(`${API_BASE}/users/u1`);
+      expect(request.request.method).toBe('PUT');
+      expect(request.request.body.profileId).toBe('p12');
+      request.flush({ ...USER, name: 'Ana Paula' });
+      await settle();
+
+      expect(toasts().map((toast) => toast.message)).toEqual(['Usuário atualizado com sucesso.']);
+    });
+  }
 });

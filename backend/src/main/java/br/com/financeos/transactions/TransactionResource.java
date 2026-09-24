@@ -77,7 +77,7 @@ public class TransactionResource {
     public Response create(@Valid TransactionRequest request) {
         accessControl.require(Screen.TRANSACTIONS, Action.CREATE);
         validateStatus(request, null);
-        validateCategory(request, null);
+        Category category = validateCategory(request, null);
 
         FinancialTransaction transaction = new FinancialTransaction();
         transaction.userId = currentUser.id();
@@ -85,7 +85,7 @@ public class TransactionResource {
         repository.persistAndFlush(transaction);
 
         return Response.created(URI.create("/api/transactions/" + transaction.id))
-                .entity(TransactionResponse.from(transaction))
+                .entity(TransactionResponse.from(transaction, nameOf(category)))
                 .build();
     }
 
@@ -98,9 +98,9 @@ public class TransactionResource {
                 .orElseThrow(NotFoundException::new);
 
         validateStatus(request, transaction);
-        validateCategory(request, transaction);
+        Category category = validateCategory(request, transaction);
         apply(transaction, request);
-        return TransactionResponse.from(transaction);
+        return TransactionResponse.from(transaction, nameOf(category));
     }
 
     @DELETE
@@ -115,9 +115,9 @@ public class TransactionResource {
         return Response.noContent().build();
     }
 
-    private void validateCategory(TransactionRequest request, FinancialTransaction existing) {
+    private Category validateCategory(TransactionRequest request, FinancialTransaction existing) {
         if (request.categoryId() == null) {
-            return;
+            return null;
         }
 
         Category category = categoryRepository.findByIdOptional(request.categoryId())
@@ -135,6 +135,12 @@ public class TransactionResource {
             throw new WebApplicationException(
                     "Categoria inativa não pode ser selecionada.", Response.Status.BAD_REQUEST);
         }
+
+        return category;
+    }
+
+    private static String nameOf(Category category) {
+        return category == null ? null : category.name;
     }
 
     private static void validateStatus(TransactionRequest request, FinancialTransaction existing) {

@@ -1,11 +1,12 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, ElementRef, OnInit, ViewChild, inject, signal } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ConfirmDialog } from '../../core/confirm-dialog/confirm-dialog';
 import { FieldErrorState, focusFirstInvalidField } from '../../core/field-errors';
 import { AppUserSummary, Profile } from '../../core/models';
+import { AuthService } from '../../core/services/auth.service';
 import { ProfileService } from '../../core/services/profile.service';
 import { ToastService } from '../../core/services/toast.service';
 import { UserService } from '../../core/services/user.service';
@@ -26,6 +27,7 @@ export class UserForm implements OnInit {
   private readonly profileService = inject(ProfileService);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
+  private readonly authService = inject(AuthService);
 
   @ViewChild('userForm') private formElement?: ElementRef<HTMLFormElement>;
 
@@ -37,6 +39,11 @@ export class UserForm implements OnInit {
 
   protected readonly fieldErrors = new FieldErrorState(FIELDS);
   protected readonly profiles = signal<Profile[]>([]);
+  // O 403 cobre o perfil alterado durante a sessão: a tela ainda acha que pode, o servidor já não deixa.
+  private readonly profilesDenied = signal(false);
+  protected readonly profileUnavailable = computed(
+    () => !this.authService.can('PROFILES', 'VIEW') || this.profilesDenied(),
+  );
 
   // A senha nunca é carregada: na edição começa vazia e só vai no payload se for preenchida.
   protected form = { name: '', email: '', password: '', profileId: '', active: true };
@@ -51,9 +58,17 @@ export class UserForm implements OnInit {
   }
 
   private async loadProfiles(): Promise<void> {
+    if (this.profileUnavailable()) {
+      return;
+    }
+
     try {
       this.profiles.set(await this.profileService.options());
     } catch (err) {
+      if (err instanceof HttpErrorResponse && err.status === 403) {
+        this.profilesDenied.set(true);
+        return;
+      }
       this.toast.fromHttpError(err, 'Não foi possível carregar os perfis.');
     }
   }

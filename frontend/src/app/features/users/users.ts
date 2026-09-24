@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -36,9 +37,9 @@ export class Users implements OnInit {
   protected readonly list = new PagedList({
     key: 'users',
     defaults: DEFAULT_FILTERS,
-    fetch: async (filters, page) => {
-      const [result] = await Promise.all([this.userService.list(filters, page), this.loadProfiles()]);
-      return result;
+    fetch: (filters, page) => {
+      this.loadProfiles();
+      return this.userService.list(filters, page);
     },
     loadErrorMessage: LOAD_FALLBACK,
     state: inject(ListStateService),
@@ -47,8 +48,11 @@ export class Users implements OnInit {
 
   protected readonly saving = signal(false);
   protected readonly profiles = signal<Profile[]>([]);
-  private readonly profilesLoaded = signal(false);
-  private profilesRequest: Promise<void> | null = null;
+  private readonly profilesState = signal<'idle' | 'loading' | 'loaded' | 'failed'>('idle');
+  private readonly profilesDenied = signal(false);
+  protected readonly canViewProfiles = computed(
+    () => this.authService.can('PROFILES', 'VIEW') && !this.profilesDenied(),
+  );
 
   protected readonly chips = computed<FilterChip[]>(() => {
     const applied = this.list.applied();
@@ -61,8 +65,7 @@ export class Users implements OnInit {
       chips.push({ key: 'email', label: `E-mail: ${applied.email.trim()}` });
     }
     if (applied.profileId) {
-      const name = this.profilesLoaded() ? this.profileName(applied.profileId) : '…';
-      chips.push({ key: 'profileId', label: `Perfil: ${name}` });
+      chips.push({ key: 'profileId', label: `Perfil: ${this.appliedProfileLabel(applied.profileId)}` });
     }
     if (applied.active) {
       chips.push({ key: 'active', label: `Situação: ${SITUATION_LABELS[applied.active] ?? applied.active}` });
@@ -75,21 +78,40 @@ export class Users implements OnInit {
     void this.list.load();
   }
 
-  // Todos os perfis, sem paginar: dão o nome do perfil em cada linha e as opções do filtro.
-  // Faz parte da carga da listagem: as linhas só aparecem com eles, senão o Perfil sairia "-" até
-  // eles chegarem. Falhou, cai no erro de carga da listagem e a próxima carga tenta de novo.
-  private loadProfiles(): Promise<void> {
-    this.profilesRequest ??= this.profileService.options().then(
+  // Todos os perfis, sem paginar: só alimentam o filtro e o rótulo dele — o perfil de cada linha
+  // já vem do back-end. Correm fora da carga da listagem, para que a falta de permissão ou a falha
+  // deles nunca derrube as linhas; falhou, a próxima carga da listagem tenta de novo.
+  private loadProfiles(): void {
+    if (!this.canViewProfiles() || this.profilesState() === 'loading' || this.profilesState() === 'loaded') {
+      return;
+    }
+
+    this.profilesState.set('loading');
+    void this.profileService.options().then(
       (profiles) => {
         this.profiles.set(profiles);
-        this.profilesLoaded.set(true);
+        this.profilesState.set('loaded');
       },
       (err: unknown) => {
-        this.profilesRequest = null;
-        throw err;
+        this.profilesState.set('failed');
+        // Permissão retirada durante a sessão: o filtro some, como se o perfil nunca a tivesse tido.
+        if (err instanceof HttpErrorResponse && err.status === 403) {
+          this.profilesDenied.set(true);
+          return;
+        }
+        this.toast.fromHttpError(err, 'Não foi possível carregar os perfis.');
       },
     );
-    return this.profilesRequest;
+  }
+
+  private appliedProfileLabel(profileId: string): string {
+    if (!this.canViewProfiles()) {
+      return 'indisponível';
+    }
+    if (this.profilesState() === 'loading' || this.profilesState() === 'idle') {
+      return '…';
+    }
+    return this.profiles().find((profile) => profile.id === profileId)?.name ?? 'indisponível';
   }
 
   protected create(): void {
@@ -116,7 +138,7 @@ export class Users implements OnInit {
     this.saving.set(false);
   }
 
-  protected profileName(profileId: string | null): string {
-    return this.profiles().find((profile) => profile.id === profileId)?.name ?? '-';
+  protected profileName(user: AppUserSummary): string {
+    return user.profileName ?? '-';
   }
 }
