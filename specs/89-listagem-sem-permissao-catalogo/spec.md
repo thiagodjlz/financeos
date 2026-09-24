@@ -4,7 +4,7 @@ url: https://github.com/thiagodjlz/financeos/issues/89
 title: "Listagem de Lançamentos/Usuários cai inteira em erro sem permissão de ver Categorias/Perfis"
 domains: [transactions, users, categories, auth, documentation]
 target: main
-stage: validated
+stage: pr-open
 branch: feature/issue-89-listagem-sem-permissao-catalogo
 created: 2026-09-24
 ---
