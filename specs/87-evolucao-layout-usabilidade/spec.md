@@ -4,7 +4,7 @@ url: https://github.com/thiagodjlz/financeos/issues/87
 title: "Evolução geral do layout e usabilidade do sistema"
 domains: [transactions, categories, users, auth, documentation]
 target: main
-stage: validated
+stage: pr-open
 branch: feature/issue-87-evolucao-layout-usabilidade
 created: 2026-09-23
 ---
