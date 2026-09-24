@@ -4,6 +4,7 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.Matchers.hasItem;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -37,6 +38,7 @@ class UserResourceTest {
     private static final String OWN_USER_ID = "00000000-0000-0000-0000-000000000001";
     private static final String SUPER_ADMIN_ID = "00000000-0000-0000-0000-000000000099";
     private static final String OTHER_PROFILE_ID = "00000000-0000-0000-0000-0000000009d2";
+    private static final String OTHER_PROFILE_NAME = "Teste usuarios perfil alternativo";
 
     @Inject
     AppUserRepository repository;
@@ -58,7 +60,7 @@ class UserResourceTest {
             profileRepository.getEntityManager()
                     .createNativeQuery("insert into profiles (id, name) values (cast(?1 as uuid), ?2)")
                     .setParameter(1, OTHER_PROFILE_ID)
-                    .setParameter(2, "Teste usuarios perfil alternativo")
+                    .setParameter(2, OTHER_PROFILE_NAME)
                     .executeUpdate();
         });
     }
@@ -411,9 +413,59 @@ class UserResourceTest {
         putUser(id, "Usuário Teste Perfil", email, OTHER_PROFILE_ID, "true")
                 .then()
                 .statusCode(200)
-                .body("profileId", equalTo(OTHER_PROFILE_ID));
+                .body("profileId", equalTo(OTHER_PROFILE_ID))
+                .body("profileName", equalTo(OTHER_PROFILE_NAME));
 
         assertEquals(OTHER_PROFILE_ID, findUser(id).get("profileId"));
+        assertEquals(OTHER_PROFILE_NAME, findUser(id).get("profileName"));
+    }
+
+    @Test
+    void shouldReturnProfileNameInListAndDetail() {
+        String prefix = "teste-usuarios-n-" + UUID.randomUUID().toString().substring(0, 8);
+        String adminProfileName = QuarkusTransaction.requiringNew()
+                .call(() -> profileRepository.findById(UUID.fromString(ADMIN_PROFILE_ID)).name);
+
+        String withProfile = given()
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "name": "Teste Nome Perfil A",
+                          "email": "%s-a@financeos.local",
+                          "password": "senha-valida",
+                          "profileId": "%s"
+                        }
+                        """.formatted(prefix, ADMIN_PROFILE_ID))
+                .when().post("/users")
+                .then()
+                .statusCode(201)
+                .body("profileName", equalTo(adminProfileName))
+                .extract()
+                .path("id");
+
+        UUID withoutProfile = QuarkusTransaction.requiringNew().call(() -> {
+            AppUser user = new AppUser();
+            user.name = "Teste Nome Perfil B";
+            user.email = prefix + "-b@financeos.local";
+            user.passwordHash = "sem-login";
+            repository.persist(user);
+            return user.id;
+        });
+
+        given()
+                .queryParam("email", prefix)
+                .when().get("/users")
+                .then()
+                .statusCode(200)
+                .body("totalItems", equalTo(2))
+                .body("items[0].id", equalTo(withProfile))
+                .body("items[0].profileName", equalTo(adminProfileName))
+                .body("items[1].id", equalTo(withoutProfile.toString()))
+                .body("items[1].profileId", nullValue())
+                .body("items[1].profileName", nullValue());
+
+        assertEquals(adminProfileName, findUser(withProfile).get("profileName"));
+        assertEquals(null, findUser(withoutProfile.toString()).get("profileName"));
     }
 
     @Test

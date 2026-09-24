@@ -41,7 +41,14 @@
       />
       <small class="field-error" *ngIf="fieldErrors.invalid('password')">{{ fieldErrors.message('password') }}</small>
     </label>
-    <label>
+    <label *ngIf="profileUnavailable()">
+      Perfil
+      <span class="field-notice">
+        Seu perfil não tem permissão para ver Perfis, por isso não é possível escolher o perfil.
+      </span>
+      <small class="field-error" *ngIf="fieldErrors.invalid('profileId')">{{ fieldErrors.message('profileId') }}</small>
+    </label>
+    <label *ngIf="!profileUnavailable()">
       Perfil
       <select
         name="profileId"

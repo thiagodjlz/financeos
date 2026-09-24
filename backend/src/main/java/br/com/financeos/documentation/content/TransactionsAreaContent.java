@@ -60,7 +60,11 @@ final class TransactionsAreaContent {
                                 List.of("Status",
                                         "Pendente ou Pago. O campo só existe quando o Tipo é Despesa."),
                                 List.of("Categoria",
-                                        "Obrigatória. A lista traz apenas categorias ativas do mesmo tipo."))));
+                                        "Obrigatória. A lista traz apenas categorias ativas do mesmo tipo. Se o "
+                                                + "seu perfil não puder ver a tela de Categorias, a lista dá "
+                                                + "lugar a um aviso de que não é possível escolher a categoria: "
+                                                + "na edição, a categoria já gravada é mantida enquanto o Tipo "
+                                                + "não for trocado."))));
     }
 
     private static DocumentationSection regras() {
@@ -99,7 +103,10 @@ final class TransactionsAreaContent {
                         "Uma categoria que foi desativada e já estava no lançamento continua disponível na edição, "
                                 + "marcada como Inativo, para que você consiga salvar sem trocá-la.",
                         "Lançamentos antigos gravados sem categoria continuam na tabela e aparecem como "
-                                + "Sem categoria; ao editá-los, é preciso escolher uma categoria para salvar."));
+                                + "Sem categoria; ao editá-los, é preciso escolher uma categoria para salvar.",
+                        "O filtro de Categoria só aparece se o seu perfil puder ver a tela de Categorias. Sem "
+                                + "essa permissão, a tabela continua mostrando normalmente a categoria de cada "
+                                + "lançamento."));
     }
 
     private static DocumentationSection acoes() {

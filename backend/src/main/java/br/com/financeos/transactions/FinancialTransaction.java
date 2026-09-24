@@ -6,6 +6,7 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.Formula;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
@@ -31,6 +32,9 @@ public class FinancialTransaction extends PanacheEntityBase {
 
     @Column(name = "category_id")
     public UUID categoryId;
+
+    @Formula("(select c.name from categories c where c.id = category_id)")
+    public String categoryName;
 
     @Column(name = "transaction_date", nullable = false)
     public LocalDate transactionDate;

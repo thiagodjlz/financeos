@@ -40,7 +40,7 @@
         <option value="INCOME">Receita</option>
       </select>
     </label>
-    <label>
+    <label *ngIf="canViewCategories()">
       Categoria
       <select name="filterCategoryId" [(ngModel)]="list.filters.categoryId" (change)="list.apply()">
         <option value="">Todas</option>
@@ -92,7 +92,7 @@
         <tr *ngFor="let transaction of list.items()">
           <td data-label="Data">{{ transaction.transactionDate }}</td>
           <td data-label="Descrição">{{ transaction.description }}</td>
-          <td data-label="Categoria">{{ categoryName(transaction.categoryId) }}</td>
+          <td data-label="Categoria">{{ categoryName(transaction) }}</td>
           <td data-label="Status">
             <span [class]="statusPillClass(transaction.status)">{{ statusLabel(transaction.status) }}</span>
           </td>

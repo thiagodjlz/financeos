@@ -36,7 +36,7 @@
         (keydown.enter)="list.apply()"
       />
     </label>
-    <label>
+    <label *ngIf="canViewProfiles()">
       Perfil
       <select name="filterProfileId" [(ngModel)]="list.filters.profileId" (change)="list.apply()">
         <option value="">Todos</option>
@@ -75,7 +75,7 @@
         <tr *ngFor="let user of list.items()">
           <td data-label="Nome">{{ user.name }}</td>
           <td data-label="E-mail">{{ user.email }}</td>
-          <td data-label="Perfil">{{ profileName(user.profileId) }}</td>
+          <td data-label="Perfil">{{ profileName(user) }}</td>
           <td data-label="Status">
             <span class="status-pill" [class.pill-income]="user.active" [class.pill-neutral]="!user.active">
               {{ user.active ? 'Ativo' : 'Inativo' }}

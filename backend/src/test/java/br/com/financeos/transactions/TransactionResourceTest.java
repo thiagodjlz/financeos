@@ -241,7 +241,8 @@ class TransactionResourceTest {
                 .when().put("/transactions/{id}", id)
                 .then()
                 .statusCode(200)
-                .body("categoryId", equalTo(category.id.toString()));
+                .body("categoryId", equalTo(category.id.toString()))
+                .body("categoryName", equalTo(category.name));
     }
 
     @Test
@@ -447,9 +448,9 @@ class TransactionResourceTest {
 
     private static final UUID OTHER_USER_ID = UUID.fromString("00000000-0000-0000-0000-000000000099");
 
-    private void createTransaction(UUID userId, String description, LocalDate date, TransactionType type,
+    private UUID createTransaction(UUID userId, String description, LocalDate date, TransactionType type,
             TransactionStatus status, UUID categoryId) {
-        QuarkusTransaction.requiringNew().run(() -> {
+        return QuarkusTransaction.requiringNew().call(() -> {
             FinancialTransaction transaction = new FinancialTransaction();
             transaction.userId = userId;
             transaction.description = description;
@@ -459,7 +460,103 @@ class TransactionResourceTest {
             transaction.status = status;
             transaction.categoryId = categoryId;
             repository.persist(transaction);
+            return transaction.id;
         });
+    }
+
+    @Test
+    void shouldReturnCategoryNameInListAndDetail() {
+        String prefix = "Teste mercado nome categoria " + UUID.randomUUID();
+        Category activeCategory = createCategory(CategoryType.EXPENSE, true);
+        Category inactiveCategory = createCategory(CategoryType.EXPENSE, true);
+        UUID withActive = createTransaction(TEST_USER_ID, prefix + " ativa", LocalDate.of(2026, 1, 3),
+                TransactionType.EXPENSE, TransactionStatus.PENDING, activeCategory.id);
+        UUID withInactive = createTransaction(TEST_USER_ID, prefix + " inativa", LocalDate.of(2026, 1, 2),
+                TransactionType.EXPENSE, TransactionStatus.PENDING, inactiveCategory.id);
+        UUID legacy = createTransaction(TEST_USER_ID, prefix + " legado", LocalDate.of(2026, 1, 1),
+                TransactionType.EXPENSE, TransactionStatus.PENDING, null);
+        deactivateCategory(inactiveCategory.id);
+
+        given()
+                .queryParam("description", prefix)
+                .when().get("/transactions")
+                .then()
+                .statusCode(200)
+                .body("totalItems", equalTo(3))
+                .body("items[0].description", equalTo(prefix + " ativa"))
+                .body("items[0].categoryName", equalTo(activeCategory.name))
+                .body("items[1].description", equalTo(prefix + " inativa"))
+                .body("items[1].categoryName", equalTo(inactiveCategory.name))
+                .body("items[2].description", equalTo(prefix + " legado"))
+                .body("items[2].categoryId", nullValue())
+                .body("items[2].categoryName", nullValue());
+
+        given()
+                .when().get("/transactions/{id}", withActive)
+                .then()
+                .statusCode(200)
+                .body("categoryName", equalTo(activeCategory.name));
+
+        given()
+                .when().get("/transactions/{id}", withInactive)
+                .then()
+                .statusCode(200)
+                .body("categoryName", equalTo(inactiveCategory.name));
+
+        given()
+                .when().get("/transactions/{id}", legacy)
+                .then()
+                .statusCode(200)
+                .body("categoryName", nullValue());
+    }
+
+    @Test
+    void shouldRespondCategoryNameOnCreateAndUpdate() {
+        Category firstCategory = createCategory(CategoryType.EXPENSE, true);
+        Category secondCategory = createCategory(CategoryType.EXPENSE, true);
+
+        String id = given()
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "transactionDate": "2026-06-30",
+                          "description": "Teste mercado nome na resposta",
+                          "amount": 10.00,
+                          "type": "EXPENSE",
+                          "status": "PENDING",
+                          "categoryId": "%s"
+                        }
+                        """.formatted(firstCategory.id))
+                .when().post("/transactions")
+                .then()
+                .statusCode(201)
+                .body("categoryName", equalTo(firstCategory.name))
+                .extract()
+                .path("id");
+
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "transactionDate": "2026-06-30",
+                          "description": "Teste mercado nome na resposta editado",
+                          "amount": 10.00,
+                          "type": "EXPENSE",
+                          "status": "PENDING",
+                          "categoryId": "%s"
+                        }
+                        """.formatted(secondCategory.id))
+                .when().put("/transactions/{id}", id)
+                .then()
+                .statusCode(200)
+                .body("categoryId", equalTo(secondCategory.id.toString()))
+                .body("categoryName", equalTo(secondCategory.name));
+
+        given()
+                .when().get("/transactions/{id}", id)
+                .then()
+                .statusCode(200)
+                .body("categoryName", equalTo(secondCategory.name));
     }
 
     @Test

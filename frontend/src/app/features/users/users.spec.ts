@@ -16,7 +16,16 @@ const PROFILES: Profile[] = [
   { id: 'p2', name: 'Leitura', active: true, permissions: [] },
 ];
 
-const USER: AppUserSummary = { id: 'u1', name: 'Ana', email: 'ana@financeos.local', active: true, profileId: 'p1' };
+const USER: AppUserSummary = {
+  id: 'u1',
+  name: 'Ana',
+  email: 'ana@financeos.local',
+  active: true,
+  profileId: 'p1',
+  profileName: 'Administrador',
+};
+
+const WITHOUT_PROFILE: AppUserSummary = { ...USER, id: 'u9', profileId: null, profileName: null };
 
 function page(items: AppUserSummary[], totalItems = items.length, totalPages = items.length ? 1 : 0, current = 1): Page<AppUserSummary> {
   return { items, totalItems, totalPages, page: current, size: 10 };
@@ -42,18 +51,39 @@ describe('Users', () => {
 
   afterEach(() => httpMock.verify());
 
+  // Zoneless: o createComponent já roda o ngOnInit, que decide pela permissão se pede os perfis.
+  function create(superAdmin = true): void {
+    TestBed.inject(AuthService).superAdmin.set(superAdmin);
+    fixture = TestBed.createComponent(Users);
+    fixture.detectChanges();
+  }
+
+  function withoutProfilesView(): void {
+    TestBed.inject(AuthService).permissions.set([
+      { screen: 'USERS', canView: true, canCreate: true, canEdit: true, canDelete: true },
+    ]);
+  }
+
   async function render(
     users: Page<AppUserSummary> = page([USER]),
     superAdmin = true,
     url = DEFAULT_URL,
     profiles: Profile[] = PROFILES,
   ): Promise<void> {
-    fixture = TestBed.createComponent(Users);
-    TestBed.inject(AuthService).superAdmin.set(superAdmin);
-    fixture.detectChanges();
+    create(superAdmin);
     httpMock.expectOne(url).flush(users);
-    httpMock.expectOne(OPTIONS_URL).flush(profiles);
+    if (TestBed.inject(AuthService).can('PROFILES', 'VIEW')) {
+      httpMock.expectOne(OPTIONS_URL).flush(profiles);
+    }
     await settle();
+  }
+
+  function profileCells(): (string | undefined)[] {
+    return queryAll('tbody td[data-label="Perfil"]').map((cell) => cell.textContent?.trim());
+  }
+
+  function optionTexts(selector: string): (string | undefined)[] {
+    return queryAll<HTMLOptionElement>(`${selector} option`).map((option) => option.textContent?.trim());
   }
 
   async function settle(): Promise<void> {
@@ -168,7 +198,7 @@ describe('Users', () => {
       active: true,
       permissions: [],
     }));
-    await render(page([{ ...USER, profileId: 'p12' }]), true, DEFAULT_URL, many);
+    await render(page([{ ...USER, profileId: 'p12', profileName: 'Perfil 12' }]), true, DEFAULT_URL, many);
 
     expect(query('tbody td[data-label="Perfil"]').textContent?.trim()).toBe('Perfil 12');
 
@@ -208,8 +238,7 @@ describe('Users', () => {
   });
 
   it('na falha de carga mostra a mensagem na área, sem o vazio', async () => {
-    fixture = TestBed.createComponent(Users);
-    fixture.detectChanges();
+    create();
     httpMock.expectOne(DEFAULT_URL).flush(null, { status: 503, statusText: 'Unavailable' });
     httpMock.expectOne(OPTIONS_URL).flush(PROFILES);
     await settle();
@@ -218,45 +247,136 @@ describe('Users', () => {
     expect(query('.empty-state')).toBeNull();
   });
 
-  it('com a listagem respondendo antes dos perfis, segura as linhas e o rótulo até eles chegarem', async () => {
+  it('sem permissão de ver Perfis lista as linhas e a paginação, sem erro de carga nem perfis', async () => {
+    withoutProfilesView();
+    create(false);
+    httpMock.expectOne(DEFAULT_URL).flush(page([USER, { ...USER, id: 'u2' }, WITHOUT_PROFILE], 23, 3));
+    httpMock.expectNone(OPTIONS_URL);
+    await settle();
+
+    expect(queryAll('tbody tr')).toHaveLength(3);
+    expect(query('.panel-heading span').textContent?.trim()).toBe('23');
+    expect(query('.pagination-status').textContent?.trim()).toBe('Página 1 de 3');
+    expect(query('.load-error')).toBeNull();
+    expect(toastService.toasts()).toHaveLength(0);
+    expect(profileCells()).toEqual(['Administrador', 'Administrador', '-']);
+
+    await click(query('.filter-toggle'));
+    expect(query('select[name="filterProfileId"]')).toBeNull();
+
+    await selectValue('select[name="filterActive"]', 'false');
+    httpMock.expectOne(`${API_BASE}/users?page=1&size=10&active=false`).flush(page([USER]));
+    httpMock.expectNone(OPTIONS_URL);
+    await settle();
+
+    expect(chipTexts()).toEqual(['Situação: Inativos']);
+    expect(queryAll('tbody tr')).toHaveLength(1);
+  });
+
+  it('mostra na coluna o perfil vindo da linha, com ou sem os perfis, e "-" só sem perfil', async () => {
+    const rows = page([{ ...USER, profileId: 'p12', profileName: 'Perfil 12' }, WITHOUT_PROFILE]);
+
+    await render(rows);
+    expect(profileCells()).toEqual(['Perfil 12', '-']);
+    fixture.destroy();
+
+    withoutProfilesView();
+    await render(rows, false);
+    expect(profileCells()).toEqual(['Perfil 12', '-']);
+  });
+
+  it('com os perfis pendentes, as linhas já saem com o nome certo e o rótulo espera por eles', async () => {
     TestBed.inject(ListStateService).set('users', {
       filters: { name: '', email: '', profileId: 'p1', active: 'true' },
       page: 1,
     });
-    fixture = TestBed.createComponent(Users);
-    fixture.detectChanges();
-    httpMock.expectOne(`${API_BASE}/users?page=1&size=10&profileId=p1&active=true`).flush(page([USER]));
-    await settle();
-
-    expect(query('.loading-state')).not.toBeNull();
-    expect(queryAll('tbody tr')).toHaveLength(0);
-    expect(chipTexts()).toEqual(['Perfil: …', 'Situação: Ativos']);
-
-    httpMock.expectOne(OPTIONS_URL).flush(PROFILES);
+    create();
+    httpMock.expectOne(`${API_BASE}/users?page=1&size=10&profileId=p1&active=true`).flush(page([USER, WITHOUT_PROFILE]));
+    const options = httpMock.expectOne(OPTIONS_URL);
     await settle();
 
     expect(query('.loading-state')).toBeNull();
-    expect(query('tbody td[data-label="Perfil"]').textContent?.trim()).toBe('Administrador');
+    expect(profileCells()).toEqual(['Administrador', '-']);
+    expect(chipTexts()).toEqual(['Perfil: …', 'Situação: Ativos']);
+
+    options.flush(PROFILES);
+    await settle();
+
     expect(chipTexts()).toEqual(['Perfil: Administrador', 'Situação: Ativos']);
+    expect(profileCells()).toEqual(['Administrador', '-']);
   });
 
-  it('na falha dos perfis mostra o erro de carga no lugar das linhas e tenta de novo na próxima carga', async () => {
-    fixture = TestBed.createComponent(Users);
-    fixture.detectChanges();
+  it('sem permissão de ver Perfis, o filtro de Perfil restaurado aparece como indisponível', async () => {
+    TestBed.inject(ListStateService).set('users', {
+      filters: { name: '', email: '', profileId: 'p1', active: 'true' },
+      page: 1,
+    });
+    withoutProfilesView();
+    create(false);
+    httpMock.expectOne(`${API_BASE}/users?page=1&size=10&profileId=p1&active=true`).flush(page([USER]));
+    httpMock.expectNone(OPTIONS_URL);
+    await settle();
+
+    expect(chipTexts()).toEqual(['Perfil: indisponível', 'Situação: Ativos']);
+
+    await click(queryAll('.filter-chip-remove')[0]);
+    httpMock.expectOne(DEFAULT_URL).flush(page([USER]));
+    await settle();
+
+    expect(chipTexts()).toEqual(['Situação: Ativos']);
+  });
+
+  it('na falha dos perfis mantém as linhas, avisa uma vez, deixa o filtro sem opções e tenta de novo', async () => {
+    create();
     httpMock.expectOne(DEFAULT_URL).flush(page([USER]));
     httpMock.expectOne(OPTIONS_URL).flush(null, { status: 503, statusText: 'Unavailable' });
     await settle();
 
-    expect(query('.load-error').textContent?.trim()).toBe('Não foi possível carregar os usuários.');
-    expect(queryAll('tbody tr')).toHaveLength(0);
-    expect(toastService.toasts()).toHaveLength(1);
+    expect(query('.load-error')).toBeNull();
+    expect(profileCells()).toEqual(['Administrador']);
+    expect(toastService.toasts().map((toast) => toast.title)).toEqual(['Falha']);
+
+    await click(query('.filter-toggle'));
+    expect(optionTexts('select[name="filterProfileId"]')).toEqual(['Todos']);
 
     await click(query('.filter-chip-remove'));
     httpMock.expectOne(`${API_BASE}/users?page=1&size=10`).flush(page([USER]));
     httpMock.expectOne(OPTIONS_URL).flush(PROFILES);
     await settle();
 
-    expect(query('.load-error')).toBeNull();
-    expect(query('tbody td[data-label="Perfil"]').textContent?.trim()).toBe('Administrador');
+    expect(optionTexts('select[name="filterProfileId"]')).toEqual(['Todos', 'Administrador', 'Leitura']);
+    expect(toastService.toasts()).toHaveLength(1);
+  });
+
+  it('com a API fora, a listagem e os perfis falhando juntos geram um único aviso', async () => {
+    create();
+    httpMock.expectOne(DEFAULT_URL).error(new ProgressEvent('error'));
+    httpMock.expectOne(OPTIONS_URL).error(new ProgressEvent('error'));
+    await settle();
+
+    expect(query('.load-error').textContent?.trim()).toBe('Não foi possível carregar os usuários.');
+    expect(toastService.toasts()).toHaveLength(1);
+  });
+
+  it('com os perfis negados pelo servidor, esconde o filtro de Perfil sem aviso e não insiste', async () => {
+    create();
+    httpMock.expectOne(DEFAULT_URL).flush(page([USER]));
+    httpMock
+      .expectOne(OPTIONS_URL)
+      .flush({ message: 'Você não tem permissão para realizar esta ação.' }, { status: 403, statusText: 'Forbidden' });
+    await settle();
+
+    expect(profileCells()).toEqual(['Administrador']);
+    expect(toastService.toasts()).toHaveLength(0);
+
+    await click(query('.filter-toggle'));
+    expect(query('select[name="filterProfileId"]')).toBeNull();
+
+    await click(query('.filter-chip-remove'));
+    httpMock.expectOne(`${API_BASE}/users?page=1&size=10`).flush(page([USER]));
+    httpMock.expectNone(OPTIONS_URL);
+    await settle();
+
+    expect(queryAll('tbody tr')).toHaveLength(1);
   });
 });

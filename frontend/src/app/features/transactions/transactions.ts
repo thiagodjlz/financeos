@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -48,9 +49,9 @@ export class Transactions implements OnInit {
   protected readonly list = new PagedList({
     key: 'transactions',
     defaults: DEFAULT_FILTERS,
-    fetch: async (filters, page) => {
-      const [result] = await Promise.all([this.transactionService.list(filters, page), this.loadCategories()]);
-      return result;
+    fetch: (filters, page) => {
+      this.loadCategories();
+      return this.transactionService.list(filters, page);
     },
     loadErrorMessage: TRANSACTIONS_LOAD_FALLBACK,
     state: inject(ListStateService),
@@ -59,8 +60,11 @@ export class Transactions implements OnInit {
 
   protected readonly saving = signal(false);
   protected readonly categories = signal<Category[]>([]);
-  private readonly categoriesLoaded = signal(false);
-  private categoriesRequest: Promise<void> | null = null;
+  private readonly categoriesState = signal<'idle' | 'loading' | 'loaded' | 'failed'>('idle');
+  private readonly categoriesDenied = signal(false);
+  protected readonly canViewCategories = computed(
+    () => this.authService.can('CATEGORIES', 'VIEW') && !this.categoriesDenied(),
+  );
 
   protected readonly chips = computed<FilterChip[]>(() => {
     const applied = this.list.applied();
@@ -70,8 +74,7 @@ export class Transactions implements OnInit {
       chips.push({ key: 'description', label: `Descrição: ${applied.description.trim()}` });
     }
     if (applied.categoryId) {
-      const name = this.categoriesLoaded() ? this.categoryName(applied.categoryId) : '…';
-      chips.push({ key: 'categoryId', label: `Categoria: ${name}` });
+      chips.push({ key: 'categoryId', label: `Categoria: ${this.appliedCategoryLabel(applied.categoryId)}` });
     }
     if (applied.type) {
       chips.push({ key: 'type', label: `Tipo: ${TYPE_LABELS[applied.type] ?? applied.type}` });
@@ -93,21 +96,40 @@ export class Transactions implements OnInit {
     void this.list.load();
   }
 
-  // Catálogo completo, inclusive inativas: dá o nome da categoria em cada linha e as opções do filtro.
-  // Faz parte da carga da listagem: as linhas só aparecem com ele, senão sairiam "Sem categoria" até
-  // ele chegar. Falhou, cai no erro de carga da listagem e a próxima carga tenta de novo.
-  private loadCategories(): Promise<void> {
-    this.categoriesRequest ??= this.categoryService.options().then(
+  // Catálogo completo, inclusive inativas: só alimenta o filtro e o rótulo dele — o nome de cada
+  // linha já vem do back-end. Corre fora da carga da listagem, para que a falta de permissão ou a
+  // falha dele nunca derrube as linhas; falhou, a próxima carga da listagem tenta de novo.
+  private loadCategories(): void {
+    if (!this.canViewCategories() || this.categoriesState() === 'loading' || this.categoriesState() === 'loaded') {
+      return;
+    }
+
+    this.categoriesState.set('loading');
+    void this.categoryService.options().then(
       (categories) => {
         this.categories.set(categories);
-        this.categoriesLoaded.set(true);
+        this.categoriesState.set('loaded');
       },
       (err: unknown) => {
-        this.categoriesRequest = null;
-        throw err;
+        this.categoriesState.set('failed');
+        // Permissão retirada durante a sessão: o filtro some, como se o perfil nunca a tivesse tido.
+        if (err instanceof HttpErrorResponse && err.status === 403) {
+          this.categoriesDenied.set(true);
+          return;
+        }
+        this.toast.fromHttpError(err, 'Não foi possível carregar as categorias.');
       },
     );
-    return this.categoriesRequest;
+  }
+
+  private appliedCategoryLabel(categoryId: string): string {
+    if (!this.canViewCategories()) {
+      return 'indisponível';
+    }
+    if (this.categoriesState() === 'loading' || this.categoriesState() === 'idle') {
+      return '…';
+    }
+    return this.categories().find((category) => category.id === categoryId)?.name ?? 'indisponível';
   }
 
   protected filterCategories(): Category[] {
@@ -148,8 +170,8 @@ export class Transactions implements OnInit {
     this.saving.set(false);
   }
 
-  protected categoryName(id: string | null): string {
-    return this.categories().find((category) => category.id === id)?.name ?? 'Sem categoria';
+  protected categoryName(transaction: Transaction): string {
+    return transaction.categoryName ?? 'Sem categoria';
   }
 
   protected categoryOptionLabel(category: Category): string {

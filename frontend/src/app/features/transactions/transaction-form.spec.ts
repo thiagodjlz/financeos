@@ -3,6 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
 import { API_BASE, Category, Transaction } from '../../core/models';
+import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
 import { TransactionForm } from './transaction-form';
 
@@ -23,7 +24,11 @@ const TRANSACTION: Transaction = {
   type: 'EXPENSE',
   status: 'PENDING',
   source: 'MANUAL',
+  categoryName: 'Mercado',
 };
+
+const NO_PERMISSION_NOTICE =
+  'Seu perfil não tem permissão para ver Categorias, por isso não é possível escolher a categoria.';
 
 const TODAY = new Date().toISOString().slice(0, 10);
 
@@ -33,7 +38,8 @@ describe('TransactionForm', () => {
   let toastService: ToastService;
   let router: Router;
 
-  async function setup(id: string | null): Promise<void> {
+  // Zoneless: o createComponent já roda o ngOnInit, então a permissão precisa estar posta antes dele.
+  async function setup(id: string | null, canViewCategories = true): Promise<void> {
     await TestBed.configureTestingModule({
       imports: [TransactionForm],
       providers: [
@@ -48,6 +54,11 @@ describe('TransactionForm', () => {
     toastService = TestBed.inject(ToastService);
     router = TestBed.inject(Router);
     vi.spyOn(router, 'navigate').mockResolvedValue(true);
+    const auth = TestBed.inject(AuthService);
+    auth.superAdmin.set(canViewCategories);
+    auth.permissions.set([
+      { screen: 'TRANSACTIONS', canView: true, canCreate: true, canEdit: true, canDelete: true },
+    ]);
     fixture = TestBed.createComponent(TransactionForm);
     fixture.detectChanges();
   }
@@ -345,5 +356,91 @@ describe('TransactionForm', () => {
 
     expect(query('.load-error').textContent?.trim()).toBe('Não foi possível carregar o lançamento.');
     expect(query('form')).toBeNull();
+  });
+
+  function noCategoryRequests(): void {
+    httpMock.expectNone((request) => request.url.startsWith(`${API_BASE}/categories`));
+  }
+
+  it('sem permissão de ver Categorias, a inclusão mostra o aviso no lugar da Categoria, sem pedir o catálogo nem avisar', async () => {
+    await setup(null, false);
+    await settle();
+    noCategoryRequests();
+
+    expect(query('select[name="categoryId"]')).toBeNull();
+    expect(query('.field-notice').textContent?.trim()).toBe(NO_PERMISSION_NOTICE);
+    expect(toasts()).toEqual([]);
+
+    await fillText('input[name="description"]', 'Feira');
+    await click(button('Salvar'));
+
+    const request = httpMock.expectOne(`${API_BASE}/transactions`);
+    expect(request.request.body.categoryId).toBeNull();
+    request.flush(
+      {
+        violations: [{ field: 'create.request.categoryId', message: 'A categoria é obrigatória.' }],
+        message: 'Informe os campos obrigatórios: Categoria.',
+      },
+      { status: 400, statusText: 'Bad Request' },
+    );
+    await settle();
+
+    expect(queryAll('.field-error').map((error) => error.textContent?.trim())).toEqual(['A categoria é obrigatória.']);
+    expect(router.navigate).not.toHaveBeenCalled();
+  });
+
+  it('sem permissão de ver Categorias, a edição mantém a categoria gravada no PUT, sem pedir o catálogo nem avisar', async () => {
+    await setup('transaction-1', false);
+    httpMock.expectOne(`${API_BASE}/transactions/transaction-1`).flush({ ...TRANSACTION, categoryId: 'cat-old' });
+    await settle();
+    noCategoryRequests();
+
+    expect(query('select[name="categoryId"]')).toBeNull();
+    expect(query('.field-notice').textContent?.trim()).toBe(NO_PERMISSION_NOTICE);
+    expect(toasts()).toEqual([]);
+
+    await fillText('input[name="description"]', 'Feira grande');
+    await click(button('Salvar'));
+
+    const request = httpMock.expectOne(`${API_BASE}/transactions/transaction-1`);
+    expect(request.request.method).toBe('PUT');
+    expect(request.request.body.categoryId).toBe('cat-old');
+    request.flush({ ...TRANSACTION, categoryId: 'cat-old', description: 'Feira grande' });
+    await settle();
+
+    expect(toasts().map((toast) => toast.message)).toEqual(['Lançamento atualizado com sucesso.']);
+  });
+
+  it('com o catálogo negado pelo servidor (403), a inclusão mostra o aviso no lugar da Categoria, sem toast', async () => {
+    await setup(null);
+    httpMock
+      .expectOne(`${API_BASE}/categories/options?type=EXPENSE`)
+      .flush({ message: 'Você não tem permissão para realizar esta ação.' }, { status: 403, statusText: 'Forbidden' });
+    await settle();
+
+    expect(query('select[name="categoryId"]')).toBeNull();
+    expect(query('.field-notice').textContent?.trim()).toBe(NO_PERMISSION_NOTICE);
+    expect(toasts()).toEqual([]);
+  });
+
+  it('com o catálogo negado pelo servidor (403), a edição não busca a categoria gravada e a mantém no PUT', async () => {
+    await setup('transaction-1');
+    httpMock.expectOne(`${API_BASE}/transactions/transaction-1`).flush({ ...TRANSACTION, categoryId: 'cat-old' });
+    await settle();
+    httpMock
+      .expectOne(`${API_BASE}/categories/options?type=EXPENSE`)
+      .flush({ message: 'Você não tem permissão para realizar esta ação.' }, { status: 403, statusText: 'Forbidden' });
+    await settle();
+    noCategoryRequests();
+
+    expect(query('.field-notice').textContent?.trim()).toBe(NO_PERMISSION_NOTICE);
+    expect(toasts()).toEqual([]);
+
+    await click(button('Salvar'));
+
+    const request = httpMock.expectOne(`${API_BASE}/transactions/transaction-1`);
+    expect(request.request.body.categoryId).toBe('cat-old');
+    request.flush({ ...TRANSACTION, categoryId: 'cat-old' });
+    await settle();
   });
 });

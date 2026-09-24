@@ -4,6 +4,7 @@ import java.net.URI;
 import java.util.Objects;
 import java.util.UUID;
 
+import br.com.financeos.profiles.Profile;
 import br.com.financeos.profiles.ProfileRepository;
 import br.com.financeos.profiles.Screen;
 import br.com.financeos.shared.AccessControl;
@@ -80,7 +81,7 @@ public class UserResource {
             throw new WebApplicationException("E-mail já cadastrado.", Response.Status.CONFLICT);
         }
 
-        requireProfileExists(request.profileId());
+        Profile profile = requireProfileExists(request.profileId());
 
         AppUser user = new AppUser();
         user.name = request.name().trim();
@@ -90,7 +91,7 @@ public class UserResource {
         repository.persistAndFlush(user);
 
         return Response.created(URI.create("/api/users/" + user.id))
-                .entity(UserResponse.from(user))
+                .entity(UserResponse.from(user, profile.name))
                 .build();
     }
 
@@ -109,7 +110,7 @@ public class UserResource {
             throw new WebApplicationException("E-mail já cadastrado.", Response.Status.CONFLICT);
         }
 
-        requireProfileExists(request.profileId());
+        Profile profile = requireProfileExists(request.profileId());
 
         if (currentUser.id().equals(id)) {
             if (!request.active()) {
@@ -129,7 +130,7 @@ public class UserResource {
             user.passwordHash = BcryptUtil.bcryptHash(request.password());
         }
 
-        return UserResponse.from(user);
+        return UserResponse.from(user, profile.name);
     }
 
     @DELETE
@@ -148,9 +149,9 @@ public class UserResource {
         return Response.noContent().build();
     }
 
-    private void requireProfileExists(UUID profileId) {
-        if (profileRepository.findByIdOptional(profileId).isEmpty()) {
-            throw new WebApplicationException("Perfil informado não existe.", Response.Status.BAD_REQUEST);
-        }
+    private Profile requireProfileExists(UUID profileId) {
+        return profileRepository.findByIdOptional(profileId)
+                .orElseThrow(() -> new WebApplicationException(
+                        "Perfil informado não existe.", Response.Status.BAD_REQUEST));
     }
 }

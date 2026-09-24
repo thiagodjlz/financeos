@@ -55,7 +55,10 @@ final class UsersAreaContent {
                                         "Obrigatório, em formato válido e com no máximo 180 caracteres."),
                                 List.of("Senha",
                                         "De 8 a 72 caracteres. Obrigatória no cadastro; opcional na alteração."),
-                                List.of("Perfil", "Obrigatório."),
+                                List.of("Perfil",
+                                        "Obrigatório. Se o seu perfil não puder ver a tela de Perfis, a lista dá "
+                                                + "lugar a um aviso de que não é possível escolher o perfil: na "
+                                                + "alteração, o perfil já gravado é mantido."),
                                 List.of("Status",
                                         "Ativo ou Inativo. Disponível apenas no cadastro de alteração."))),
                 DocumentationBlock.highlight(
@@ -102,6 +105,8 @@ final class UsersAreaContent {
                         "O botão Desativar aparece somente nas linhas de quem está ativo.",
                         "Trocar o perfil de uma pessoa muda o que ela vê no menu assim que ela entrar novamente no "
                                 + "sistema.",
+                        "O filtro de Perfil só aparece se o seu perfil puder ver a tela de Perfis. Sem essa "
+                                + "permissão, a tabela continua mostrando normalmente o perfil de cada pessoa.",
                         "O nome cadastrado é o que aparece no rodapé do menu e na saudação do Resumo, que usa "
                                 + "apenas o primeiro nome."));
     }
