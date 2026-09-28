@@ -50,3 +50,49 @@ export function longMonthName(month: number): string {
 function shortNumber(value: number): string {
   return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 2 }).format(value);
 }
+
+export function shortDate(value: string): string {
+  const [year, month, day] = value.split('-');
+  return day && month && year ? `${day}/${month}/${year}` : value;
+}
+
+export function isoDate(date: Date): string {
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
+// Título do grupo de lançamentos por dia no celular. `today` chega em ISO local para o teste
+// fixar o "hoje" sem depender do relógio da máquina.
+export function dayHeading(value: string, today: string): string {
+  const [year, month, day] = value.split('-').map(Number);
+  if (!year || !month || !day) {
+    return value;
+  }
+
+  const [todayYear, todayMonth, todayDay] = today.split('-').map(Number);
+  const yesterday = isoDate(new Date(todayYear, todayMonth - 1, todayDay - 1));
+  const monthLabel = new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(new Date(year, month - 1, 1));
+  const label = `${day} de ${monthLabel}${year === todayYear ? '' : ` de ${year}`}`;
+
+  if (value === today) {
+    return `Hoje, ${label}`;
+  }
+
+  if (value === yesterday) {
+    return `Ontem, ${label}`;
+  }
+
+  return label;
+}
+
+export function initials(name: string | null | undefined): string {
+  const words = (name ?? '').trim().split(/\s+/).filter(Boolean);
+  if (!words.length) {
+    return '';
+  }
+
+  const first = words[0].charAt(0);
+  const last = words.length > 1 ? words[words.length - 1].charAt(0) : '';
+  return (first + last).toUpperCase();
+}

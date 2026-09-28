@@ -59,7 +59,9 @@ describe('Profiles', () => {
   }
 
   function buttonByText(text: string, scope = ''): HTMLButtonElement | undefined {
-    return queryAll<HTMLButtonElement>(`${scope} button`).find((button) => button.textContent?.trim() === text);
+    return queryAll<HTMLButtonElement>(`${scope} button`).find(
+      (button) => (button.getAttribute('aria-label') ?? button.textContent?.trim()) === text,
+    );
   }
 
   async function click(element: HTMLElement): Promise<void> {
@@ -73,11 +75,11 @@ describe('Profiles', () => {
     expect(query('table.fixed-layout')).not.toBeNull();
     expect(query('form')).toBeNull();
     expect(queryAll('thead th').map((th) => th.textContent?.trim())).toEqual(['Nome', 'Ações']);
+    expect(query('h1.page-title').textContent?.trim()).toBe('Perfis');
     expect(query('tbody td').getAttribute('data-label')).toBe('Nome');
-    expect(query('.filter-toggle').textContent?.trim()).toBe('Filtros');
+    expect(query('.filter-toggle')).toBeNull();
 
-    await click(query('.filter-toggle'));
-    expect(queryAll('.filter-fields input, .filter-fields select').map((field) => field.getAttribute('name'))).toEqual([
+    expect(queryAll('.list-toolbar input, .list-toolbar select').map((field) => field.getAttribute('name'))).toEqual([
       'filterName',
     ]);
   });
@@ -85,23 +87,22 @@ describe('Profiles', () => {
   it('navega para inclusão e edição com as permissões', async () => {
     await render();
 
-    await click(buttonByText('Incluir', '.list-toolbar') as HTMLButtonElement);
+    await click(buttonByText('Novo perfil', '.page-header') as HTMLButtonElement);
     expect(router.navigate).toHaveBeenCalledWith(['/profiles/new']);
-    await click(buttonByText('Editar', 'tbody') as HTMLButtonElement);
+    await click(buttonByText('Editar perfil', 'tbody') as HTMLButtonElement);
     expect(router.navigate).toHaveBeenCalledWith(['/profiles', 'profile-1', 'edit']);
   });
 
-  it('esconde Incluir, Editar e Excluir sem permissão', async () => {
+  it('esconde Novo perfil, Editar perfil e Excluir perfil sem permissão', async () => {
     await render(page([PROFILE]), false);
 
-    expect(buttonByText('Incluir')).toBeUndefined();
-    expect(buttonByText('Editar')).toBeUndefined();
-    expect(buttonByText('Excluir')).toBeUndefined();
+    expect(buttonByText('Novo perfil')).toBeUndefined();
+    expect(buttonByText('Editar perfil')).toBeUndefined();
+    expect(buttonByText('Excluir perfil')).toBeUndefined();
   });
 
   it('filtra por Nome e mostra "Nenhum registro encontrado." com "Limpar filtros"', async () => {
     await render();
-    await click(query('.filter-toggle'));
 
     const input = query<HTMLInputElement>('input[name="filterName"]');
     input.value = 'gestao';
@@ -111,7 +112,7 @@ describe('Profiles', () => {
     httpMock.expectOne(`${DEFAULT_URL}&name=gestao`).flush(page([]));
     await settle();
 
-    expect(query('.filter-toggle').textContent?.trim()).toBe('Filtros (1)');
+    expect(query('.filter-chip').textContent?.trim()).toBe('Nome: gestao');
     expect(query('.filtered-empty p').textContent?.trim()).toBe('Nenhum registro encontrado.');
 
     await click(buttonByText('Limpar filtros', '.filtered-empty') as HTMLButtonElement);
@@ -124,7 +125,7 @@ describe('Profiles', () => {
   it('exclui com DELETE, recarrega e avisa', async () => {
     await render();
 
-    await click(buttonByText('Excluir', 'tbody') as HTMLButtonElement);
+    await click(buttonByText('Excluir perfil', 'tbody') as HTMLButtonElement);
     const request = httpMock.expectOne(`${API_BASE}/profiles/profile-1`);
     expect(request.request.method).toBe('DELETE');
     request.flush(null);
@@ -133,13 +134,13 @@ describe('Profiles', () => {
     await settle();
 
     expect(toastService.toasts()[0].message).toBe('Perfil excluído com sucesso.');
-    expect(query('.empty-state').textContent?.trim()).toBe('Nenhum perfil cadastrado');
+    expect(query('.list-state strong').textContent?.trim()).toBe('Nenhum perfil cadastrado');
   });
 
   it('exibe alerta com a mensagem do corpo no 409 de perfil em uso', async () => {
     await render();
 
-    await click(buttonByText('Excluir', 'tbody') as HTMLButtonElement);
+    await click(buttonByText('Excluir perfil', 'tbody') as HTMLButtonElement);
     httpMock
       .expectOne(`${API_BASE}/profiles/profile-1`)
       .flush({ message: 'Perfil em uso por usuários.' }, { status: 409, statusText: 'Conflict' });

@@ -43,6 +43,7 @@ function formFrom(transaction: Transaction) {
   selector: 'app-transaction-form',
   imports: [CommonModule, FormsModule, ConfirmDialog],
   templateUrl: './transaction-form.html',
+  styleUrl: './transaction-form.scss',
 })
 export class TransactionForm implements OnInit {
   private readonly transactionService = inject(TransactionService);
@@ -143,6 +144,18 @@ export class TransactionForm implements OnInit {
     if (!this.categories().some((category) => category.id === this.form.categoryId)) {
       this.form.categoryId = '';
     }
+  }
+
+  // `<option>` não mostra a cor: a bolinha fica ao lado do select, na cor da categoria escolhida.
+  protected selectedCategoryColor(): string | null {
+    const id = this.form.categoryId;
+    if (!id) {
+      return null;
+    }
+
+    const inactive = this.preselectedInactiveCategory();
+    const category = inactive?.id === id ? inactive : this.categories().find((item) => item.id === id);
+    return category?.color ?? null;
   }
 
   protected onCategoryIdChange(): void {

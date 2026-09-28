@@ -1,83 +1,106 @@
-<h2 class="page-title">{{ id ? 'Editar usuário' : 'Novo usuário' }}</h2>
+<header class="page-header form-header">
+  <div class="page-heading">
+    <button type="button" class="back-link" aria-label="Voltar para Usuários" title="Voltar para Usuários" (click)="requestCancel()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M15 6l-6 6 6 6"></path>
+      </svg>
+      <span class="back-link-text">Usuários</span>
+    </button>
+    <h1 class="page-title">{{ id ? 'Editar usuário' : 'Novo usuário' }}</h1>
+    <p class="page-subtitle">{{ id ? 'Altere os dados do usuário' : 'Cadastre quem vai acessar o sistema' }}</p>
+  </div>
+</header>
 
 <div class="form-page" [attr.aria-busy]="loading()">
   <p class="loading-state" *ngIf="loading()"><span class="sr-only">Carregando...</span></p>
   <p class="load-error" role="alert" *ngIf="!loading() && loadError()">{{ loadError() }}</p>
 
-  <form class="panel form-panel" *ngIf="!loading() && !loadError()" #userForm (ngSubmit)="save()">
-    <label>
-      Nome
-      <input
-        name="name"
-        [(ngModel)]="form.name"
-        [class.invalid]="fieldErrors.invalid('name')"
-        (input)="fieldErrors.clear('name')"
-        required
-      />
-      <small class="field-error" *ngIf="fieldErrors.invalid('name')">{{ fieldErrors.message('name') }}</small>
-    </label>
-    <label>
-      E-mail
-      <input
-        type="email"
-        name="email"
-        [(ngModel)]="form.email"
-        [class.invalid]="fieldErrors.invalid('email')"
-        (input)="fieldErrors.clear('email')"
-        required
-      />
-      <small class="field-error" *ngIf="fieldErrors.invalid('email')">{{ fieldErrors.message('email') }}</small>
-    </label>
-    <label>
-      {{ id ? 'Nova senha (opcional)' : 'Senha' }}
-      <input
-        type="password"
-        name="password"
-        autocomplete="new-password"
-        [(ngModel)]="form.password"
-        [class.invalid]="fieldErrors.invalid('password')"
-        (input)="fieldErrors.clear('password')"
-        [required]="!id"
-      />
-      <small class="field-error" *ngIf="fieldErrors.invalid('password')">{{ fieldErrors.message('password') }}</small>
-    </label>
-    <label *ngIf="profileUnavailable()">
-      Perfil
-      <span class="field-notice">
-        Seu perfil não tem permissão para ver Perfis, por isso não é possível escolher o perfil.
-      </span>
-      <small class="field-error" *ngIf="fieldErrors.invalid('profileId')">{{ fieldErrors.message('profileId') }}</small>
-    </label>
-    <label *ngIf="!profileUnavailable()">
-      Perfil
-      <select
-        name="profileId"
-        [(ngModel)]="form.profileId"
-        [class.invalid]="fieldErrors.invalid('profileId')"
-        (change)="fieldErrors.clear('profileId')"
-        required
-      >
-        <option value="">Selecione</option>
-        <option *ngFor="let profile of profiles()" [value]="profile.id">{{ profile.name }}</option>
-      </select>
-      <small class="field-error" *ngIf="fieldErrors.invalid('profileId')">{{ fieldErrors.message('profileId') }}</small>
-    </label>
-    <label *ngIf="id">
-      Status
-      <select
-        name="active"
-        [(ngModel)]="form.active"
-        [class.invalid]="fieldErrors.invalid('active')"
-        (change)="fieldErrors.clear('active')"
-      >
-        <option [ngValue]="true">Ativo</option>
-        <option [ngValue]="false">Inativo</option>
-      </select>
-      <small class="field-error" *ngIf="fieldErrors.invalid('active')">{{ fieldErrors.message('active') }}</small>
-    </label>
-    <div class="two-cols form-actions">
-      <button class="primary-button" type="submit" [disabled]="saving()">Salvar</button>
+  <form class="panel form-card" *ngIf="!loading() && !loadError()" #userForm (ngSubmit)="save()">
+    <div class="form-card-body form-grid">
+      <label>
+        Nome
+        <input
+          name="name"
+          [(ngModel)]="form.name"
+          [class.invalid]="fieldErrors.invalid('name')"
+          (input)="fieldErrors.clear('name')"
+          required
+        />
+        <small class="field-error" *ngIf="fieldErrors.invalid('name')">{{ fieldErrors.message('name') }}</small>
+      </label>
+      <label>
+        E-mail
+        <input
+          type="email"
+          name="email"
+          [(ngModel)]="form.email"
+          [class.invalid]="fieldErrors.invalid('email')"
+          (input)="fieldErrors.clear('email')"
+          required
+        />
+        <small class="field-error" *ngIf="fieldErrors.invalid('email')">{{ fieldErrors.message('email') }}</small>
+      </label>
+      <label>
+        {{ id ? 'Nova senha (opcional)' : 'Senha' }}
+        <input
+          type="password"
+          name="password"
+          autocomplete="new-password"
+          [(ngModel)]="form.password"
+          [class.invalid]="fieldErrors.invalid('password')"
+          (input)="fieldErrors.clear('password')"
+          [required]="!id"
+        />
+        <small class="field-error" *ngIf="fieldErrors.invalid('password')">{{ fieldErrors.message('password') }}</small>
+      </label>
+      <label *ngIf="profileUnavailable()">
+        Perfil
+        <span class="field-notice">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="5" y="10.5" width="14" height="10" rx="2.5"></rect>
+            <path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"></path>
+          </svg>
+          <span>Seu perfil não tem permissão para ver Perfis, por isso não é possível escolher o perfil.</span>
+        </span>
+        <small class="field-error" *ngIf="fieldErrors.invalid('profileId')">{{ fieldErrors.message('profileId') }}</small>
+      </label>
+      <label *ngIf="!profileUnavailable()">
+        Perfil
+        <select
+          name="profileId"
+          [(ngModel)]="form.profileId"
+          [class.invalid]="fieldErrors.invalid('profileId')"
+          (change)="fieldErrors.clear('profileId')"
+          required
+        >
+          <option value="">Selecione</option>
+          <option *ngFor="let profile of profiles()" [value]="profile.id">{{ profile.name }}</option>
+        </select>
+        <small class="field-error" *ngIf="fieldErrors.invalid('profileId')">{{ fieldErrors.message('profileId') }}</small>
+      </label>
+      <label *ngIf="id">
+        Status
+        <select
+          name="active"
+          [(ngModel)]="form.active"
+          [class.invalid]="fieldErrors.invalid('active')"
+          (change)="fieldErrors.clear('active')"
+        >
+          <option [ngValue]="true">Ativo</option>
+          <option [ngValue]="false">Inativo</option>
+        </select>
+        <small class="field-error" *ngIf="fieldErrors.invalid('active')">{{ fieldErrors.message('active') }}</small>
+      </label>
+    </div>
+
+    <div class="form-card-footer form-actions">
       <button class="ghost-button" type="button" (click)="requestCancel()">Cancelar</button>
+      <button class="primary-button" type="submit" [disabled]="saving()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M5 12.5l4.5 4.5L19 7.5"></path>
+        </svg>
+        <span>Salvar usuário</span>
+      </button>
     </div>
   </form>
 </div>

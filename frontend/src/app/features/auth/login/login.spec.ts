@@ -54,6 +54,35 @@ describe('Login', () => {
     return query<HTMLElement>('form [class*="status"]');
   }
 
+  it('alterna a senha entre oculta e visível pelo botão Mostrar senha, sem requisição', () => {
+    const password = () => query<HTMLInputElement>('input[name="password"]') as HTMLInputElement;
+    const toggle = () =>
+      query<HTMLButtonElement>('.password-field button[type="button"]') as HTMLButtonElement;
+
+    expect(password().getAttribute('type')).toBe('password');
+    expect(toggle().getAttribute('aria-label')).toBe('Mostrar senha');
+    expect(toggle().getAttribute('aria-pressed')).toBe('false');
+
+    toggle().click();
+    fixture.detectChanges();
+
+    expect(password().getAttribute('type')).toBe('text');
+    expect(toggle().getAttribute('aria-label')).toBe('Ocultar senha');
+    expect(toggle().getAttribute('aria-pressed')).toBe('true');
+
+    toggle().click();
+    fixture.detectChanges();
+
+    expect(password().getAttribute('type')).toBe('password');
+    httpMock.expectNone(`${API_BASE}/auth/login`);
+    expect(toasts()).toEqual([]);
+  });
+
+  it('mostra o título Entrar no FinanceOS e não usa placeholder de e-mail de exemplo', () => {
+    expect(query('h1')?.textContent?.trim()).toBe('Entrar no FinanceOS');
+    expect(query<HTMLInputElement>('input[name="email"]')?.getAttribute('placeholder')).toBeNull();
+  });
+
   it('não tem mais a faixa vermelha no card de login', () => {
     expect(feedbackBanner()).toBeNull();
   });

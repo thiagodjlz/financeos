@@ -7,18 +7,24 @@ import {
   OnDestroy,
   ViewChild,
   afterNextRender,
+  computed,
   inject,
   signal,
 } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { filter, map } from 'rxjs';
 import { BackToTop } from '../../core/back-to-top/back-to-top';
+import { initials } from '../../core/formatters';
 import { AuthService } from '../../core/services/auth.service';
 import { APP_NAME, APP_VERSION } from '../../core/version';
 
-type NavGroup = 'registers' | 'settings' | 'about';
+type NavSheet = 'more';
 
-const DRAWER_OPEN_CLASS = 'drawer-open';
+const OVERLAY_OPEN_CLASS = 'overlay-open';
 const FOCUSABLE_SELECTOR = 'button:not([disabled]), a[href], input, select, [tabindex]:not([tabindex="-1"])';
+const FORM_ROUTE = /^\/(transactions|categories|users|profiles)\/(new|[^/?#]+\/edit)(?:[?#]|$)/;
+const MORE_ROUTE = /^\/(categories|users|profiles|documentation|release-notes)(?:[/?#]|$)/;
 
 @Component({
   selector: 'app-main-layout',
@@ -30,63 +36,80 @@ export class MainLayout implements OnDestroy {
   protected readonly authService = inject(AuthService);
   protected readonly router = inject(Router);
   private readonly injector = inject(Injector);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   protected readonly appName = APP_NAME;
   protected readonly appVersion = APP_VERSION;
 
-  protected readonly expanded = signal(false);
-  protected readonly openGroup = signal<NavGroup | null>(null);
-  protected readonly drawerOpen = signal(false);
+  protected readonly collapsed = signal(false);
+  protected readonly openSheet = signal<NavSheet | null>(null);
+  protected readonly userInitials = computed(() => initials(this.authService.me()?.name));
+
+  private readonly currentUrl = toSignal(
+    this.router.events.pipe(
+      filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+      map((event) => event.urlAfterRedirects),
+    ),
+    { initialValue: this.router.url },
+  );
+  protected readonly formRoute = computed(() => FORM_ROUTE.test(this.currentUrl()));
+  protected readonly moreActive = computed(() => MORE_ROUTE.test(this.currentUrl()));
+
+  private sheetTrigger: HTMLElement | null = null;
 
   @ViewChild('workspace') private workspace?: ElementRef<HTMLElement>;
-  @ViewChild('drawer') private drawer?: ElementRef<HTMLElement>;
-  @ViewChild('menuButton') private menuButton?: ElementRef<HTMLButtonElement>;
 
   ngOnDestroy(): void {
     this.unlockBackground();
   }
 
-  protected toggleDrawer(): void {
-    if (this.drawerOpen()) {
-      this.closeDrawer(true);
+  protected toggleCollapsed(): void {
+    this.collapsed.update((collapsed) => !collapsed);
+  }
+
+  protected toggleSheet(sheet: NavSheet, event: Event): void {
+    if (this.openSheet() === sheet) {
+      this.closeSheet(true);
       return;
     }
 
-    this.drawerOpen.set(true);
-    document.body.classList.add(DRAWER_OPEN_CLASS);
+    this.sheetTrigger = event.currentTarget as HTMLElement | null;
+    this.openSheet.set(sheet);
+    document.body.classList.add(OVERLAY_OPEN_CLASS);
     afterNextRender(
       () => {
-        this.drawerFocusables()[0]?.focus();
+        this.sheetFocusables()[0]?.focus();
       },
       { injector: this.injector },
     );
   }
 
-  protected closeDrawer(returnFocus: boolean): void {
-    const wasOpen = this.drawerOpen();
-    this.drawerOpen.set(false);
+  protected closeSheet(returnFocus: boolean): void {
+    const wasOpen = this.openSheet() !== null;
+    this.openSheet.set(null);
     this.unlockBackground();
 
     if (wasOpen && returnFocus) {
-      this.menuButton?.nativeElement.focus();
+      this.sheetTrigger?.focus();
     }
+    this.sheetTrigger = null;
   }
 
   @HostListener('document:keydown.escape')
   protected onEscape(): void {
-    if (this.drawerOpen()) {
-      this.closeDrawer(true);
+    if (this.openSheet()) {
+      this.closeSheet(true);
     }
   }
 
   @HostListener('document:keydown.tab', ['$event'])
   @HostListener('document:keydown.shift.tab', ['$event'])
-  protected onDrawerTab(event: Event): void {
-    if (!this.drawerOpen()) {
+  protected onSheetTab(event: Event): void {
+    if (!this.openSheet()) {
       return;
     }
 
-    const focusables = this.drawerFocusables();
+    const focusables = this.sheetFocusables();
     if (!focusables.length) {
       return;
     }
@@ -94,7 +117,7 @@ export class MainLayout implements OnDestroy {
     const first = focusables[0];
     const last = focusables[focusables.length - 1];
     const active = document.activeElement;
-    const inside = !!active && !!this.drawer?.nativeElement.contains(active);
+    const inside = !!active && !!this.openSheetElement()?.contains(active);
 
     if ((event as KeyboardEvent).shiftKey) {
       if (!inside || active === first) {
@@ -110,81 +133,31 @@ export class MainLayout implements OnDestroy {
     }
   }
 
-  private drawerFocusables(): HTMLElement[] {
-    const host = this.drawer?.nativeElement;
-    if (!host) {
-      return [];
-    }
+  private openSheetElement(): HTMLElement | null {
+    const sheet = this.openSheet();
+    return sheet ? this.host.nativeElement.querySelector<HTMLElement>(`#sheet-${sheet}`) : null;
+  }
 
-    return Array.from(host.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
+  private sheetFocusables(): HTMLElement[] {
+    const element = this.openSheetElement();
+    return element ? Array.from(element.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)) : [];
   }
 
   private unlockBackground(): void {
-    document.body.classList.remove(DRAWER_OPEN_CLASS);
-  }
-
-  protected expand(): void {
-    this.expanded.set(true);
-  }
-
-  protected collapse(): void {
-    this.expanded.set(false);
-  }
-
-  protected onMouseLeave(event: MouseEvent): void {
-    const sidebar = event.currentTarget as HTMLElement;
-
-    if (sidebar.contains(document.activeElement)) {
-      return;
-    }
-
-    this.collapse();
-  }
-
-  protected onFocusOut(event: FocusEvent): void {
-    const sidebar = event.currentTarget as HTMLElement;
-    const nextFocused = event.relatedTarget as Node | null;
-
-    if (!nextFocused || !sidebar.contains(nextFocused)) {
-      this.collapse();
-    }
-  }
-
-  protected toggleGroup(group: NavGroup): void {
-    if (!this.expanded()) {
-      this.expanded.set(true);
-      this.openGroup.set(group);
-      return;
-    }
-
-    this.openGroup.set(this.openGroup() === group ? null : group);
+    document.body.classList.remove(OVERLAY_OPEN_CLASS);
   }
 
   protected onNavigate(): void {
-    this.closeDrawer(false);
-    this.expanded.set(false);
-    this.openGroup.set(null);
+    this.closeSheet(false);
     this.workspace?.nativeElement.focus();
-  }
-
-  protected isRegistersActive(): boolean {
-    return this.router.url.startsWith('/categories');
   }
 
   protected canSeeRegisters(): boolean {
     return this.authService.can('CATEGORIES', 'VIEW');
   }
 
-  protected isSettingsActive(): boolean {
-    return this.router.url.startsWith('/users') || this.router.url.startsWith('/profiles');
-  }
-
   protected canSeeSettings(): boolean {
     return this.authService.can('USERS', 'VIEW') || this.authService.can('PROFILES', 'VIEW');
-  }
-
-  protected isAboutActive(): boolean {
-    return this.router.url.startsWith('/documentation') || this.router.url.startsWith('/release-notes');
   }
 
   protected canSeeAbout(): boolean {
@@ -192,6 +165,7 @@ export class MainLayout implements OnDestroy {
   }
 
   protected logout(): void {
+    this.closeSheet(false);
     this.authService.logout();
     void this.router.navigate(['/login']);
   }

@@ -14,29 +14,66 @@ function viewPermission(screen: Screen): PermissionEntry {
   return { screen, canView: true, canCreate: false, canEdit: false, canDelete: false };
 }
 
+function root(fixture: ComponentFixture<MainLayout>): HTMLElement {
+  return fixture.nativeElement as HTMLElement;
+}
+
 function navButtons(fixture: ComponentFixture<MainLayout>): HTMLButtonElement[] {
-  return Array.from(
-    (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('.nav-list button'),
+  return Array.from(root(fixture).querySelectorAll<HTMLButtonElement>('.nav-list button'));
+}
+
+function navLabels(fixture: ComponentFixture<MainLayout>): string[] {
+  return navButtons(fixture).map((button) => button.textContent?.trim() ?? '');
+}
+
+function sectionTitles(fixture: ComponentFixture<MainLayout>): string[] {
+  return Array.from(root(fixture).querySelectorAll('.nav-section-title')).map(
+    (title) => title.textContent?.trim() ?? '',
   );
 }
 
-function findButton(
-  fixture: ComponentFixture<MainLayout>,
-  label: string,
-): HTMLButtonElement | undefined {
+function findNav(fixture: ComponentFixture<MainLayout>, label: string): HTMLButtonElement | undefined {
   return navButtons(fixture).find((button) => button.textContent?.trim() === label);
 }
 
-function sidebar(fixture: ComponentFixture<MainLayout>): HTMLElement {
-  return (fixture.nativeElement as HTMLElement).querySelector('aside.sidebar') as HTMLElement;
+function bottomItems(fixture: ComponentFixture<MainLayout>): string[] {
+  return Array.from(root(fixture).querySelectorAll<HTMLButtonElement>('.bottom-bar .bottom-item')).map(
+    (button) => button.textContent?.trim() ?? '',
+  );
 }
 
-function menuButton(fixture: ComponentFixture<MainLayout>): HTMLButtonElement {
-  return (fixture.nativeElement as HTMLElement).querySelector('.menu-button') as HTMLButtonElement;
+function bottomItem(fixture: ComponentFixture<MainLayout>, label: string): HTMLButtonElement {
+  return Array.from(root(fixture).querySelectorAll<HTMLButtonElement>('.bottom-bar .bottom-item')).find(
+    (button) => button.textContent?.trim() === label,
+  ) as HTMLButtonElement;
+}
+
+function fab(fixture: ComponentFixture<MainLayout>): HTMLButtonElement | null {
+  return root(fixture).querySelector<HTMLButtonElement>('.bottom-fab');
+}
+
+function sheet(fixture: ComponentFixture<MainLayout>, id: 'more'): HTMLElement | null {
+  return root(fixture).querySelector<HTMLElement>(`#sheet-${id}`);
+}
+
+function sheetItems(fixture: ComponentFixture<MainLayout>, id: 'more'): string[] {
+  return Array.from(sheet(fixture, id)?.querySelectorAll('.sheet-item') ?? []).map(
+    (item) => item.textContent?.trim() ?? '',
+  );
+}
+
+function sheetSectionTitles(fixture: ComponentFixture<MainLayout>): string[] {
+  return Array.from(sheet(fixture, 'more')?.querySelectorAll('.sheet-section-title') ?? []).map(
+    (title) => title.textContent?.trim() ?? '',
+  );
 }
 
 function scrim(fixture: ComponentFixture<MainLayout>): HTMLElement | null {
-  return (fixture.nativeElement as HTMLElement).querySelector('.drawer-scrim');
+  return root(fixture).querySelector('.nav-scrim');
+}
+
+function collapseToggle(fixture: ComponentFixture<MainLayout>): HTMLButtonElement {
+  return root(fixture).querySelector('.collapse-toggle') as HTMLButtonElement;
 }
 
 function pressKey(key: string, shiftKey = false): KeyboardEvent {
@@ -57,458 +94,381 @@ describe('MainLayout', () => {
     }).compileComponents();
   });
 
+  afterEach(() => {
+    document.body.classList.remove('overlay-open');
+  });
+
   function createFixture(): ComponentFixture<MainLayout> {
     const fixture = TestBed.createComponent(MainLayout);
     fixture.detectChanges();
     return fixture;
   }
 
-  it('should render the FinanceOS shell with the nav items the user has access to', () => {
-    const authService = TestBed.inject(AuthService);
-    authService.superAdmin.set(true);
-    const fixture = createFixture();
-
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain('FinanceOS');
-    expect(navButtons(fixture)).toHaveLength(5);
-    expect(findButton(fixture, 'Cadastros')).toBeDefined();
-    expect(findButton(fixture, 'Configurações')).toBeDefined();
-    expect(findButton(fixture, 'Categorias')).toBeUndefined();
-    expect(findButton(fixture, 'Usuários')).toBeUndefined();
-    expect(findButton(fixture, 'Perfis')).toBeUndefined();
-  });
-
-  it('hides nav items the user has no view permission for', () => {
-    const fixture = createFixture();
-
-    expect(navButtons(fixture)).toHaveLength(0);
-  });
-
-  it('shows the Cadastros group when the user can view categories', () => {
-    const authService = TestBed.inject(AuthService);
-    authService.permissions.set([viewPermission('CATEGORIES')]);
-    const fixture = createFixture();
-
-    expect(findButton(fixture, 'Cadastros')).toBeDefined();
-  });
-
-  it('hides the Cadastros group when the user cannot view categories', () => {
-    const authService = TestBed.inject(AuthService);
-    authService.permissions.set([viewPermission('DASHBOARD'), viewPermission('USERS')]);
-    const fixture = createFixture();
-
-    expect(findButton(fixture, 'Cadastros')).toBeUndefined();
-  });
-
-  it('shows the Configurações group when the user can view only users', () => {
-    const authService = TestBed.inject(AuthService);
-    authService.permissions.set([viewPermission('USERS')]);
-    const fixture = createFixture();
-
-    expect(findButton(fixture, 'Configurações')).toBeDefined();
-  });
-
-  it('shows the Configurações group when the user can view only profiles', () => {
-    const authService = TestBed.inject(AuthService);
-    authService.permissions.set([viewPermission('PROFILES')]);
-    const fixture = createFixture();
-
-    expect(findButton(fixture, 'Configurações')).toBeDefined();
-  });
-
-  it('hides the Configurações group when the user can view neither users nor profiles', () => {
-    const authService = TestBed.inject(AuthService);
-    authService.permissions.set([viewPermission('DASHBOARD')]);
-    const fixture = createFixture();
-
-    expect(findButton(fixture, 'Configurações')).toBeUndefined();
-  });
-
-  it('renders only the permitted children after expanding the Configurações group', () => {
-    const authService = TestBed.inject(AuthService);
-    authService.permissions.set([viewPermission('USERS')]);
-    const fixture = createFixture();
-
-    findButton(fixture, 'Configurações')?.click();
-    fixture.detectChanges();
-
-    expect(findButton(fixture, 'Usuários')).toBeDefined();
-    expect(findButton(fixture, 'Perfis')).toBeUndefined();
-  });
-
-  it('renders both children after expanding the Configurações group with both permissions', () => {
-    const authService = TestBed.inject(AuthService);
-    authService.permissions.set([viewPermission('USERS'), viewPermission('PROFILES')]);
-    const fixture = createFixture();
-
-    findButton(fixture, 'Configurações')?.click();
-    fixture.detectChanges();
-
-    expect(findButton(fixture, 'Usuários')).toBeDefined();
-    expect(findButton(fixture, 'Perfis')).toBeDefined();
-  });
-
-  it('renders an svg icon and an accessible label on every nav button when the sidebar is collapsed', () => {
-    const authService = TestBed.inject(AuthService);
-    authService.superAdmin.set(true);
-    const fixture = createFixture();
-
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('.collapse-toggle')).toBeNull();
-
-    const buttons = navButtons(fixture);
-    expect(buttons).toHaveLength(5);
-    for (const button of buttons) {
-      expect(button.querySelector('svg')).not.toBeNull();
-      expect(button.getAttribute('title')).toBe(button.textContent?.trim());
-      expect(button.getAttribute('aria-label')).toBe(button.textContent?.trim());
-    }
-    expect(buttons.map((button) => button.getAttribute('aria-label'))).toEqual([
-      'Resumo',
-      'Lançamentos',
-      'Cadastros',
-      'Configurações',
-      'Sobre',
-    ]);
-  });
-
-  it('expands the sidebar and opens the group when the collapsed Configurações parent is clicked, without navigating', () => {
-    const authService = TestBed.inject(AuthService);
-    authService.superAdmin.set(true);
-    const fixture = createFixture();
-    const router = TestBed.inject(Router);
-    const initialUrl = router.url;
-
-    const compiled = fixture.nativeElement as HTMLElement;
-    findButton(fixture, 'Configurações')?.click();
-    fixture.detectChanges();
-
-    expect(compiled.querySelector('.sidebar.expanded')).not.toBeNull();
-    expect(findButton(fixture, 'Usuários')).toBeDefined();
-    expect(findButton(fixture, 'Perfis')).toBeDefined();
-    expect(router.url).toBe(initialUrl);
-  });
-
-  it('expands the sidebar and opens the group when the collapsed Cadastros parent is clicked, without navigating', () => {
-    const authService = TestBed.inject(AuthService);
-    authService.superAdmin.set(true);
-    const fixture = createFixture();
-    const router = TestBed.inject(Router);
-    const initialUrl = router.url;
-
-    const compiled = fixture.nativeElement as HTMLElement;
-    findButton(fixture, 'Cadastros')?.click();
-    fixture.detectChanges();
-
-    expect(compiled.querySelector('.sidebar.expanded')).not.toBeNull();
-    expect(findButton(fixture, 'Categorias')).toBeDefined();
-    expect(router.url).toBe(initialUrl);
-  });
-
-  it('renders the Categorias child only while the group is open and the sidebar is expanded', () => {
-    const authService = TestBed.inject(AuthService);
-    authService.permissions.set([viewPermission('CATEGORIES')]);
-    const fixture = createFixture();
-
-    expect(findButton(fixture, 'Categorias')).toBeUndefined();
-
-    findButton(fixture, 'Cadastros')?.click();
-    fixture.detectChanges();
-    expect(findButton(fixture, 'Categorias')).toBeDefined();
-
-    sidebar(fixture).dispatchEvent(new Event('mouseleave'));
-    fixture.detectChanges();
-    expect(findButton(fixture, 'Categorias')).toBeUndefined();
-  });
-
-  it('toggles the group and keeps the sidebar expanded when a parent is clicked with the rail expanded', () => {
-    const authService = TestBed.inject(AuthService);
-    authService.superAdmin.set(true);
-    const fixture = createFixture();
-    const router = TestBed.inject(Router);
-    const initialUrl = router.url;
-    const compiled = fixture.nativeElement as HTMLElement;
-
-    sidebar(fixture).dispatchEvent(new Event('mouseenter'));
-    fixture.detectChanges();
-    expect(compiled.querySelector('.sidebar.expanded')).not.toBeNull();
-
-    findButton(fixture, 'Cadastros')?.click();
-    fixture.detectChanges();
-    expect(compiled.querySelector('.sidebar.expanded')).not.toBeNull();
-    expect(findButton(fixture, 'Categorias')).toBeDefined();
-    expect(router.url).toBe(initialUrl);
-
-    findButton(fixture, 'Cadastros')?.click();
-    fixture.detectChanges();
-    expect(compiled.querySelector('.sidebar.expanded')).not.toBeNull();
-    expect(findButton(fixture, 'Categorias')).toBeUndefined();
-    expect(router.url).toBe(initialUrl);
-  });
-
-  it('closes the other group when a group is opened, behaving as an accordion', () => {
-    const authService = TestBed.inject(AuthService);
-    authService.superAdmin.set(true);
-    const fixture = createFixture();
-
-    findButton(fixture, 'Configurações')?.click();
-    fixture.detectChanges();
-    expect(findButton(fixture, 'Usuários')).toBeDefined();
-
-    findButton(fixture, 'Cadastros')?.click();
-    fixture.detectChanges();
-    expect(findButton(fixture, 'Categorias')).toBeDefined();
-    expect(findButton(fixture, 'Usuários')).toBeUndefined();
-    expect(findButton(fixture, 'Perfis')).toBeUndefined();
-
-    findButton(fixture, 'Configurações')?.click();
-    fixture.detectChanges();
-    expect(findButton(fixture, 'Usuários')).toBeDefined();
-    expect(findButton(fixture, 'Categorias')).toBeUndefined();
-  });
-
-  it('exibe o grupo Sobre como último item do menu', () => {
-    const authService = TestBed.inject(AuthService);
-    authService.permissions.set([viewPermission('DOCUMENTATION')]);
-    const fixture = createFixture();
-
-    const buttons = navButtons(fixture);
-    expect(buttons).toHaveLength(1);
-
-    const sobre = buttons[buttons.length - 1];
-    expect(sobre.textContent?.trim()).toBe('Sobre');
-    expect(sobre.querySelector('svg')?.getAttribute('width')).toBe('20');
-    expect(sobre.querySelector('.nav-label')?.textContent?.trim()).toBe('Sobre');
-    expect(sobre.getAttribute('title')).toBe('Sobre');
-  });
-
-  it('esconde Sobre e Documentação sem a permissão', () => {
-    const authService = TestBed.inject(AuthService);
-    authService.permissions.set([viewPermission('DASHBOARD')]);
-    const fixture = createFixture();
-
-    const nav = (fixture.nativeElement as HTMLElement).querySelector('.nav-list') as HTMLElement;
-    expect(nav.textContent).not.toContain('Sobre');
-    expect(nav.textContent).not.toContain('Documentação');
-    expect(nav.textContent).not.toContain('Novidades por versão');
-  });
-
-  it('exibe o grupo Sobre só com a permissão de Novidades por versão, e o subitem some sem ela', () => {
-    const authService = TestBed.inject(AuthService);
-    authService.permissions.set([viewPermission('RELEASE_NOTES')]);
-    const fixture = createFixture();
-
-    expect(findButton(fixture, 'Sobre')).toBeDefined();
-
-    findButton(fixture, 'Sobre')?.click();
-    fixture.detectChanges();
-
-    expect(findButton(fixture, 'Novidades por versão')).toBeDefined();
-    expect(findButton(fixture, 'Documentação')).toBeUndefined();
-  });
-
-  it('mantém um único grupo aberto entre Cadastros, Configurações e Sobre', () => {
-    const authService = TestBed.inject(AuthService);
-    authService.superAdmin.set(true);
-    const fixture = createFixture();
-
-    findButton(fixture, 'Configurações')?.click();
-    fixture.detectChanges();
-    expect(findButton(fixture, 'Usuários')).toBeDefined();
-
-    findButton(fixture, 'Sobre')?.click();
-    fixture.detectChanges();
-    expect(findButton(fixture, 'Documentação')).toBeDefined();
-    expect(findButton(fixture, 'Usuários')).toBeUndefined();
-
-    findButton(fixture, 'Cadastros')?.click();
-    fixture.detectChanges();
-    expect(findButton(fixture, 'Categorias')).toBeDefined();
-    expect(findButton(fixture, 'Documentação')).toBeUndefined();
-  });
-
-  it('recolhe o trilho e move o foco ao abrir a Documentação', async () => {
-    const authService = TestBed.inject(AuthService);
-    authService.superAdmin.set(true);
-    const fixture = createFixture();
-    const compiled = fixture.nativeElement as HTMLElement;
-    const aside = sidebar(fixture);
-
-    aside.dispatchEvent(new Event('mouseenter'));
-    fixture.detectChanges();
-    findButton(fixture, 'Sobre')?.click();
-    fixture.detectChanges();
-
-    const documentacao = findButton(fixture, 'Documentação');
-    expect(documentacao).toBeDefined();
-
-    documentacao?.click();
-    fixture.detectChanges();
-    await fixture.whenStable();
-    fixture.detectChanges();
-
-    expect(compiled.querySelector('.sidebar.expanded')).toBeNull();
-    expect(findButton(fixture, 'Documentação')).toBeUndefined();
-    const workspace = compiled.querySelector('.workspace') as HTMLElement;
-    expect(workspace.contains(document.activeElement)).toBe(true);
-  });
-
-  it('collapses the sidebar and moves focus to the workspace when a navigating item is activated', async () => {
-    const authService = TestBed.inject(AuthService);
-    authService.superAdmin.set(true);
-    const fixture = createFixture();
-    const compiled = fixture.nativeElement as HTMLElement;
-    const aside = sidebar(fixture);
-
-    aside.dispatchEvent(new Event('mouseenter'));
-    fixture.detectChanges();
-    findButton(fixture, 'Cadastros')?.click();
-    fixture.detectChanges();
-
-    const categorias = findButton(fixture, 'Categorias');
-    expect(categorias).toBeDefined();
-    categorias?.focus();
-    categorias?.dispatchEvent(new Event('focusin', { bubbles: true }));
-    fixture.detectChanges();
-    expect(compiled.querySelector('.sidebar.expanded')).not.toBeNull();
-
-    categorias?.click();
-    fixture.detectChanges();
-    await fixture.whenStable();
-    fixture.detectChanges();
-
-    expect(compiled.querySelector('.sidebar.expanded')).toBeNull();
-    const workspace = compiled.querySelector('.workspace') as HTMLElement;
-    expect(aside.contains(document.activeElement)).toBe(false);
-    expect(workspace.contains(document.activeElement)).toBe(true);
-  });
-
-  it('monta um único botão Voltar ao topo e navegar entre telas não cria outro listener de scroll', async () => {
-    const addSpy = vi.spyOn(window, 'addEventListener');
-    const authService = TestBed.inject(AuthService);
-    authService.superAdmin.set(true);
-    const fixture = createFixture();
-    const router = TestBed.inject(Router);
-
-    await router.navigateByUrl('/transactions');
-    fixture.detectChanges();
-    await router.navigateByUrl('/documentation');
-    fixture.detectChanges();
-
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelectorAll('app-back-to-top')).toHaveLength(1);
-    expect(compiled.querySelectorAll('.back-to-top')).toHaveLength(1);
-    expect(addSpy.mock.calls.filter(([type]) => type === 'scroll')).toHaveLength(1);
-    addSpy.mockRestore();
-  });
-
-  describe('gaveta de navegação no mobile', () => {
-    afterEach(() => {
-      document.body.classList.remove('drawer-open');
-    });
-
-    it('abre a gaveta pelo botão Menu, reflete aria-expanded e renderiza o scrim', () => {
-      const authService = TestBed.inject(AuthService);
-      authService.superAdmin.set(true);
+  function withPermissions(...screens: Screen[]): void {
+    TestBed.inject(AuthService).permissions.set(screens.map(viewPermission));
+  }
+
+  function asSuperAdmin(): void {
+    TestBed.inject(AuthService).superAdmin.set(true);
+  }
+
+  describe('menu lateral', () => {
+    it('mostra a marca e todos os itens em seções, sem acordeão, para quem pode tudo', () => {
+      asSuperAdmin();
       const fixture = createFixture();
 
-      const button = menuButton(fixture);
-      expect(button.getAttribute('aria-label')).toBe('Abrir menu');
-      expect(button.getAttribute('aria-controls')).toBe('app-drawer');
-      expect(button.getAttribute('aria-expanded')).toBe('false');
-      expect(scrim(fixture)).toBeNull();
-      expect(sidebar(fixture).classList.contains('open')).toBe(false);
+      expect(root(fixture).querySelector('.brand-text strong')?.textContent?.trim()).toBe('FinanceOS');
+      expect(root(fixture).querySelector('h1')).toBeNull();
+      expect(navLabels(fixture)).toEqual([
+        'Resumo',
+        'Lançamentos',
+        'Categorias',
+        'Usuários',
+        'Perfis',
+        'Documentação',
+        'Novidades por versão',
+      ]);
+      expect(sectionTitles(fixture)).toEqual(['Cadastros', 'Configurações', 'Sobre']);
+      for (const button of navButtons(fixture)) {
+        expect(button.querySelector('svg')).not.toBeNull();
+      }
+    });
 
-      button.click();
+    it('não mostra item nem seção sem permissão de ver', () => {
+      const fixture = createFixture();
+
+      expect(navButtons(fixture)).toHaveLength(0);
+      expect(sectionTitles(fixture)).toEqual([]);
+    });
+
+    it('mostra a seção Cadastros só com permissão de ver Categorias', () => {
+      withPermissions('CATEGORIES');
+      const fixture = createFixture();
+
+      expect(sectionTitles(fixture)).toEqual(['Cadastros']);
+      expect(navLabels(fixture)).toEqual(['Categorias']);
+    });
+
+    it('esconde a seção Cadastros sem permissão de ver Categorias', () => {
+      withPermissions('DASHBOARD', 'USERS');
+      const fixture = createFixture();
+
+      expect(sectionTitles(fixture)).toEqual(['Configurações']);
+      expect(findNav(fixture, 'Categorias')).toBeUndefined();
+    });
+
+    it('mostra Configurações com só Usuários, sem o item Perfis', () => {
+      withPermissions('USERS');
+      const fixture = createFixture();
+
+      expect(sectionTitles(fixture)).toEqual(['Configurações']);
+      expect(navLabels(fixture)).toEqual(['Usuários']);
+    });
+
+    it('mostra Configurações com só Perfis, sem o item Usuários', () => {
+      withPermissions('PROFILES');
+      const fixture = createFixture();
+
+      expect(sectionTitles(fixture)).toEqual(['Configurações']);
+      expect(navLabels(fixture)).toEqual(['Perfis']);
+    });
+
+    it('mostra Sobre só com Novidades por versão, sem Documentação', () => {
+      withPermissions('RELEASE_NOTES');
+      const fixture = createFixture();
+
+      expect(sectionTitles(fixture)).toEqual(['Sobre']);
+      expect(navLabels(fixture)).toEqual(['Novidades por versão']);
+    });
+
+    it('esconde Sobre, Documentação e Novidades sem as permissões', () => {
+      withPermissions('DASHBOARD');
+      const fixture = createFixture();
+
+      const nav = root(fixture).querySelector('.nav-list') as HTMLElement;
+      expect(nav.textContent).not.toContain('Sobre');
+      expect(nav.textContent).not.toContain('Documentação');
+      expect(nav.textContent).not.toContain('Novidades por versão');
+    });
+
+    it('recolhe em trilho e expande de volta pelo botão do menu, com rótulo acessível nos itens', () => {
+      asSuperAdmin();
+      const fixture = createFixture();
+      const toggle = collapseToggle(fixture);
+
+      expect(toggle.getAttribute('aria-label')).toBe('Recolher menu');
+      expect(toggle.getAttribute('aria-expanded')).toBe('true');
+      expect(root(fixture).querySelector('.app-shell.menu-collapsed')).toBeNull();
+      expect(findNav(fixture, 'Resumo')?.getAttribute('aria-label')).toBeNull();
+
+      toggle.click();
       fixture.detectChanges();
 
-      expect(button.getAttribute('aria-expanded')).toBe('true');
-      expect(scrim(fixture)).not.toBeNull();
-      expect(sidebar(fixture).id).toBe('app-drawer');
-      expect(sidebar(fixture).classList.contains('open')).toBe(true);
-      expect(document.body.classList.contains('drawer-open')).toBe(true);
+      expect(root(fixture).querySelector('.app-shell.menu-collapsed')).not.toBeNull();
+      expect(toggle.getAttribute('aria-label')).toBe('Expandir menu');
+      expect(toggle.getAttribute('aria-expanded')).toBe('false');
+      for (const button of navButtons(fixture)) {
+        expect(button.getAttribute('aria-label')).toBe(button.textContent?.trim());
+        expect(button.getAttribute('title')).toBe(button.textContent?.trim());
+      }
+
+      toggle.click();
+      fixture.detectChanges();
+
+      expect(root(fixture).querySelector('.app-shell.menu-collapsed')).toBeNull();
     });
 
-    it('move o foco para o primeiro item so depois de a gaveta ser renderizada aberta e devolve ao botão Menu ao fechar pelo scrim', async () => {
+    it('mostra iniciais, nome, versão e Sair no rodapé', () => {
       const authService = TestBed.inject(AuthService);
       authService.superAdmin.set(true);
+      authService.me.set({ name: 'Ana Souza', email: 'ana@financeos.local', superAdmin: true, permissions: [] });
       const fixture = createFixture();
 
-      const aside = sidebar(fixture);
-      const first = navButtons(fixture)[0];
-      const nativeFocus = first.focus.bind(first);
-      let drawerRenderedOpenWhenFocused: boolean | null = null;
-      first.focus = () => {
-        drawerRenderedOpenWhenFocused = aside.classList.contains('open');
-        nativeFocus();
-      };
+      const footer = root(fixture).querySelector('.sidebar-footer') as HTMLElement;
+      expect(footer.querySelector('.avatar')?.textContent?.trim()).toBe('AS');
+      expect(footer.querySelector('.current-user')?.textContent?.trim()).toBe('Ana Souza');
+      expect(footer.querySelector('.app-version')?.textContent).toContain('FinanceOS');
+      expect(footer.querySelector('button[aria-label="Sair"]')).not.toBeNull();
+    });
 
-      menuButton(fixture).click();
+    it('move o foco para o conteúdo ao navegar por um item do menu', async () => {
+      asSuperAdmin();
+      const fixture = createFixture();
+
+      findNav(fixture, 'Categorias')?.click();
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      const workspace = root(fixture).querySelector('.workspace') as HTMLElement;
+      expect(document.activeElement).toBe(workspace);
+      expect(TestBed.inject(Router).url).toBe('/categories');
+    });
+  });
+
+  describe('barra inferior no celular', () => {
+    it('tem Resumo, Lançamentos, + e Mais para quem pode tudo, sem Cadastros', () => {
+      asSuperAdmin();
+      const fixture = createFixture();
+
+      expect(bottomItems(fixture)).toEqual(['Resumo', 'Lançamentos', 'Mais']);
+      expect(fab(fixture)?.getAttribute('aria-label')).toBe('Novo lançamento');
+      expect(root(fixture).querySelector('#sheet-registers')).toBeNull();
+    });
+
+    it('mostra Categorias no painel Mais, na seção Cadastros antes das demais', () => {
+      asSuperAdmin();
+      const fixture = createFixture();
+
+      expect(sheetSectionTitles(fixture)).toEqual(['Cadastros', 'Configurações', 'Sobre']);
+      expect(sheetItems(fixture, 'more')).toEqual([
+        'Categorias',
+        'Usuários',
+        'Perfis',
+        'Documentação',
+        'Novidades por versão',
+        'Sair',
+      ]);
+    });
+
+    it('mostra Categorias no painel Mais só com permissão de ver Categorias', () => {
+      withPermissions('CATEGORIES');
+      const fixture = createFixture();
+
+      expect(bottomItems(fixture)).toEqual(['Mais']);
+      expect(sheetSectionTitles(fixture)).toEqual(['Cadastros']);
+      expect(sheetItems(fixture, 'more')).toEqual(['Categorias', 'Sair']);
+    });
+
+    it('esconde Categorias e a seção Cadastros do painel Mais sem permissão de ver Categorias', () => {
+      withPermissions('DASHBOARD', 'TRANSACTIONS', 'USERS', 'PROFILES', 'DOCUMENTATION', 'RELEASE_NOTES');
+      const fixture = createFixture();
+
+      expect(sheetSectionTitles(fixture)).toEqual(['Configurações', 'Sobre']);
+      expect(sheetItems(fixture, 'more')).not.toContain('Categorias');
+    });
+
+    it('esconde o + sem permissão de incluir lançamento', () => {
+      withPermissions('TRANSACTIONS');
+      const fixture = createFixture();
+
+      expect(bottomItems(fixture)).toEqual(['Lançamentos', 'Mais']);
+      expect(fab(fixture)).toBeNull();
+    });
+
+    it('mostra o + com permissão de incluir lançamento e ele leva ao cadastro', async () => {
+      TestBed.inject(AuthService).permissions.set([
+        { screen: 'TRANSACTIONS', canView: true, canCreate: true, canEdit: false, canDelete: false },
+      ]);
+      const fixture = createFixture();
+
+      fab(fixture)?.click();
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      expect(TestBed.inject(Router).url).toBe('/transactions/new');
+    });
+
+    it('mantém Mais sempre visível, com Sair, mesmo sem nenhuma permissão', () => {
+      const fixture = createFixture();
+
+      expect(bottomItems(fixture)).toEqual(['Mais']);
+      expect(sheetSectionTitles(fixture)).toEqual([]);
+      expect(sheetItems(fixture, 'more')).toEqual(['Sair']);
+    });
+
+    it.each([
+      ['/dashboard', 'Resumo'],
+      ['/transactions', 'Lançamentos'],
+      ['/categories', 'Mais'],
+      ['/users', 'Mais'],
+      ['/profiles', 'Mais'],
+      ['/documentation', 'Mais'],
+      ['/release-notes', 'Mais'],
+    ])('destaca só o item da barra do grupo de %s', async (url, active) => {
+      asSuperAdmin();
+      const fixture = createFixture();
+
+      await TestBed.inject(Router).navigateByUrl(url);
       fixture.detectChanges();
       await fixture.whenStable();
       fixture.detectChanges();
 
-      expect(drawerRenderedOpenWhenFocused).toBe(true);
-      expect(document.activeElement).toBe(navButtons(fixture)[0]);
-
-      scrim(fixture)?.click();
-      fixture.detectChanges();
-
-      expect(scrim(fixture)).toBeNull();
-      expect(document.activeElement).toBe(menuButton(fixture));
-      expect(document.body.classList.contains('drawer-open')).toBe(false);
+      const highlighted = Array.from(root(fixture).querySelectorAll('.bottom-bar .bottom-item.active')).map(
+        (item) => item.textContent?.trim(),
+      );
+      expect(highlighted).toEqual([active]);
     });
 
-    it('fecha a gaveta no Esc e devolve o foco ao botão Menu', () => {
-      const authService = TestBed.inject(AuthService);
-      authService.superAdmin.set(true);
+    it.each([
+      '/transactions/new',
+      '/transactions/7/edit',
+      '/categories/new',
+      '/categories/3/edit',
+      '/users/new',
+      '/users/5/edit',
+      '/profiles/new',
+      '/profiles/2/edit',
+    ])('não renderiza a barra inferior no cadastro %s, onde o Salvar fica fixo no rodapé', async (url) => {
+      asSuperAdmin();
       const fixture = createFixture();
 
-      menuButton(fixture).click();
+      await TestBed.inject(Router).navigateByUrl(url);
       fixture.detectChanges();
+
+      expect(root(fixture).querySelector('.bottom-bar')).toBeNull();
+      expect(fab(fixture)).toBeNull();
+      expect(root(fixture).querySelector('.app-shell')?.classList.contains('form-route')).toBe(true);
+    });
+
+    it.each(['/dashboard', '/transactions', '/categories', '/users', '/profiles', '/documentation', '/release-notes'])(
+      'mantém a barra inferior em %s',
+      async (url) => {
+        asSuperAdmin();
+        const fixture = createFixture();
+
+        await TestBed.inject(Router).navigateByUrl(url);
+        fixture.detectChanges();
+
+        expect(root(fixture).querySelector('.bottom-bar')).not.toBeNull();
+        expect(bottomItems(fixture)).toEqual(['Resumo', 'Lançamentos', 'Mais']);
+        expect(root(fixture).querySelector('.app-shell')?.classList.contains('form-route')).toBe(false);
+      },
+    );
+
+    it('volta a mostrar a barra inferior ao sair do cadastro para a listagem', async () => {
+      asSuperAdmin();
+      const fixture = createFixture();
+      const router = TestBed.inject(Router);
+
+      await router.navigateByUrl('/transactions/new');
+      fixture.detectChanges();
+      expect(root(fixture).querySelector('.bottom-bar')).toBeNull();
+
+      await router.navigateByUrl('/transactions');
+      fixture.detectChanges();
+      expect(root(fixture).querySelector('.bottom-bar')).not.toBeNull();
+    });
+
+    it('abre o painel Mais com os itens permitidos, trava a rolagem e foca o primeiro controle', async () => {
+      withPermissions('USERS', 'DOCUMENTATION');
+      const fixture = createFixture();
+      const more = bottomItem(fixture, 'Mais');
+
+      expect(sheet(fixture, 'more')?.classList.contains('open')).toBe(false);
+      expect(sheet(fixture, 'more')?.getAttribute('aria-hidden')).toBe('true');
+
+      more.click();
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      const panel = sheet(fixture, 'more') as HTMLElement;
+      expect(panel.classList.contains('open')).toBe(true);
+      expect(panel.getAttribute('aria-hidden')).toBeNull();
+      expect(panel.getAttribute('role')).toBe('dialog');
+      expect(more.getAttribute('aria-expanded')).toBe('true');
       expect(scrim(fixture)).not.toBeNull();
+      expect(document.body.classList.contains('overlay-open')).toBe(true);
+      expect(sheetItems(fixture, 'more')).toEqual(['Usuários', 'Documentação', 'Sair']);
+      expect(panel.contains(document.activeElement)).toBe(true);
+    });
+
+    it('abre o painel Mais e navega para Categorias por ele', async () => {
+      withPermissions('CATEGORIES');
+      const fixture = createFixture();
+
+      bottomItem(fixture, 'Mais').click();
+      fixture.detectChanges();
+      expect(sheet(fixture, 'more')?.classList.contains('open')).toBe(true);
+
+      (sheet(fixture, 'more')?.querySelector('.sheet-item') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      expect(TestBed.inject(Router).url).toBe('/categories');
+      expect(sheet(fixture, 'more')?.classList.contains('open')).toBe(false);
+    });
+
+    it('fecha no Esc e devolve o foco ao botão que abriu', () => {
+      asSuperAdmin();
+      const fixture = createFixture();
+      const more = bottomItem(fixture, 'Mais');
+
+      more.focus();
+      more.click();
+      fixture.detectChanges();
 
       pressKey('Escape');
       fixture.detectChanges();
 
+      expect(sheet(fixture, 'more')?.classList.contains('open')).toBe(false);
       expect(scrim(fixture)).toBeNull();
-      expect(menuButton(fixture).getAttribute('aria-expanded')).toBe('false');
-      expect(document.activeElement).toBe(menuButton(fixture));
-      expect(document.body.classList.contains('drawer-open')).toBe(false);
+      expect(more.getAttribute('aria-expanded')).toBe('false');
+      expect(document.activeElement).toBe(more);
+      expect(document.body.classList.contains('overlay-open')).toBe(false);
     });
 
-    it('fecha a gaveta ao acionar um item de navegação e move o foco para o conteúdo', async () => {
-      const authService = TestBed.inject(AuthService);
-      authService.superAdmin.set(true);
+    it('fecha pelo scrim', () => {
+      asSuperAdmin();
       const fixture = createFixture();
-      const compiled = fixture.nativeElement as HTMLElement;
 
-      menuButton(fixture).click();
+      bottomItem(fixture, 'Mais').click();
       fixture.detectChanges();
-      expect(scrim(fixture)).not.toBeNull();
-
-      findButton(fixture, 'Lançamentos')?.click();
-      fixture.detectChanges();
-      await fixture.whenStable();
+      scrim(fixture)?.click();
       fixture.detectChanges();
 
-      expect(scrim(fixture)).toBeNull();
-      expect(document.body.classList.contains('drawer-open')).toBe(false);
-      const workspace = compiled.querySelector('.workspace') as HTMLElement;
-      expect(workspace.contains(document.activeElement)).toBe(true);
+      expect(sheet(fixture, 'more')?.classList.contains('open')).toBe(false);
+      expect(document.body.classList.contains('overlay-open')).toBe(false);
     });
 
-    it('não deixa o Tab alcançar o conteúdo atrás enquanto a gaveta está aberta', () => {
-      const authService = TestBed.inject(AuthService);
-      authService.superAdmin.set(true);
+    it('retém o Tab dentro do painel aberto', () => {
+      asSuperAdmin();
       const fixture = createFixture();
-      const compiled = fixture.nativeElement as HTMLElement;
 
-      menuButton(fixture).click();
+      bottomItem(fixture, 'Mais').click();
       fixture.detectChanges();
 
-      const aside = sidebar(fixture);
-      const focusables = Array.from(aside.querySelectorAll<HTMLElement>('button'));
+      const panel = sheet(fixture, 'more') as HTMLElement;
+      const focusables = Array.from(panel.querySelectorAll<HTMLElement>('button'));
       const first = focusables[0];
       const last = focusables[focusables.length - 1];
 
@@ -520,24 +480,71 @@ describe('MainLayout', () => {
       pressKey('Tab', true);
       expect(document.activeElement).toBe(last);
 
-      const workspace = compiled.querySelector('.workspace') as HTMLElement;
-      workspace.focus();
+      (root(fixture).querySelector('.workspace') as HTMLElement).focus();
       pressKey('Tab');
-      expect(aside.contains(document.activeElement)).toBe(true);
+      expect(panel.contains(document.activeElement)).toBe(true);
     });
 
-    it('não retém o foco nem trava a rolagem quando a gaveta está fechada', () => {
-      const authService = TestBed.inject(AuthService);
-      authService.superAdmin.set(true);
+    it('não retém o foco nem trava a rolagem com os painéis fechados', () => {
+      asSuperAdmin();
       const fixture = createFixture();
-      const compiled = fixture.nativeElement as HTMLElement;
-      const workspace = compiled.querySelector('.workspace') as HTMLElement;
+      const workspace = root(fixture).querySelector('.workspace') as HTMLElement;
 
       workspace.focus();
       pressKey('Tab');
 
       expect(document.activeElement).toBe(workspace);
-      expect(document.body.classList.contains('drawer-open')).toBe(false);
+      expect(document.body.classList.contains('overlay-open')).toBe(false);
     });
+
+    it('fecha o painel e foca o conteúdo ao navegar por um item dele', async () => {
+      asSuperAdmin();
+      const fixture = createFixture();
+
+      bottomItem(fixture, 'Mais').click();
+      fixture.detectChanges();
+      (sheet(fixture, 'more')?.querySelector('.sheet-item') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      expect(sheet(fixture, 'more')?.classList.contains('open')).toBe(false);
+      expect(document.body.classList.contains('overlay-open')).toBe(false);
+      expect(document.activeElement).toBe(root(fixture).querySelector('.workspace'));
+      expect(TestBed.inject(Router).url).toBe('/categories');
+    });
+
+    it('sai pelo item Sair do painel Mais', async () => {
+      asSuperAdmin();
+      const fixture = createFixture();
+      const authService = TestBed.inject(AuthService);
+      const logout = vi.spyOn(authService, 'logout');
+
+      bottomItem(fixture, 'Mais').click();
+      fixture.detectChanges();
+      (sheet(fixture, 'more')?.querySelector('.sheet-logout') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      expect(logout).toHaveBeenCalled();
+      expect(TestBed.inject(Router).url).toBe('/login');
+      expect(document.body.classList.contains('overlay-open')).toBe(false);
+    });
+  });
+
+  it('monta um único botão Voltar ao topo e navegar entre telas não cria outro listener de scroll', async () => {
+    const addSpy = vi.spyOn(window, 'addEventListener');
+    asSuperAdmin();
+    const fixture = createFixture();
+    const router = TestBed.inject(Router);
+
+    await router.navigateByUrl('/transactions');
+    fixture.detectChanges();
+    await router.navigateByUrl('/documentation');
+    fixture.detectChanges();
+
+    expect(root(fixture).querySelectorAll('app-back-to-top')).toHaveLength(1);
+    expect(root(fixture).querySelectorAll('.back-to-top')).toHaveLength(1);
+    expect(addSpy.mock.calls.filter(([type]) => type === 'scroll')).toHaveLength(1);
+    addSpy.mockRestore();
   });
 });

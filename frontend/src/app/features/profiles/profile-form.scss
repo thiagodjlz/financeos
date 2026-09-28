@@ -1,13 +1,6 @@
-form.form-page-wide {
-  max-width: 760px;
-}
-
-.name-field {
-  max-width: 320px;
-}
-
-.form-actions {
-  max-width: 320px;
+.table-wrap {
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-md);
 }
 
 .permissions-table {
@@ -113,8 +106,7 @@ th.perm-col,
     justify-content: flex-end;
   }
 
-  .name-field,
-  .form-actions {
-    max-width: none;
+  .table-wrap {
+    border: 0;
   }
 }

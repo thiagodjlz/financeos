@@ -1,223 +1,342 @@
-<main class="app-shell">
-  <header class="mobile-topbar">
-    <button
-      class="menu-button"
-      type="button"
-      #menuButton
-      aria-label="Abrir menu"
-      [attr.aria-expanded]="drawerOpen()"
-      aria-controls="app-drawer"
-      (click)="toggleDrawer()"
-    >
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-        <path d="M4 7h16M4 12h16M4 17h16"></path>
-      </svg>
-    </button>
-    <div class="topbar-brand">
-      <div class="mark">F</div>
-      <p>{{ appName }}</p>
-    </div>
-  </header>
-
-  <div class="drawer-scrim" *ngIf="drawerOpen()" (click)="closeDrawer(true)"></div>
-
-  <aside
-    id="app-drawer"
-    class="sidebar"
-    #drawer
-    [class.expanded]="expanded()"
-    [class.open]="drawerOpen()"
-    (mouseenter)="expand()"
-    (mouseleave)="onMouseLeave($event)"
-    (focusin)="expand()"
-    (focusout)="onFocusOut($event)"
-  >
+<div class="app-shell" [class.menu-collapsed]="collapsed()" [class.form-route]="formRoute()">
+  <aside class="sidebar" aria-label="Menu lateral">
     <div class="brand-block">
-      <div class="mark">F</div>
+      <div class="mark" aria-hidden="true">F</div>
       <div class="brand-text">
-        <h1>FinanceOS</h1>
-        <p>Controle financeiro</p>
+        <strong>{{ appName }}</strong>
+        <span>Controle financeiro</span>
       </div>
+      <button
+        type="button"
+        class="icon-button collapse-toggle"
+        [attr.aria-label]="collapsed() ? 'Expandir menu' : 'Recolher menu'"
+        [attr.title]="collapsed() ? 'Expandir menu' : 'Recolher menu'"
+        [attr.aria-expanded]="!collapsed()"
+        (click)="toggleCollapsed()"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3.5" y="4.5" width="17" height="15" rx="2.5"></rect>
+          <path d="M9.5 4.5v15"></path>
+        </svg>
+      </button>
     </div>
 
     <nav class="nav-list" aria-label="Principal">
-      <button
-        *ngIf="authService.can('DASHBOARD', 'VIEW')"
-        type="button"
-        routerLink="/dashboard"
-        routerLinkActive="active"
-        (click)="onNavigate()"
-        [attr.title]="expanded() ? null : 'Resumo'"
-        [attr.aria-label]="expanded() ? null : 'Resumo'"
-      >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-          <rect x="3" y="3" width="7.5" height="7.5" rx="1.6"></rect>
-          <rect x="13.5" y="3" width="7.5" height="7.5" rx="1.6"></rect>
-          <rect x="3" y="13.5" width="7.5" height="7.5" rx="1.6"></rect>
-          <rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.6"></rect>
-        </svg>
-        <span class="nav-label">Resumo</span>
-      </button>
-      <button
-        *ngIf="authService.can('TRANSACTIONS', 'VIEW')"
-        type="button"
-        routerLink="/transactions"
-        routerLinkActive="active"
-        (click)="onNavigate()"
-        [attr.title]="expanded() ? null : 'Lançamentos'"
-        [attr.aria-label]="expanded() ? null : 'Lançamentos'"
-      >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-          <path d="M4 8h13M17 8l-3.2-3.2M17 8l-3.2 3.2"></path>
-          <path d="M20 16H7M7 16l3.2-3.2M7 16l3.2 3.2"></path>
-        </svg>
-        <span class="nav-label">Lançamentos</span>
-      </button>
-      <div class="nav-group" *ngIf="canSeeRegisters()">
+      <div class="nav-section">
         <button
+          *ngIf="authService.can('DASHBOARD', 'VIEW')"
           type="button"
-          class="nav-parent"
-          [class.active]="isRegistersActive()"
-          (click)="toggleGroup('registers')"
-          [attr.title]="expanded() ? null : 'Cadastros'"
-          [attr.aria-label]="expanded() ? null : 'Cadastros'"
+          routerLink="/dashboard"
+          routerLinkActive="active"
+          (click)="onNavigate()"
+          [attr.title]="collapsed() ? 'Resumo' : null"
+          [attr.aria-label]="collapsed() ? 'Resumo' : null"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-            <path d="M3.5 7a2 2 0 0 1 2-2h4.2l2.1 2.6h6.7a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"></path>
+            <rect x="3" y="3" width="7.5" height="7.5" rx="1.6"></rect>
+            <rect x="13.5" y="3" width="7.5" height="7.5" rx="1.6"></rect>
+            <rect x="3" y="13.5" width="7.5" height="7.5" rx="1.6"></rect>
+            <rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.6"></rect>
           </svg>
-          <span class="nav-label">Cadastros</span>
+          <span class="nav-label">Resumo</span>
         </button>
-        <div class="nav-children" *ngIf="openGroup() === 'registers' && expanded()">
-          <button
-            *ngIf="authService.can('CATEGORIES', 'VIEW')"
-            type="button"
-            routerLink="/categories"
-            routerLinkActive="active"
-            (click)="onNavigate()"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-              <circle cx="8.5" cy="12" r="5.2"></circle>
-              <circle cx="16" cy="12" r="5.2"></circle>
-            </svg>
-            <span class="nav-label">Categorias</span>
-          </button>
-        </div>
+        <button
+          *ngIf="authService.can('TRANSACTIONS', 'VIEW')"
+          type="button"
+          routerLink="/transactions"
+          routerLinkActive="active"
+          (click)="onNavigate()"
+          [attr.title]="collapsed() ? 'Lançamentos' : null"
+          [attr.aria-label]="collapsed() ? 'Lançamentos' : null"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+            <path d="M4 8h13M17 8l-3.2-3.2M17 8l-3.2 3.2"></path>
+            <path d="M20 16H7M7 16l3.2-3.2M7 16l3.2 3.2"></path>
+          </svg>
+          <span class="nav-label">Lançamentos</span>
+        </button>
       </div>
-      <div class="nav-group" *ngIf="canSeeSettings()">
+
+      <div class="nav-section" *ngIf="canSeeRegisters()">
+        <span class="nav-section-title">Cadastros</span>
         <button
+          *ngIf="authService.can('CATEGORIES', 'VIEW')"
           type="button"
-          class="nav-parent"
-          [class.active]="isSettingsActive()"
-          (click)="toggleGroup('settings')"
-          [attr.title]="expanded() ? null : 'Configurações'"
-          [attr.aria-label]="expanded() ? null : 'Configurações'"
+          routerLink="/categories"
+          routerLinkActive="active"
+          (click)="onNavigate()"
+          [attr.title]="collapsed() ? 'Categorias' : null"
+          [attr.aria-label]="collapsed() ? 'Categorias' : null"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-            <rect x="5" y="3" width="14" height="18" rx="2"></rect>
-            <path d="M8.5 8h7M8.5 12h7M8.5 16h4"></path>
+            <circle cx="8.5" cy="12" r="5.2"></circle>
+            <circle cx="16" cy="12" r="5.2"></circle>
           </svg>
-          <span class="nav-label">Configurações</span>
+          <span class="nav-label">Categorias</span>
         </button>
-        <div class="nav-children" *ngIf="openGroup() === 'settings' && expanded()">
-          <button
-            *ngIf="authService.can('USERS', 'VIEW')"
-            type="button"
-            routerLink="/users"
-            routerLinkActive="active"
-            (click)="onNavigate()"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-              <circle cx="12" cy="8" r="3.6"></circle>
-              <path d="M4.5 20c0-4.2 3.4-6.8 7.5-6.8s7.5 2.6 7.5 6.8"></path>
-            </svg>
-            <span class="nav-label">Usuários</span>
-          </button>
-          <button
-            *ngIf="authService.can('PROFILES', 'VIEW')"
-            type="button"
-            routerLink="/profiles"
-            routerLinkActive="active"
-            (click)="onNavigate()"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-              <rect x="4" y="4" width="16" height="16" rx="4"></rect>
-              <path d="M8.5 12.5l2.3 2.3 4.7-4.7"></path>
-            </svg>
-            <span class="nav-label">Perfis</span>
-          </button>
-        </div>
       </div>
-      <div class="nav-group" *ngIf="canSeeAbout()">
+
+      <div class="nav-section" *ngIf="canSeeSettings()">
+        <span class="nav-section-title">Configurações</span>
         <button
+          *ngIf="authService.can('USERS', 'VIEW')"
           type="button"
-          class="nav-parent"
-          [class.active]="isAboutActive()"
-          (click)="toggleGroup('about')"
-          [attr.title]="expanded() ? null : 'Sobre'"
-          [attr.aria-label]="expanded() ? null : 'Sobre'"
+          routerLink="/users"
+          routerLinkActive="active"
+          (click)="onNavigate()"
+          [attr.title]="collapsed() ? 'Usuários' : null"
+          [attr.aria-label]="collapsed() ? 'Usuários' : null"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-            <circle cx="12" cy="12" r="9"></circle>
-            <path d="M12 11v5"></path>
-            <path d="M12 7.6h.01"></path>
+            <circle cx="12" cy="8" r="3.6"></circle>
+            <path d="M4.5 20c0-4.2 3.4-6.8 7.5-6.8s7.5 2.6 7.5 6.8"></path>
           </svg>
-          <span class="nav-label">Sobre</span>
+          <span class="nav-label">Usuários</span>
         </button>
-        <div class="nav-children" *ngIf="openGroup() === 'about' && expanded()">
-          <button
-            *ngIf="authService.can('DOCUMENTATION', 'VIEW')"
-            type="button"
-            routerLink="/documentation"
-            routerLinkActive="active"
-            (click)="onNavigate()"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-              <path d="M5 4.5h8.5a3 3 0 0 1 3 3V20a2.5 2.5 0 0 0-2.5-2.5H5z"></path>
-              <path d="M19 6.5V20a2.5 2.5 0 0 0-2.5-2.5"></path>
-            </svg>
-            <span class="nav-label">Documentação</span>
-          </button>
-          <button
-            *ngIf="authService.can('RELEASE_NOTES', 'VIEW')"
-            type="button"
-            routerLink="/release-notes"
-            routerLinkActive="active"
-            (click)="onNavigate()"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-              <path d="M12 4a5 5 0 0 0-5 5v3l-1.5 3h13L17 12V9a5 5 0 0 0-5-5z"></path>
-              <path d="M9.5 19a2.5 2.5 0 0 0 5 0"></path>
-            </svg>
-            <span class="nav-label">Novidades por versão</span>
-          </button>
-        </div>
+        <button
+          *ngIf="authService.can('PROFILES', 'VIEW')"
+          type="button"
+          routerLink="/profiles"
+          routerLinkActive="active"
+          (click)="onNavigate()"
+          [attr.title]="collapsed() ? 'Perfis' : null"
+          [attr.aria-label]="collapsed() ? 'Perfis' : null"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+            <rect x="4" y="4" width="16" height="16" rx="4"></rect>
+            <path d="M8.5 12.5l2.3 2.3 4.7-4.7"></path>
+          </svg>
+          <span class="nav-label">Perfis</span>
+        </button>
+      </div>
+
+      <div class="nav-section" *ngIf="canSeeAbout()">
+        <span class="nav-section-title">Sobre</span>
+        <button
+          *ngIf="authService.can('DOCUMENTATION', 'VIEW')"
+          type="button"
+          routerLink="/documentation"
+          routerLinkActive="active"
+          (click)="onNavigate()"
+          [attr.title]="collapsed() ? 'Documentação' : null"
+          [attr.aria-label]="collapsed() ? 'Documentação' : null"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+            <path d="M5 4.5h8.5a3 3 0 0 1 3 3V20a2.5 2.5 0 0 0-2.5-2.5H5z"></path>
+            <path d="M19 6.5V20a2.5 2.5 0 0 0-2.5-2.5"></path>
+          </svg>
+          <span class="nav-label">Documentação</span>
+        </button>
+        <button
+          *ngIf="authService.can('RELEASE_NOTES', 'VIEW')"
+          type="button"
+          routerLink="/release-notes"
+          routerLinkActive="active"
+          (click)="onNavigate()"
+          [attr.title]="collapsed() ? 'Novidades por versão' : null"
+          [attr.aria-label]="collapsed() ? 'Novidades por versão' : null"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+            <path d="M12 4a5 5 0 0 0-5 5v3l-1.5 3h13L17 12V9a5 5 0 0 0-5-5z"></path>
+            <path d="M9.5 19a2.5 2.5 0 0 0 5 0"></path>
+          </svg>
+          <span class="nav-label">Novidades por versão</span>
+        </button>
       </div>
     </nav>
 
-    <button
-      type="button"
-      class="logout-button"
-      (click)="logout()"
-      [attr.title]="expanded() ? null : 'Sair'"
-      [attr.aria-label]="expanded() ? null : 'Sair'"
-    >
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-        <path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"></path>
-        <path d="M11 8l-4 4 4 4"></path>
-        <path d="M7 12h11"></path>
-      </svg>
-      <span class="nav-label">Sair</span>
-    </button>
-
     <footer class="sidebar-footer">
-      <p class="current-user" *ngIf="authService.me() as me" [attr.title]="me.name">{{ me.name }}</p>
-      <p class="app-footer">{{ appName }} &middot; v{{ appVersion }}</p>
+      <div class="avatar" aria-hidden="true">{{ userInitials() }}</div>
+      <div class="user-text">
+        <strong class="current-user" *ngIf="authService.me() as me" [attr.title]="me.name">{{ me.name }}</strong>
+        <span class="app-version">{{ appName }} &middot; v{{ appVersion }}</span>
+      </div>
+      <button type="button" class="icon-button logout-button" aria-label="Sair" title="Sair" (click)="logout()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"></path>
+          <path d="M11 8l-4 4 4 4"></path>
+          <path d="M7 12h11"></path>
+        </svg>
+      </button>
     </footer>
   </aside>
 
-  <section class="workspace" #workspace tabindex="-1">
+  <main class="workspace" #workspace tabindex="-1">
     <router-outlet />
+  </main>
+
+  <nav class="bottom-bar" *ngIf="!formRoute()" aria-label="Navegação inferior">
+    <button
+      *ngIf="authService.can('DASHBOARD', 'VIEW')"
+      type="button"
+      class="bottom-item"
+      routerLink="/dashboard"
+      routerLinkActive="active"
+      (click)="onNavigate()"
+    >
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+        <rect x="3" y="3" width="7.5" height="7.5" rx="1.6"></rect>
+        <rect x="13.5" y="3" width="7.5" height="7.5" rx="1.6"></rect>
+        <rect x="3" y="13.5" width="7.5" height="7.5" rx="1.6"></rect>
+        <rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.6"></rect>
+      </svg>
+      <span>Resumo</span>
+    </button>
+    <button
+      *ngIf="authService.can('TRANSACTIONS', 'VIEW')"
+      type="button"
+      class="bottom-item"
+      routerLink="/transactions"
+      routerLinkActive="active"
+      (click)="onNavigate()"
+    >
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+        <path d="M4 8h13M17 8l-3.2-3.2M17 8l-3.2 3.2"></path>
+        <path d="M20 16H7M7 16l3.2-3.2M7 16l3.2 3.2"></path>
+      </svg>
+      <span>Lançamentos</span>
+    </button>
+    <div class="bottom-fab-slot" *ngIf="authService.can('TRANSACTIONS', 'CREATE')">
+      <button
+        type="button"
+        class="bottom-fab"
+        aria-label="Novo lançamento"
+        title="Novo lançamento"
+        routerLink="/transactions/new"
+        (click)="onNavigate()"
+      >
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <path d="M12 5v14M5 12h14"></path>
+        </svg>
+      </button>
+    </div>
+    <button
+      type="button"
+      class="bottom-item"
+      aria-haspopup="dialog"
+      aria-controls="sheet-more"
+      [attr.aria-expanded]="openSheet() === 'more'"
+      [class.active]="moreActive()"
+      (click)="toggleSheet('more', $event)"
+    >
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+        <path d="M4 7h16M4 12h16M4 17h16"></path>
+      </svg>
+      <span>Mais</span>
+    </button>
+  </nav>
+
+  <div class="sheet-scrim nav-scrim" *ngIf="openSheet()" (click)="closeSheet(true)"></div>
+
+  <section
+    id="sheet-more"
+    class="sheet nav-sheet"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="sheet-more-title"
+    [class.open]="openSheet() === 'more'"
+    [attr.aria-hidden]="openSheet() === 'more' ? null : 'true'"
+  >
+    <div class="sheet-handle"></div>
+    <div class="sheet-head">
+      <h2 id="sheet-more-title">Mais</h2>
+      <button type="button" class="icon-button" aria-label="Fechar Mais" title="Fechar Mais" (click)="closeSheet(true)">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <path d="M6.5 6.5l11 11M17.5 6.5l-11 11"></path>
+        </svg>
+      </button>
+    </div>
+    <div class="sheet-list">
+      <span class="sheet-section-title" *ngIf="canSeeRegisters()">Cadastros</span>
+      <button
+        *ngIf="authService.can('CATEGORIES', 'VIEW')"
+        type="button"
+        class="sheet-item"
+        routerLink="/categories"
+        routerLinkActive="active"
+        (click)="onNavigate()"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+          <circle cx="8.5" cy="12" r="5.2"></circle>
+          <circle cx="16" cy="12" r="5.2"></circle>
+        </svg>
+        <span>Categorias</span>
+      </button>
+      <span class="sheet-section-title" *ngIf="canSeeSettings()">Configurações</span>
+      <button
+        *ngIf="authService.can('USERS', 'VIEW')"
+        type="button"
+        class="sheet-item"
+        routerLink="/users"
+        routerLinkActive="active"
+        (click)="onNavigate()"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+          <circle cx="12" cy="8" r="3.6"></circle>
+          <path d="M4.5 20c0-4.2 3.4-6.8 7.5-6.8s7.5 2.6 7.5 6.8"></path>
+        </svg>
+        <span>Usuários</span>
+      </button>
+      <button
+        *ngIf="authService.can('PROFILES', 'VIEW')"
+        type="button"
+        class="sheet-item"
+        routerLink="/profiles"
+        routerLinkActive="active"
+        (click)="onNavigate()"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+          <rect x="4" y="4" width="16" height="16" rx="4"></rect>
+          <path d="M8.5 12.5l2.3 2.3 4.7-4.7"></path>
+        </svg>
+        <span>Perfis</span>
+      </button>
+      <span class="sheet-section-title" *ngIf="canSeeAbout()">Sobre</span>
+      <button
+        *ngIf="authService.can('DOCUMENTATION', 'VIEW')"
+        type="button"
+        class="sheet-item"
+        routerLink="/documentation"
+        routerLinkActive="active"
+        (click)="onNavigate()"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+          <path d="M5 4.5h8.5a3 3 0 0 1 3 3V20a2.5 2.5 0 0 0-2.5-2.5H5z"></path>
+          <path d="M19 6.5V20a2.5 2.5 0 0 0-2.5-2.5"></path>
+        </svg>
+        <span>Documentação</span>
+      </button>
+      <button
+        *ngIf="authService.can('RELEASE_NOTES', 'VIEW')"
+        type="button"
+        class="sheet-item"
+        routerLink="/release-notes"
+        routerLinkActive="active"
+        (click)="onNavigate()"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+          <path d="M12 4a5 5 0 0 0-5 5v3l-1.5 3h13L17 12V9a5 5 0 0 0-5-5z"></path>
+          <path d="M9.5 19a2.5 2.5 0 0 0 5 0"></path>
+        </svg>
+        <span>Novidades por versão</span>
+      </button>
+      <div class="sheet-account">
+        <div class="avatar" aria-hidden="true">{{ userInitials() }}</div>
+        <div class="user-text">
+          <strong class="current-user" *ngIf="authService.me() as me">{{ me.name }}</strong>
+          <span class="app-version">{{ appName }} &middot; v{{ appVersion }}</span>
+        </div>
+      </div>
+      <button type="button" class="sheet-item sheet-logout" (click)="logout()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"></path>
+          <path d="M11 8l-4 4 4 4"></path>
+          <path d="M7 12h11"></path>
+        </svg>
+        <span>Sair</span>
+      </button>
+    </div>
   </section>
 
   <app-back-to-top [focusTarget]="workspace" />
-</main>
+</div>

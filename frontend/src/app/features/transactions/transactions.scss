@@ -1,27 +1,37 @@
 table {
-  min-width: 1000px;
+  min-width: 900px;
 }
 
 col.col-date {
-  width: 140px;
+  width: 128px;
 }
 
 col.col-category {
-  width: 170px;
-}
-
-col.col-status {
   width: 200px;
 }
 
+col.col-status {
+  width: 140px;
+}
+
 col.col-amount {
-  width: 130px;
+  width: 160px;
+}
+
+.date-cell {
+  color: var(--text-label);
+}
+
+.description-text {
+  font-weight: 500;
+}
+
+.type-icon,
+.day-row {
+  display: none;
 }
 
 .amount-cell {
-  text-align: right;
-  font-weight: 700;
-
   &.income {
     color: var(--income-amount);
   }
@@ -31,13 +41,129 @@ col.col-amount {
   }
 }
 
+.transaction-row.canceled .amount-cell {
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
 @media (max-width: 680px) {
+  .page-actions {
+    display: none;
+  }
+
   table {
     min-width: 0;
   }
 
+  tbody .day-row {
+    display: block;
+    border: 0;
+    padding: 12px 0 6px;
+    background: transparent;
+
+    th {
+      display: block;
+      height: auto;
+      border: 0;
+      padding: 0;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: var(--fs-th);
+      font-weight: 600;
+    }
+  }
+
+  tbody tr + tr.day-row {
+    margin-top: 0;
+  }
+
+  tbody tr.day-row + tr {
+    margin-top: 0;
+  }
+
+  .transaction-row {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr) auto;
+    grid-template-areas:
+      'icon desc amount'
+      'icon cat status'
+      'actions actions actions';
+    align-items: center;
+    column-gap: 12px;
+    min-height: 64px;
+    padding: 8px 4px 8px 12px;
+
+    td {
+      padding: 0;
+    }
+
+    td::before {
+      content: none;
+    }
+  }
+
+  .date-cell {
+    display: none;
+  }
+
+  .transaction-row .description-cell {
+    display: contents;
+  }
+
+  .category-cell {
+    grid-area: cat;
+    min-width: 0;
+    color: var(--text-muted);
+    font-size: var(--fs-small);
+  }
+
+  .type-icon {
+    display: grid;
+    grid-area: icon;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    border-radius: var(--radius-pill);
+    background: var(--expense-soft);
+    color: var(--expense-on-soft);
+
+    &.income {
+      background: var(--income-soft);
+      color: var(--income-on-soft);
+    }
+  }
+
+  .description-text {
+    grid-area: desc;
+    min-width: 0;
+    overflow: hidden;
+    font-size: 15px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
   .amount-cell {
-    text-align: left;
-    font-size: var(--fs-body);
+    grid-area: amount;
+    font-size: 15px;
+    font-weight: 650;
+    text-align: right;
+  }
+
+  .status-cell {
+    grid-area: status;
+    justify-self: end;
+  }
+
+  .status-cell .status-pill {
+    height: 22px;
+    padding: 0 8px;
+    font-size: 12px;
+  }
+
+  .transaction-row td.row-actions {
+    grid-area: actions;
+    margin-top: 6px;
+    padding: 4px 0 0;
   }
 }

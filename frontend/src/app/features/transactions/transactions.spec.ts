@@ -2,6 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
+import { dayHeading, isoDate } from '../../core/formatters';
 import { API_BASE, Category, Page, Transaction } from '../../core/models';
 import { AuthService } from '../../core/services/auth.service';
 import { ListStateService } from '../../core/services/list-state.service';
@@ -115,8 +116,18 @@ describe('Transactions', () => {
     await settle();
   }
 
-  async function openFilters(): Promise<void> {
-    await click(query('.filter-toggle'));
+  function buttonByLabel(label: string, scope = ''): HTMLButtonElement | undefined {
+    return queryAll<HTMLButtonElement>(`${scope} button`).find(
+      (button) => (button.getAttribute('aria-label') ?? button.textContent?.trim()) === label,
+    );
+  }
+
+  function rowCells(): HTMLElement[] {
+    return queryAll('tbody tr.transaction-row td');
+  }
+
+  function summaryText(): string {
+    return (query('.pagination-summary').textContent ?? '').replace(/\s+/g, ' ').trim();
   }
 
   async function selectValue(selector: string, value: string): Promise<void> {
@@ -135,7 +146,7 @@ describe('Transactions', () => {
 
     expect(query('form')).toBeNull();
     expect(queryAll('tbody input, tbody select')).toHaveLength(0);
-    const cells = queryAll('tbody tr td');
+    const cells = rowCells();
     expect(cells.map((cell) => cell.getAttribute('data-label'))).toEqual([
       'Data',
       'Descrição',
@@ -145,36 +156,41 @@ describe('Transactions', () => {
       null,
     ]);
     expect(cells[2].textContent?.trim()).toBe('Mercado');
-    expect(query('.panel-heading span').textContent?.trim()).toBe('1');
+    expect(summaryText()).toBe('Mostrando 1–1 de 1');
   });
 
-  it('mostra "Incluir" com CREATE e "Editar" com EDIT, navegando para o cadastro', async () => {
+  it('mostra "Novo lançamento" com CREATE e "Editar lançamento" com EDIT, navegando para o cadastro', async () => {
     await render();
 
-    const include = buttonByText('Incluir', '.list-toolbar') as HTMLButtonElement;
+    expect(query('h1.page-title').textContent?.trim()).toBe('Lançamentos');
+    expect(query('.page-subtitle').textContent?.trim()).toBe('Acompanhe suas receitas e despesas');
+    const include = buttonByText('Novo lançamento', '.page-header') as HTMLButtonElement;
     expect(include.classList.contains('primary-button')).toBe(true);
     await click(include);
     expect(router.navigate).toHaveBeenCalledWith(['/transactions/new']);
 
-    await click(buttonByText('Editar', 'tbody') as HTMLButtonElement);
+    const edit = buttonByLabel('Editar lançamento', 'tbody') as HTMLButtonElement;
+    expect(edit.classList.contains('icon-button')).toBe(true);
+    expect(edit.getAttribute('title')).toBe('Editar lançamento');
+    await click(edit);
     expect(router.navigate).toHaveBeenCalledWith(['/transactions', 'transaction-1', 'edit']);
   });
 
-  it('esconde "Incluir", "Editar" e "Cancelar" sem as permissões', async () => {
+  it('esconde "Novo lançamento", "Editar lançamento" e "Cancelar lançamento" sem as permissões', async () => {
     TestBed.inject(AuthService).permissions.set([
       { screen: 'TRANSACTIONS', canView: true, canCreate: false, canEdit: false, canDelete: false },
     ]);
     await render(page([TRANSACTION]), false);
 
-    expect(buttonByText('Incluir')).toBeUndefined();
-    expect(buttonByText('Editar')).toBeUndefined();
-    expect(buttonByText('Cancelar')).toBeUndefined();
+    expect(buttonByText('Novo lançamento')).toBeUndefined();
+    expect(buttonByLabel('Editar lançamento')).toBeUndefined();
+    expect(buttonByLabel('Cancelar lançamento')).toBeUndefined();
   });
 
-  it('mantém o "Cancelar" da linha cancelando o lançamento e recarregando a página', async () => {
+  it('mantém o "Cancelar lançamento" da linha cancelando o lançamento e recarregando a página', async () => {
     await render();
 
-    await click(buttonByText('Cancelar', 'tbody') as HTMLButtonElement);
+    await click(buttonByLabel('Cancelar lançamento', 'tbody') as HTMLButtonElement);
 
     const request = httpMock.expectOne(`${LIST_URL}/transaction-1`);
     expect(request.request.method).toBe('DELETE');
@@ -186,12 +202,12 @@ describe('Transactions', () => {
     expect(toastService.toasts().map((toast) => [toast.title, toast.message])).toEqual([
       ['Sucesso', 'Lançamento cancelado com sucesso.'],
     ]);
-    expect(queryAll('tbody tr td')[3].textContent?.trim()).toBe('Cancelado');
+    expect(rowCells()[3].textContent?.trim()).toBe('Cancelado');
+    expect(query('tbody tr.transaction-row').classList.contains('canceled')).toBe(true);
   });
 
   it('pagina mantendo os filtros e desabilita os botões nas pontas', async () => {
     await render(page([TRANSACTION], 11, 2));
-    await openFilters();
     await selectValue('select[name="filterType"]', 'EXPENSE');
     httpMock.expectOne(`${LIST_URL}?page=1&size=10&type=EXPENSE`).flush(page([TRANSACTION], 11, 2));
     await settle();
@@ -207,9 +223,8 @@ describe('Transactions', () => {
     expect((buttonByText('Próxima') as HTMLButtonElement).disabled).toBe(true);
   });
 
-  it('aplica filtros em E, mostra "Filtros (N)" com rótulos e remove um rótulo reaplicando os demais', async () => {
+  it('aplica filtros em E pelos campos visíveis, conta no botão Filtros e remove um rótulo reaplicando os demais', async () => {
     await render(page([TRANSACTION], 11, 2));
-    await openFilters();
 
     const description = query<HTMLInputElement>('input[name="filterDescription"]');
     description.value = 'feira';
@@ -229,10 +244,10 @@ describe('Transactions', () => {
       .flush(page([TRANSACTION]));
     await settle();
 
-    expect(query('.filter-toggle').textContent?.trim()).toBe('Filtros (3)');
+    expect(query('.filter-toggle').getAttribute('aria-label')).toBe('Filtros, 3 ativos');
     expect(chipTexts()).toEqual(['Descrição: feira', 'Categoria: Mercado', 'Status: Pendente']);
 
-    await click(queryAll('.filter-chip-remove')[0]);
+    await click(queryAll('.filter-chip')[0]);
     httpMock
       .expectOne(`${LIST_URL}?page=1&size=10&categoryId=cat-expense&status=PENDING`)
       .flush(page([TRANSACTION]));
@@ -244,18 +259,16 @@ describe('Transactions', () => {
 
   it('filtra Status por Pendente, Pago e Cancelado, sem padrão', async () => {
     await render();
-    await openFilters();
 
     const options = queryAll<HTMLOptionElement>('select[name="filterStatus"] option').map((option) =>
       option.textContent?.trim(),
     );
     expect(options).toEqual(['Todos', 'Pendente', 'Pago', 'Cancelado']);
-    expect(query('.filter-toggle').textContent?.trim()).toBe('Filtros');
+    expect(query('.filter-toggle').getAttribute('aria-label')).toBe('Filtros');
   });
 
   it('restaura filtros e página ao voltar do cadastro', async () => {
     await render(page([TRANSACTION], 11, 2));
-    await openFilters();
     await selectValue('select[name="filterType"]', 'EXPENSE');
     httpMock.expectOne(`${LIST_URL}?page=1&size=10&type=EXPENSE`).flush(page([TRANSACTION], 11, 2));
     await settle();
@@ -282,12 +295,11 @@ describe('Transactions', () => {
     await settle();
 
     expect(query('.loading-state')).toBeNull();
-    expect(query('.empty-state').textContent?.trim()).toBe('Sem lançamentos cadastrados');
+    expect(query('.list-state strong').textContent?.trim()).toBe('Sem lançamentos cadastrados');
   });
 
   it('com filtro sem resultado mostra "Nenhum registro encontrado." e "Limpar filtros" volta ao padrão', async () => {
     await render();
-    await openFilters();
     await selectValue('select[name="filterType"]', 'INCOME');
     httpMock.expectOne(`${LIST_URL}?page=1&size=10&type=INCOME`).flush(page([]));
     await settle();
@@ -298,8 +310,8 @@ describe('Transactions', () => {
     httpMock.expectOne(`${LIST_URL}?page=1&size=10`).flush(page([TRANSACTION]));
     await settle();
 
-    expect(query('.filter-toggle').textContent?.trim()).toBe('Filtros');
-    expect(queryAll('tbody tr')).toHaveLength(1);
+    expect(query('.filter-toggle').getAttribute('aria-label')).toBe('Filtros');
+    expect(queryAll('tbody tr.transaction-row')).toHaveLength(1);
   });
 
   it('na falha de carga mostra a mensagem na área, no lugar do vazio, além do toast', async () => {
@@ -316,7 +328,6 @@ describe('Transactions', () => {
 
   it('oferece no filtro todas as categorias do tipo, marcando as inativas', async () => {
     await render();
-    await openFilters();
     await selectValue('select[name="filterType"]', 'EXPENSE');
     httpMock.expectOne(`${LIST_URL}?page=1&size=10&type=EXPENSE`).flush(page([TRANSACTION]));
     await settle();
@@ -336,14 +347,13 @@ describe('Transactions', () => {
     httpMock.expectNone(OPTIONS_URL);
     await settle();
 
-    expect(queryAll('tbody tr')).toHaveLength(3);
-    expect(query('.panel-heading span').textContent?.trim()).toBe('23');
+    expect(queryAll('tbody tr.transaction-row')).toHaveLength(3);
+    expect(summaryText()).toBe('Mostrando 1–10 de 23');
     expect(query('.pagination-status').textContent?.trim()).toBe('Página 1 de 3');
     expect(query('.load-error')).toBeNull();
     expect(toastService.toasts()).toHaveLength(0);
     expect(categoryCells()).toEqual(['Mercado', 'Mercado', 'Sem categoria']);
 
-    await openFilters();
     expect(query('select[name="filterCategoryId"]')).toBeNull();
 
     await selectValue('select[name="filterType"]', 'EXPENSE');
@@ -352,7 +362,7 @@ describe('Transactions', () => {
     await settle();
 
     expect(chipTexts()).toEqual(['Tipo: Despesa']);
-    expect(queryAll('tbody tr')).toHaveLength(1);
+    expect(queryAll('tbody tr.transaction-row')).toHaveLength(1);
   });
 
   it('mostra na coluna o nome vindo da linha, com ou sem o catálogo, e "Sem categoria" só no legado', async () => {
@@ -401,7 +411,7 @@ describe('Transactions', () => {
 
     expect(chipTexts()).toEqual(['Categoria: indisponível']);
 
-    await click(queryAll('.filter-chip-remove')[0]);
+    await click(queryAll('.filter-chip')[0]);
     httpMock.expectOne(`${LIST_URL}?page=1&size=10`).flush(page([TRANSACTION]));
     await settle();
 
@@ -418,7 +428,6 @@ describe('Transactions', () => {
     expect(categoryCells()).toEqual(['Mercado']);
     expect(toastService.toasts().map((toast) => toast.title)).toEqual(['Falha']);
 
-    await openFilters();
     expect(optionTexts('select[name="filterCategoryId"]')).toEqual(['Todas']);
 
     await selectValue('select[name="filterType"]', 'EXPENSE');
@@ -451,7 +460,6 @@ describe('Transactions', () => {
     expect(categoryCells()).toEqual(['Mercado']);
     expect(toastService.toasts()).toHaveLength(0);
 
-    await openFilters();
     expect(query('select[name="filterCategoryId"]')).toBeNull();
 
     await selectValue('select[name="filterType"]', 'EXPENSE');
@@ -459,6 +467,62 @@ describe('Transactions', () => {
     httpMock.expectNone(OPTIONS_URL);
     await settle();
 
-    expect(queryAll('tbody tr')).toHaveLength(1);
+    expect(queryAll('tbody tr.transaction-row')).toHaveLength(1);
+  });
+
+  it('mostra a data em dd/mm/aaaa e o valor com sinal, receita em verde', async () => {
+    const income: Transaction = {
+      ...TRANSACTION,
+      id: 'income-1',
+      type: 'INCOME',
+      status: null,
+      amount: 8450,
+      categoryId: 'cat-income',
+      categoryName: 'Salário',
+    };
+    await render(page([TRANSACTION, income]));
+
+    const dates = queryAll('tbody td[data-label="Data"]').map((cell) => cell.textContent?.trim());
+    expect(dates).toEqual(['01/07/2026', '01/07/2026']);
+    const amounts = queryAll('tbody td[data-label="Valor"]');
+    expect(amounts[0].textContent?.replace(/\s+/g, ' ').trim()).toBe('− R$ 120,00');
+    expect(amounts[1].textContent?.replace(/\s+/g, ' ').trim()).toBe('+ R$ 8.450,00');
+    expect(amounts[1].classList.contains('income')).toBe(true);
+  });
+
+  it('mostra "—" com rótulo acessível na receita sem status e a etiqueta nas despesas', async () => {
+    const income: Transaction = { ...TRANSACTION, id: 'income-1', type: 'INCOME', status: null };
+    await render(page([TRANSACTION, income]));
+
+    const statusCells = queryAll('tbody td[data-label="Status"]');
+    const pill = statusCells[0].querySelector('.status-pill') as HTMLElement;
+    expect(pill.textContent?.trim()).toBe('Pendente');
+    expect(pill.classList.contains('pill-pending')).toBe(true);
+    const none = statusCells[1].querySelector('.no-status') as HTMLElement;
+    expect(none.textContent?.trim()).toBe('—');
+    expect(none.getAttribute('aria-label')).toBe('Sem status');
+    expect(statusCells[1].querySelector('.status-pill')).toBeNull();
+  });
+
+  it('pinta a bolinha da categoria com a categoryColor e a omite quando ela é nula', async () => {
+    await render(
+      page([{ ...TRANSACTION, categoryColor: '#E07A3F' }, { ...TRANSACTION, id: 't2', categoryColor: null }, LEGACY]),
+    );
+
+    const dots = queryAll('tbody td[data-label="Categoria"]').map(
+      (cell) => cell.querySelector<HTMLElement>('.category-dot')?.style.background ?? null,
+    );
+    expect(dots).toEqual(['rgb(224, 122, 63)', null, null]);
+  });
+
+  it('agrupa as linhas por dia com um cabeçalho de data para os cartões do celular', async () => {
+    const other: Transaction = { ...TRANSACTION, id: 't2', transactionDate: '2026-06-30' };
+    await render(page([TRANSACTION, { ...TRANSACTION, id: 't3' }, other]));
+
+    const headings = queryAll('tbody tr.day-row th').map((cell) => cell.textContent?.trim());
+    const today = isoDate(new Date());
+    expect(headings).toEqual([dayHeading('2026-07-01', today), dayHeading('2026-06-30', today)]);
+    expect(query('tbody tr.day-row th').getAttribute('colspan')).toBe('6');
+    expect(queryAll('tbody tr.transaction-row')).toHaveLength(3);
   });
 });

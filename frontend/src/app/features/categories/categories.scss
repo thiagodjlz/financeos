@@ -1,51 +1,48 @@
+table {
+  min-width: 640px;
+}
+
 col.col-type {
-  width: 140px;
+  width: 200px;
 }
 
 col.col-situation {
-  width: 150px;
-}
-
-.row-actions .icon-button {
-  display: inline-grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  border: 1px solid var(--border-input);
-  border-radius: var(--radius-sm);
-  padding: 0;
-  background: var(--surface);
-  color: var(--expense-on-soft);
-  cursor: pointer;
-}
-
-.row-actions .icon-button:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
-@media (hover: hover) {
-  .row-actions .icon-button:hover:not(:disabled) {
-    background: var(--expense-soft);
-  }
+  width: 180px;
 }
 
 .category-name {
   display: flex;
   align-items: center;
   gap: 10px;
+  font-weight: 500;
 }
 
-.category-dot {
+.category-name .category-dot {
   width: 10px;
   height: 10px;
-  flex-shrink: 0;
-  border-radius: var(--radius-pill);
 }
 
-@media (max-width: 480px) {
-  .row-actions .icon-button {
-    width: var(--touch-target);
-    height: var(--touch-target);
+.type-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+
+  svg {
+    flex-shrink: 0;
+  }
+
+  &.expense svg {
+    color: var(--expense-on-soft);
+  }
+
+  &.income svg {
+    color: var(--income-on-soft);
+  }
+}
+
+@media (max-width: 680px) {
+  table {
+    min-width: 0;
   }
 }

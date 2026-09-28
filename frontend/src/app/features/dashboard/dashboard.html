@@ -1,82 +1,107 @@
-<header class="topbar">
-  <div>
-    <p class="eyebrow">Painel financeiro</p>
-    <div class="greeting">
-      <p class="greeting-headline">{{ greeting().headline }}</p>
-      <p class="greeting-subline">{{ greeting().subline }}</p>
-    </div>
-    <h2>{{ formatMonthName(period.month) }} {{ period.year }}</h2>
+<header class="page-header dashboard-header">
+  <div class="page-heading greeting">
+    <h1 class="page-title greeting-headline">{{ greeting().headline }}</h1>
+    <p class="page-subtitle greeting-subline">{{ greeting().subline }}</p>
   </div>
 
-  <div class="period-controls">
-    <select aria-label="Ano" [(ngModel)]="period.year" (change)="onYearChange()">
-      <option *ngFor="let year of availableYears()" [ngValue]="year">{{ year }}</option>
-    </select>
-    <select aria-label="Mês" [(ngModel)]="period.month" (change)="load()">
-      <option *ngFor="let month of availableMonths()" [ngValue]="month">
-        {{ formatMonthName(month) }}
-      </option>
-    </select>
+  <div class="month-stepper" role="group" aria-label="Período do resumo">
+    <button
+      type="button"
+      class="icon-button"
+      aria-label="Mês anterior"
+      title="Mês anterior"
+      [disabled]="!canStepBack()"
+      (click)="step(-1)"
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M15 6l-6 6 6 6"></path>
+      </svg>
+    </button>
+    <span class="month-label" aria-live="polite">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="3.5" y="5" width="17" height="15.5" rx="2.5"></rect>
+        <path d="M3.5 10h17M8 3v4M16 3v4"></path>
+      </svg>
+      {{ periodLabel() }}
+    </span>
+    <button
+      type="button"
+      class="icon-button"
+      aria-label="Próximo mês"
+      title="Próximo mês"
+      [disabled]="!canStepForward()"
+      (click)="step(1)"
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M9 6l6 6-6 6"></path>
+      </svg>
+    </button>
   </div>
 </header>
 
 <p class="load-error" role="alert" *ngIf="!loading() && loadError()">{{ loadError() }}</p>
 
 <section class="metric-grid">
+  <div class="metric-card balance-card">
+    <div class="metric-head">
+      <span class="metric-icon balance" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 8a2.5 2.5 0 0 1 2.5-2.5H17V8"></path>
+          <rect x="4" y="8" width="16" height="11" rx="2.5"></rect>
+          <path d="M16 13.5h.01"></path>
+        </svg>
+      </span>
+      <span class="metric-label">Saldo do mês</span>
+    </div>
+    <strong class="metric-value">{{ formatMoney(summary()?.balance) }}</strong>
+    <span class="metric-hint">Receitas menos despesas pagas</span>
+  </div>
   <div class="metric-card">
     <div class="metric-head">
-      <span class="metric-icon income">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-          <path d="M12 19V5M5 12l7-7 7 7"></path>
+      <span class="metric-icon income" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 19V5M5.5 11.5L12 5l6.5 6.5"></path>
         </svg>
       </span>
       <span class="metric-label">Receitas</span>
     </div>
-    <strong>{{ formatMoney(summary()?.totalIncome) }}</strong>
+    <strong class="metric-value">{{ formatMoney(summary()?.totalIncome) }}</strong>
+    <span class="metric-hint">Entradas no mês</span>
   </div>
   <div class="metric-card">
     <div class="metric-head">
-      <span class="metric-icon expense">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-          <path d="M12 5v14M5 12l7 7 7-7"></path>
+      <span class="metric-icon expense" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 5v14M5.5 12.5L12 19l6.5-6.5"></path>
         </svg>
       </span>
       <span class="metric-label">Despesas</span>
     </div>
-    <strong>{{ formatMoney(summary()?.totalExpense) }}</strong>
+    <strong class="metric-value">{{ formatMoney(summary()?.totalExpense) }}</strong>
+    <span class="metric-hint">Já pagas no mês</span>
   </div>
   <div class="metric-card">
     <div class="metric-head">
-      <span class="metric-icon pending">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-          <circle cx="12" cy="12" r="9"></circle>
-          <path d="M12 7v5l3 3"></path>
+      <span class="metric-icon pending" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="8.5"></circle>
+          <path d="M12 7.5V12l3 3"></path>
         </svg>
       </span>
       <span class="metric-label">Pendentes</span>
     </div>
-    <strong>{{ formatMoney(summary()?.pendingExpense) }}</strong>
-  </div>
-  <div class="metric-card">
-    <div class="metric-head">
-      <span class="metric-icon balance">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-          <path d="M3 12h18M12 3v18"></path>
-        </svg>
-      </span>
-      <span class="metric-label">Saldo</span>
-    </div>
-    <strong>{{ formatMoney(summary()?.balance) }}</strong>
+    <strong class="metric-value">{{ formatMoney(summary()?.pendingExpense) }}</strong>
+    <span class="metric-hint">Despesas a pagar</span>
   </div>
 </section>
 
 <section class="panels-grid">
   <section class="panel chart-panel">
     <div class="panel-heading">
-      <h3>Evolução anual</h3>
+      <h2>Evolução anual</h2>
       <div class="chart-legend">
-        <span><i class="legend-marker income"></i>Receita</span>
-        <span><i class="legend-marker expense"></i>Despesa</span>
+        <span><i class="legend-marker income"></i>Receitas</span>
+        <span><i class="legend-marker expense"></i>Despesas</span>
         <span><i class="legend-marker balance"></i>Saldo</span>
       </div>
     </div>
@@ -211,49 +236,52 @@
 
   <section class="panel breakdown-panel">
     <div class="panel-heading">
-      <h3>Detalhamento</h3>
+      <h2>Por categoria</h2>
+    </div>
+    <div class="breakdown-toggle" role="group" aria-label="Tipo das categorias">
+      <button
+        type="button"
+        [attr.aria-pressed]="breakdownType() === 'EXPENSE'"
+        (click)="breakdownType.set('EXPENSE')"
+      >
+        Despesas
+      </button>
+      <button
+        type="button"
+        [attr.aria-pressed]="breakdownType() === 'INCOME'"
+        (click)="breakdownType.set('INCOME')"
+      >
+        Receitas
+      </button>
     </div>
     <div class="category-section" [attr.aria-busy]="loading()">
-      <div class="category-section-header income">
-        <span>Receitas</span>
-        <strong>{{ categoriesByType('INCOME').length }}</strong>
-      </div>
       <div class="category-list">
-        <div class="category-row" *ngFor="let item of categoriesByType('INCOME')">
+        <div class="category-row" *ngFor="let item of breakdownItems()">
           <div class="category-row-head">
-            <strong>{{ item.categoryName }}</strong>
-            <span>{{ formatMoney(item.totalAmount) }}</span>
+            <span
+              class="category-dot"
+              *ngIf="item.categoryColor"
+              [style.background]="item.categoryColor"
+              aria-hidden="true"
+            ></span>
+            <span class="category-name">{{ item.categoryName }}</span>
+            <span class="category-amount">{{ formatMoney(item.totalAmount) }}</span>
           </div>
           <div class="category-track">
-            <div class="category-bar income" [style.width.%]="(item.totalAmount / maxAmount('INCOME')) * 100"></div>
+            <div
+              class="category-bar"
+              [style.width.%]="(item.totalAmount / breakdownMax()) * 100"
+              [style.background]="item.categoryColor"
+            ></div>
           </div>
         </div>
         <p class="loading-state" *ngIf="loading()"></p>
-        <p class="empty-state" *ngIf="!loading() && !loadError() && !categoriesByType('INCOME').length">Sem dados no período</p>
-      </div>
-    </div>
-    <div class="category-section" [attr.aria-busy]="loading()">
-      <div class="category-section-header expense">
-        <span>Despesas</span>
-        <strong>{{ categoriesByType('EXPENSE').length }}</strong>
-      </div>
-      <div class="category-list">
-        <div class="category-row" *ngFor="let item of categoriesByType('EXPENSE')">
-          <div class="category-row-head">
-            <strong>{{ item.categoryName }}</strong>
-            <span>{{ formatMoney(item.totalAmount) }}</span>
-          </div>
-          <div class="category-track">
-            <div class="category-bar expense" [style.width.%]="(item.totalAmount / maxAmount('EXPENSE')) * 100"></div>
-          </div>
-        </div>
-        <p class="loading-state" *ngIf="loading()"></p>
-        <p class="empty-state" *ngIf="!loading() && !loadError() && !categoriesByType('EXPENSE').length">Sem dados no período</p>
+        <p class="empty-state" *ngIf="!loading() && !loadError() && !breakdownItems().length">Sem dados no período</p>
       </div>
     </div>
     <div class="panel-footer">
-      <span>Total</span>
-      <strong>{{ summary()?.categoryBreakdown?.length ?? 0 }}</strong>
+      <span>{{ breakdownCountLabel() }}</span>
+      <strong>{{ formatMoney(breakdownTotal()) }}</strong>
     </div>
   </section>
 </section>

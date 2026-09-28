@@ -1,7 +1,22 @@
 @if (totalPages() > 0) {
   <nav class="pagination" aria-label="Paginação">
-    <button type="button" class="ghost-button" [disabled]="page() <= 1" (click)="previous()">Anterior</button>
-    <span class="pagination-status" aria-live="polite">Página {{ page() }} de {{ totalPages() }}</span>
-    <button type="button" class="ghost-button" [disabled]="page() >= totalPages()" (click)="next()">Próxima</button>
+    <span class="pagination-summary">
+      Mostrando <b>{{ firstItem() }}–{{ lastItem() }}</b> de <b>{{ totalItems() }}</b>
+    </span>
+    <div class="pagination-controls">
+      <button type="button" class="ghost-button" [disabled]="page() <= 1" (click)="previous()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M15 6l-6 6 6 6"></path>
+        </svg>
+        <span>Anterior</span>
+      </button>
+      <span class="pagination-status" aria-live="polite">Página {{ page() }} de {{ totalPages() }}</span>
+      <button type="button" class="ghost-button" [disabled]="page() >= totalPages()" (click)="next()">
+        <span>Próxima</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M9 6l6 6-6 6"></path>
+        </svg>
+      </button>
+    </div>
   </nav>
 }

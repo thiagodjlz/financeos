@@ -1,44 +1,86 @@
 <div class="list-toolbar">
-  <button
-    type="button"
-    class="ghost-button filter-toggle"
-    [attr.aria-expanded]="open()"
-    [attr.aria-controls]="panelId"
-    (click)="toggle()"
-  >
-    {{ toggleLabel() }}
-  </button>
-  <ng-content select="[toolbarAction]" />
-</div>
+  <div class="filter-row">
+    <ng-content select="[filterSearch]" />
 
-@if (chips().length) {
-  <ul class="filter-chips" aria-label="Filtros aplicados">
-    @for (chip of chips(); track chip.key) {
-      <li class="filter-chip">
-        <span>{{ chip.label }}</span>
-        <button
-          type="button"
-          class="filter-chip-remove"
-          [attr.aria-label]="'Remover filtro ' + chip.label"
-          title="Remover filtro"
-          (click)="remove.emit(chip.key)"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
-            <path d="M6 6l12 12M18 6L6 18" />
+    @if (hasFields()) {
+      <button
+        type="button"
+        class="filter-toggle"
+        #toggleButton
+        aria-haspopup="dialog"
+        title="Filtros"
+        [attr.aria-label]="toggleLabel()"
+        [attr.aria-controls]="panelId"
+        [attr.aria-expanded]="open()"
+        (click)="openSheet()"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+          <path d="M4 6.5h16M7 12h10M10 17.5h4"></path>
+        </svg>
+        @if (list().activeCount() > 0) {
+          <span class="filter-count" aria-hidden="true">{{ list().activeCount() }}</span>
+        }
+      </button>
+    }
+
+    @if (open()) {
+      <div class="sheet-scrim filter-scrim" (click)="dismiss()"></div>
+    }
+
+    <div
+      class="filter-sheet"
+      #sheet
+      [id]="panelId"
+      [class.open]="open()"
+      [attr.role]="open() ? 'dialog' : null"
+      [attr.aria-modal]="open() ? 'true' : null"
+      [attr.aria-labelledby]="open() ? titleId : null"
+    >
+      <div class="filter-sheet-handle sheet-handle"></div>
+      <div class="filter-sheet-head sheet-head">
+        <h2 [id]="titleId">Filtros</h2>
+        <button type="button" class="icon-button" aria-label="Fechar filtros" title="Fechar filtros" (click)="dismiss()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <path d="M6.5 6.5l11 11M17.5 6.5l-11 11"></path>
           </svg>
         </button>
-      </li>
-    }
-  </ul>
-}
-
-@if (open()) {
-  <div class="filter-panel" [id]="panelId">
-    <div class="filter-fields">
-      <ng-content />
-    </div>
-    <div class="filter-actions">
-      <button type="button" class="ghost-button" [disabled]="!canClear()" (click)="clear.emit()">Limpar filtros</button>
+      </div>
+      <div class="filter-fields">
+        <ng-content />
+      </div>
+      <div class="filter-sheet-actions">
+        <button type="button" class="ghost-button" (click)="list().clearDraft()">Limpar filtros</button>
+        <button type="button" class="primary-button" (click)="applySheet()">Aplicar</button>
+      </div>
     </div>
   </div>
-}
+
+  @if (chips().length || list().differsFromDefault()) {
+    <div class="active-filters">
+      @if (chips().length) {
+        <span class="active-filters-label">Filtros ativos:</span>
+      }
+      <ul class="filter-chips" aria-label="Filtros aplicados">
+        @for (chip of chips(); track chip.key) {
+          <li>
+            <button
+              type="button"
+              class="filter-chip"
+              [attr.aria-label]="'Remover filtro ' + chip.label"
+              title="Remover filtro"
+              (click)="list().remove(chip.key)"
+            >
+              <span>{{ chip.label }}</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                <path d="M6.5 6.5l11 11M17.5 6.5l-11 11"></path>
+              </svg>
+            </button>
+          </li>
+        }
+      </ul>
+      @if (list().differsFromDefault()) {
+        <button type="button" class="link-button" (click)="list().clear()">Limpar filtros</button>
+      }
+    </div>
+  }
+</div>

@@ -116,6 +116,15 @@ describe('TransactionForm', () => {
     await settle();
   }
 
+  function checked(name: string): string | null {
+    return query<HTMLInputElement>(`input[name="${name}"]:checked`)?.value ?? null;
+  }
+
+  async function choose(name: string, radioValue: string): Promise<void> {
+    query<HTMLInputElement>(`input[name="${name}"][value="${radioValue}"]`).click();
+    await settle();
+  }
+
   async function click(element: HTMLElement): Promise<void> {
     element.click();
     await settle();
@@ -136,11 +145,12 @@ describe('TransactionForm', () => {
     expect(value('input[name="transactionDate"]')).toBe(TODAY);
     expect(value('input[name="description"]')).toBe('');
     expect(value('input[name="amount"]')).toBe('0');
-    expect(value('select[name="type"]')).toBe('EXPENSE');
-    expect(value('select[name="status"]')).toBe('PENDING');
+    expect(checked('type')).toBe('EXPENSE');
+    expect(checked('status')).toBe('PENDING');
     expect(value('select[name="categoryId"]')).toBe('');
     expect(categoryOptions()).toEqual(['Selecione', 'Mercado']);
-    expect(button('Salvar').getAttribute('type')).toBe('submit');
+    expect(button('Salvar lançamento').getAttribute('type')).toBe('submit');
+    expect(query('form').classList.contains('form-card')).toBe(true);
     expect(button('Cancelar').getAttribute('type')).toBe('button');
   });
 
@@ -148,13 +158,13 @@ describe('TransactionForm', () => {
     await renderNew();
     await selectValue('select[name="categoryId"]', 'cat-expense');
 
-    await selectValue('select[name="type"]', 'INCOME');
+    await choose('type', 'INCOME');
     httpMock.expectOne(`${API_BASE}/categories/options?type=INCOME`).flush(INCOME_CATEGORIES);
     await settle();
 
     expect(categoryOptions()).toEqual(['Selecione', 'Salário']);
     expect(value('select[name="categoryId"]')).toBe('');
-    expect(query('select[name="status"]')).toBeNull();
+    expect(query('input[name="status"]')).toBeNull();
   });
 
   it('oferece todas as categorias ativas do tipo mesmo com mais de 10', async () => {
@@ -179,7 +189,7 @@ describe('TransactionForm', () => {
     await fillText('input[name="amount"]', '120');
     await selectValue('select[name="categoryId"]', 'cat-expense');
 
-    await click(button('Salvar'));
+    await click(button('Salvar lançamento'));
 
     const request = httpMock.expectOne(`${API_BASE}/transactions`);
     expect(request.request.method).toBe('POST');
@@ -202,11 +212,11 @@ describe('TransactionForm', () => {
 
   it('manda status nulo para Receita', async () => {
     await renderNew();
-    await selectValue('select[name="type"]', 'INCOME');
+    await choose('type', 'INCOME');
     httpMock.expectOne(`${API_BASE}/categories/options?type=INCOME`).flush(INCOME_CATEGORIES);
     await settle();
 
-    await click(button('Salvar'));
+    await click(button('Salvar lançamento'));
 
     const request = httpMock.expectOne(`${API_BASE}/transactions`);
     expect(request.request.body.status).toBeNull();
@@ -218,7 +228,7 @@ describe('TransactionForm', () => {
   it('no 400 permanece no cadastro com destaque, legenda, foco e toast', async () => {
     await renderNew();
 
-    await click(button('Salvar'));
+    await click(button('Salvar lançamento'));
 
     httpMock.expectOne(`${API_BASE}/transactions`).flush(
       {
@@ -250,10 +260,10 @@ describe('TransactionForm', () => {
   it('mostra falha no 500 e na queda de rede sem sair do cadastro', async () => {
     await renderNew();
 
-    await click(button('Salvar'));
+    await click(button('Salvar lançamento'));
     httpMock.expectOne(`${API_BASE}/transactions`).flush(null, { status: 500, statusText: 'Server Error' });
     await settle();
-    await click(button('Salvar'));
+    await click(button('Salvar lançamento'));
     httpMock
       .expectOne(`${API_BASE}/transactions`)
       .error(new ProgressEvent('error'), { status: 0, statusText: 'Unknown Error' });
@@ -302,7 +312,7 @@ describe('TransactionForm', () => {
     expect(value('select[name="categoryId"]')).toBe('cat-expense');
 
     await fillText('input[name="description"]', 'Feira grande');
-    await click(button('Salvar'));
+    await click(button('Salvar lançamento'));
 
     const request = httpMock.expectOne(`${API_BASE}/transactions/transaction-1`);
     expect(request.request.method).toBe('PUT');
@@ -372,7 +382,7 @@ describe('TransactionForm', () => {
     expect(toasts()).toEqual([]);
 
     await fillText('input[name="description"]', 'Feira');
-    await click(button('Salvar'));
+    await click(button('Salvar lançamento'));
 
     const request = httpMock.expectOne(`${API_BASE}/transactions`);
     expect(request.request.body.categoryId).toBeNull();
@@ -400,7 +410,7 @@ describe('TransactionForm', () => {
     expect(toasts()).toEqual([]);
 
     await fillText('input[name="description"]', 'Feira grande');
-    await click(button('Salvar'));
+    await click(button('Salvar lançamento'));
 
     const request = httpMock.expectOne(`${API_BASE}/transactions/transaction-1`);
     expect(request.request.method).toBe('PUT');
@@ -436,11 +446,110 @@ describe('TransactionForm', () => {
     expect(query('.field-notice').textContent?.trim()).toBe(NO_PERMISSION_NOTICE);
     expect(toasts()).toEqual([]);
 
-    await click(button('Salvar'));
+    await click(button('Salvar lançamento'));
 
     const request = httpMock.expectOne(`${API_BASE}/transactions/transaction-1`);
     expect(request.request.body.categoryId).toBe('cat-old');
     request.flush({ ...TRANSACTION, categoryId: 'cat-old' });
     await settle();
+  });
+
+  it('Tipo e Status são radios nativos; Status some em Receita e volta em Despesa', async () => {
+    await renderNew();
+
+    const typeRadios = queryAll<HTMLInputElement>('input[name="type"]');
+    expect(typeRadios.map((radio) => [radio.type, radio.value])).toEqual([
+      ['radio', 'EXPENSE'],
+      ['radio', 'INCOME'],
+    ]);
+    expect(queryAll<HTMLInputElement>('input[name="status"]').map((radio) => [radio.type, radio.value])).toEqual([
+      ['radio', 'PENDING'],
+      ['radio', 'PAID'],
+    ]);
+
+    await choose('status', 'PAID');
+    expect(checked('status')).toBe('PAID');
+
+    await choose('type', 'INCOME');
+    httpMock.expectOne(`${API_BASE}/categories/options?type=INCOME`).flush(INCOME_CATEGORIES);
+    await settle();
+    expect(query('input[name="status"]')).toBeNull();
+
+    await choose('type', 'EXPENSE');
+    httpMock.expectOne(`${API_BASE}/categories/options?type=EXPENSE`).flush(EXPENSE_CATEGORIES);
+    await settle();
+    expect(queryAll('input[name="status"]')).toHaveLength(2);
+  });
+
+  it('manda o payload de sempre com o Status escolhido no radio', async () => {
+    await renderNew();
+    await fillText('input[name="description"]', 'Feira');
+    await fillText('input[name="amount"]', '120');
+    await choose('status', 'PAID');
+    await selectValue('select[name="categoryId"]', 'cat-expense');
+
+    await click(button('Salvar lançamento'));
+
+    const request = httpMock.expectOne(`${API_BASE}/transactions`);
+    expect(request.request.body).toEqual({
+      transactionDate: TODAY,
+      description: 'Feira',
+      amount: 120,
+      type: 'EXPENSE',
+      status: 'PAID',
+      categoryId: 'cat-expense',
+    });
+    request.flush(TRANSACTION);
+    await settle();
+  });
+
+  it('mostra o Valor com "R$" e o contador N/255 da descrição', async () => {
+    await renderNew();
+
+    expect(query('.amount-field .affix-text').textContent?.trim()).toBe('R$');
+    expect(query('.field-counter').textContent?.trim()).toBe('0/255');
+
+    await fillText('input[name="description"]', 'Feira');
+
+    expect(query('.field-counter').textContent?.trim()).toBe('5/255');
+  });
+
+  it('mostra ao lado do select a bolinha na cor da categoria escolhida, e nada sem cor', async () => {
+    await renderNew([
+      { ...EXPENSE_CATEGORIES[0], color: '#E07A3F' },
+      { id: 'cat-plain', parentId: null, name: 'Sem cor', type: 'EXPENSE', color: null, active: true },
+    ]);
+
+    expect(query('.category-select .category-dot')).toBeNull();
+
+    await selectValue('select[name="categoryId"]', 'cat-expense');
+    expect(query<HTMLElement>('.category-select .category-dot').style.background).toBe('rgb(224, 122, 63)');
+
+    await selectValue('select[name="categoryId"]', 'cat-plain');
+    expect(query('.category-select .category-dot')).toBeNull();
+  });
+
+  it('o voltar do cabeçalho age como o Cancelar: sem alteração sai sem HTTP nem toast', async () => {
+    await renderNew();
+    const back = query<HTMLButtonElement>('button.back-link');
+
+    expect(back.getAttribute('aria-label')).toBe('Voltar para Lançamentos');
+    await click(back);
+
+    expect(query('.modal-card')).toBeNull();
+    expect(router.navigate).toHaveBeenCalledWith(['/transactions']);
+    expect(toasts()).toEqual([]);
+    httpMock.expectNone(() => true);
+  });
+
+  it('o voltar do cabeçalho com alteração pergunta antes de sair', async () => {
+    await renderNew();
+    await fillText('input[name="description"]', 'Alterado');
+
+    await click(query<HTMLButtonElement>('button.back-link'));
+
+    expect(query('.modal-card p').textContent?.trim()).toBe('Deseja sair sem salvar?');
+    expect(router.navigate).not.toHaveBeenCalled();
+    httpMock.expectNone(() => true);
   });
 });

@@ -86,7 +86,7 @@ describe('UserForm', () => {
   }
 
   function labels(): string[] {
-    return (Array.from(fixture.nativeElement.querySelectorAll('form > label')) as HTMLElement[]).map(
+    return (Array.from(fixture.nativeElement.querySelectorAll('.form-card-body > label')) as HTMLElement[]).map(
       (label) => label.childNodes[0].textContent?.trim() ?? '',
     );
   }
@@ -144,7 +144,7 @@ describe('UserForm', () => {
     await fillText('input[name="password"]', 'senha-valida');
     await selectValue('select[name="profileId"]', 'p2');
 
-    await click(button('Salvar'));
+    await click(button('Salvar usuário'));
 
     const request = httpMock.expectOne(`${API_BASE}/users`);
     expect(request.request.method).toBe('POST');
@@ -171,7 +171,7 @@ describe('UserForm', () => {
     expect(query<HTMLSelectElement>('select[name="profileId"]').value).toBe('p12');
 
     await selectIndex('select[name="active"]', 1);
-    await click(button('Salvar'));
+    await click(button('Salvar usuário'));
 
     const request = httpMock.expectOne(`${API_BASE}/users/u1`);
     expect(request.request.method).toBe('PUT');
@@ -191,7 +191,7 @@ describe('UserForm', () => {
     await renderEdit();
     await fillText('input[name="password"]', 'nova-senha-1');
 
-    await click(button('Salvar'));
+    await click(button('Salvar usuário'));
 
     expect(httpMock.expectOne(`${API_BASE}/users/u1`).request.body.password).toBe('nova-senha-1');
   });
@@ -200,7 +200,7 @@ describe('UserForm', () => {
     await renderEdit();
     await selectIndex('select[name="active"]', 1);
 
-    await click(button('Salvar'));
+    await click(button('Salvar usuário'));
     httpMock
       .expectOne(`${API_BASE}/users/u1`)
       .flush({ message: 'Você não pode desativar a própria conta.' }, { status: 409, statusText: 'Conflict' });
@@ -214,7 +214,7 @@ describe('UserForm', () => {
   it('no 400 destaca os campos citados e foca o primeiro na ordem do formulário', async () => {
     await setup(null);
 
-    await click(button('Salvar'));
+    await click(button('Salvar usuário'));
     httpMock.expectOne(`${API_BASE}/users`).flush(
       {
         violations: [
@@ -287,7 +287,7 @@ describe('UserForm', () => {
       expect(query('.field-notice').textContent?.trim()).toBe(NO_PERMISSION_NOTICE);
       expect(toasts()).toEqual([]);
 
-      await click(button('Salvar'));
+      await click(button('Salvar usuário'));
       httpMock.expectOne(`${API_BASE}/users`).flush(
         {
           violations: [{ field: 'create.request.profileId', message: 'O perfil é obrigatório.' }],
@@ -309,7 +309,7 @@ describe('UserForm', () => {
       expect(toasts()).toEqual([]);
 
       await fillText('input[name="name"]', 'Ana Paula');
-      await click(button('Salvar'));
+      await click(button('Salvar usuário'));
 
       const request = httpMock.expectOne(`${API_BASE}/users/u1`);
       expect(request.request.method).toBe('PUT');
@@ -320,4 +320,21 @@ describe('UserForm', () => {
       expect(toasts().map((toast) => toast.message)).toEqual(['Usuário atualizado com sucesso.']);
     });
   }
+
+  it('mostra o cadastro em cartão com "Salvar usuário" e o voltar do cabeçalho age como o Cancelar', async () => {
+    await setup(null);
+    await settle();
+
+    expect(query('form').classList.contains('form-card')).toBe(true);
+    expect(button('Salvar usuário').getAttribute('type')).toBe('submit');
+    const back = query<HTMLButtonElement>('button.back-link');
+    expect(back.getAttribute('aria-label')).toBe('Voltar para Usuários');
+
+    await click(back);
+
+    expect(query('.modal-card')).toBeNull();
+    expect(router.navigate).toHaveBeenCalledWith(['/users']);
+    expect(toasts()).toEqual([]);
+    httpMock.expectNone(() => true);
+  });
 });

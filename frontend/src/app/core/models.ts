@@ -43,6 +43,7 @@ export interface AvailablePeriod {
 export interface CategoryBreakdown {
   categoryId: string | null;
   categoryName: string;
+  categoryColor: string | null;
   type: TransactionType;
   totalAmount: number;
   transactionCount: number;
@@ -115,6 +116,7 @@ export interface Transaction {
   id: string;
   categoryId: string | null;
   categoryName: string | null;
+  categoryColor?: string | null;
   transactionDate: string;
   description: string;
   amount: number;

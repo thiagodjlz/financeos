@@ -103,7 +103,9 @@ describe('Users', () => {
   }
 
   function buttonByText(text: string, scope = ''): HTMLButtonElement | undefined {
-    return queryAll<HTMLButtonElement>(`${scope} button`).find((button) => button.textContent?.trim() === text);
+    return queryAll<HTMLButtonElement>(`${scope} button`).find(
+      (button) => (button.getAttribute('aria-label') ?? button.textContent?.trim()) === text,
+    );
   }
 
   function chipTexts(): string[] {
@@ -127,7 +129,7 @@ describe('Users', () => {
 
     expect(query('form')).toBeNull();
     expect(queryAll('tbody input, tbody select')).toHaveLength(0);
-    expect(query('.filter-toggle').textContent?.trim()).toBe('Filtros (1)');
+    expect(query('.filter-toggle').getAttribute('aria-label')).toBe('Filtros, 1 ativo');
     expect(chipTexts()).toEqual(['Situação: Ativos']);
     expect(queryAll('tbody tr td').map((cell) => cell.getAttribute('data-label'))).toEqual([
       'Nome',
@@ -144,28 +146,28 @@ describe('Users', () => {
     ]);
   });
 
-  it('mostra "Incluir" e "Editar" com as permissões e navega para o cadastro', async () => {
+  it('mostra "Novo usuário" e "Editar usuário" com as permissões e navega para o cadastro', async () => {
     await render();
 
-    await click(buttonByText('Incluir', '.list-toolbar') as HTMLButtonElement);
+    await click(buttonByText('Novo usuário', '.page-header') as HTMLButtonElement);
     expect(router.navigate).toHaveBeenCalledWith(['/users/new']);
 
-    await click(buttonByText('Editar', 'tbody') as HTMLButtonElement);
+    await click(buttonByText('Editar usuário', 'tbody') as HTMLButtonElement);
     expect(router.navigate).toHaveBeenCalledWith(['/users', 'u1', 'edit']);
   });
 
   it('esconde as ações de escrita sem permissão', async () => {
     await render(page([USER]), false);
 
-    expect(buttonByText('Incluir')).toBeUndefined();
-    expect(buttonByText('Editar')).toBeUndefined();
-    expect(buttonByText('Desativar')).toBeUndefined();
+    expect(buttonByText('Novo usuário')).toBeUndefined();
+    expect(buttonByText('Editar usuário')).toBeUndefined();
+    expect(buttonByText('Desativar usuário')).toBeUndefined();
   });
 
-  it('mantém o "Desativar" com DELETE, recarrega e avisa', async () => {
+  it('mantém o "Desativar usuário" com DELETE, recarrega e avisa', async () => {
     await render();
 
-    await click(buttonByText('Desativar', 'tbody') as HTMLButtonElement);
+    await click(buttonByText('Desativar usuário', 'tbody') as HTMLButtonElement);
     const request = httpMock.expectOne(`${API_BASE}/users/u1`);
     expect(request.request.method).toBe('DELETE');
     request.flush(null);
@@ -181,7 +183,7 @@ describe('Users', () => {
   it('exibe alerta com o texto do corpo no 409 de autodesativação', async () => {
     await render();
 
-    await click(buttonByText('Desativar', 'tbody') as HTMLButtonElement);
+    await click(buttonByText('Desativar usuário', 'tbody') as HTMLButtonElement);
     httpMock
       .expectOne(`${API_BASE}/users/u1`)
       .flush({ message: 'Você não pode desativar a própria conta.' }, { status: 409, statusText: 'Conflict' });
@@ -202,7 +204,6 @@ describe('Users', () => {
 
     expect(query('tbody td[data-label="Perfil"]').textContent?.trim()).toBe('Perfil 12');
 
-    await click(query('.filter-toggle'));
     expect(queryAll('select[name="filterProfileId"] option')).toHaveLength(13);
 
     await selectValue('select[name="filterProfileId"]', 'p12');
@@ -217,11 +218,11 @@ describe('Users', () => {
   it('remover o rótulo de Situação lista Todos', async () => {
     await render();
 
-    await click(query('.filter-chip-remove'));
+    await click(query('.filter-chip'));
     httpMock.expectOne(`${API_BASE}/users?page=1&size=10`).flush(page([USER, { ...USER, id: 'u2', active: false }]));
     await settle();
 
-    expect(query('.filter-toggle').textContent?.trim()).toBe('Filtros');
+    expect(query('.filter-toggle').getAttribute('aria-label')).toBe('Filtros');
     expect(queryAll('tbody tr')).toHaveLength(2);
   });
 
@@ -255,13 +256,12 @@ describe('Users', () => {
     await settle();
 
     expect(queryAll('tbody tr')).toHaveLength(3);
-    expect(query('.panel-heading span').textContent?.trim()).toBe('23');
+    expect((query('.pagination-summary').textContent ?? '').replace(/\s+/g, ' ').trim()).toBe('Mostrando 1–10 de 23');
     expect(query('.pagination-status').textContent?.trim()).toBe('Página 1 de 3');
     expect(query('.load-error')).toBeNull();
     expect(toastService.toasts()).toHaveLength(0);
     expect(profileCells()).toEqual(['Administrador', 'Administrador', '-']);
 
-    await click(query('.filter-toggle'));
     expect(query('select[name="filterProfileId"]')).toBeNull();
 
     await selectValue('select[name="filterActive"]', 'false');
@@ -319,7 +319,7 @@ describe('Users', () => {
 
     expect(chipTexts()).toEqual(['Perfil: indisponível', 'Situação: Ativos']);
 
-    await click(queryAll('.filter-chip-remove')[0]);
+    await click(queryAll('.filter-chip')[0]);
     httpMock.expectOne(DEFAULT_URL).flush(page([USER]));
     await settle();
 
@@ -336,10 +336,9 @@ describe('Users', () => {
     expect(profileCells()).toEqual(['Administrador']);
     expect(toastService.toasts().map((toast) => toast.title)).toEqual(['Falha']);
 
-    await click(query('.filter-toggle'));
     expect(optionTexts('select[name="filterProfileId"]')).toEqual(['Todos']);
 
-    await click(query('.filter-chip-remove'));
+    await click(query('.filter-chip'));
     httpMock.expectOne(`${API_BASE}/users?page=1&size=10`).flush(page([USER]));
     httpMock.expectOne(OPTIONS_URL).flush(PROFILES);
     await settle();
@@ -369,10 +368,9 @@ describe('Users', () => {
     expect(profileCells()).toEqual(['Administrador']);
     expect(toastService.toasts()).toHaveLength(0);
 
-    await click(query('.filter-toggle'));
     expect(query('select[name="filterProfileId"]')).toBeNull();
 
-    await click(query('.filter-chip-remove'));
+    await click(query('.filter-chip'));
     httpMock.expectOne(`${API_BASE}/users?page=1&size=10`).flush(page([USER]));
     httpMock.expectNone(OPTIONS_URL);
     await settle();

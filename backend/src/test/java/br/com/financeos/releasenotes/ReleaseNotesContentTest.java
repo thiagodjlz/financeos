@@ -137,4 +137,19 @@ class ReleaseNotesContentTest {
                 .count());
         assertTrue(improvements.stream().anyMatch(item -> item.contains("não consegue carregar")));
     }
+
+    private static final Pattern REPLACED_INTERFACE = Pattern.compile(
+            "gaveta|ano e mês só listam|botão Filtros|Incluir e Editar");
+
+    @Test
+    void shouldAnnounceTheRedesignWithoutDescribingTheReplacedInterfaceIn102() {
+        ReleaseNoteVersion v102 = VERSIONS.get(0);
+        List<String> items = v102.categories().stream().flatMap(c -> c.items().stream()).toList();
+
+        items.forEach(item -> assertFalse(REPLACED_INTERFACE.matcher(item).find(), item));
+        assertTrue(items.stream().anyMatch(item -> item.contains("Visual novo")));
+        assertTrue(items.stream().anyMatch(item -> item.contains("barra de navegação")));
+        assertTrue(items.stream().anyMatch(item -> item.contains("Mês anterior") && item.contains("Próximo mês")));
+        assertTrue(items.stream().anyMatch(item -> item.contains("Por categoria")));
+    }
 }

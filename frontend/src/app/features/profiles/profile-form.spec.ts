@@ -132,7 +132,7 @@ describe('ProfileForm', () => {
     await fillName('Leitura');
     await toggle('Resumo.view');
 
-    await click(button('Salvar'));
+    await click(button('Salvar perfil'));
 
     const request = httpMock.expectOne(`${API_BASE}/profiles`);
     expect(request.request.method).toBe('POST');
@@ -161,7 +161,7 @@ describe('ProfileForm', () => {
     expect(checkbox('Categorias.view').checked).toBe(false);
 
     await toggle('Documentação.view');
-    await click(button('Salvar'));
+    await click(button('Salvar perfil'));
 
     const request = httpMock.expectOne(`${API_BASE}/profiles/profile-1`);
     expect(request.request.method).toBe('PUT');
@@ -211,7 +211,7 @@ describe('ProfileForm', () => {
   it('destaca o Nome no 400 e deixa a violação da matriz só no toast', async () => {
     await setup(null);
 
-    await click(button('Salvar'));
+    await click(button('Salvar perfil'));
     httpMock.expectOne(`${API_BASE}/profiles`).flush(
       {
         violations: [
@@ -237,5 +237,22 @@ describe('ProfileForm', () => {
 
     expect(toasts().map((toast) => [toast.title, toast.message])).toEqual([['Alerta', 'Perfil não encontrado.']]);
     expect(router.navigate).toHaveBeenCalledWith(['/profiles']);
+  });
+
+  it('mostra o cadastro em cartão com "Salvar perfil" e o voltar do cabeçalho age como o Cancelar', async () => {
+    await setup(null);
+    await settle();
+
+    expect(query('form').classList.contains('form-card')).toBe(true);
+    expect(button('Salvar perfil').getAttribute('type')).toBe('submit');
+    const back = query<HTMLButtonElement>('button.back-link');
+    expect(back.getAttribute('aria-label')).toBe('Voltar para Perfis');
+
+    await click(back);
+
+    expect(query('.modal-card')).toBeNull();
+    expect(router.navigate).toHaveBeenCalledWith(['/profiles']);
+    expect(toasts()).toEqual([]);
+    httpMock.expectNone(() => true);
   });
 });

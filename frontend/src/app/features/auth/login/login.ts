@@ -23,11 +23,16 @@ export class Login {
   protected readonly appVersion = APP_VERSION;
 
   protected readonly saving = signal(false);
+  protected readonly passwordVisible = signal(false);
 
   protected form = {
     email: '',
     password: '',
   };
+
+  protected togglePassword(): void {
+    this.passwordVisible.update((visible) => !visible);
+  }
 
   protected async submit(): Promise<void> {
     this.saving.set(true);

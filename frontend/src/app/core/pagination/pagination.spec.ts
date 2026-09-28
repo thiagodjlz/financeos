@@ -4,11 +4,17 @@ import { Pagination } from './pagination';
 
 @Component({
   imports: [Pagination],
-  template: `<app-pagination [page]="page()" [totalPages]="totalPages()" (pageChange)="changes.push($event)" />`,
+  template: `<app-pagination
+    [page]="page()"
+    [totalPages]="totalPages()"
+    [totalItems]="totalItems()"
+    (pageChange)="changes.push($event)"
+  />`,
 })
 class Host {
   readonly page = signal(1);
   readonly totalPages = signal(2);
+  readonly totalItems = signal(13);
   readonly changes: number[] = [];
 }
 
@@ -47,6 +53,17 @@ describe('Pagination', () => {
 
     previous.click();
     expect(fixture.componentInstance.changes).toEqual([1]);
+  });
+
+  it('mostra "Mostrando X–Y de N" pelo tamanho de página', () => {
+    const summary = () =>
+      (fixture.nativeElement.querySelector('.pagination-summary').textContent as string).replace(/\s+/g, ' ').trim();
+
+    expect(summary()).toBe('Mostrando 1–10 de 13');
+
+    fixture.componentInstance.page.set(2);
+    fixture.detectChanges();
+    expect(summary()).toBe('Mostrando 11–13 de 13');
   });
 
   it('some quando não há registros', () => {

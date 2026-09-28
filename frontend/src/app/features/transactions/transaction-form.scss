@@ -1,0 +1,61 @@
+.amount-field {
+  min-height: 60px;
+  padding: 0 16px;
+
+  .affix-text {
+    font-size: 18px;
+  }
+
+  input {
+    height: 58px;
+    color: var(--text);
+    font-size: 24px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.category-select {
+  position: relative;
+  display: block;
+
+  .category-dot {
+    position: absolute;
+    top: 50%;
+    left: 14px;
+    width: 10px;
+    height: 10px;
+    margin-top: -5px;
+    pointer-events: none;
+  }
+
+  &.with-dot select {
+    padding-left: 34px;
+  }
+}
+
+@media (max-width: 680px) {
+  .amount-field {
+    justify-content: center;
+    border: 0;
+    border-bottom: 2px solid var(--accent);
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+
+    .affix-text {
+      font-size: 20px;
+    }
+
+    input {
+      flex: 0 1 180px;
+      font-size: 36px;
+      letter-spacing: -0.02em;
+      text-align: center;
+    }
+  }
+
+  .amount-field:focus-within {
+    box-shadow: none;
+  }
+}

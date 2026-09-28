@@ -103,7 +103,9 @@ describe('Categories', () => {
   }
 
   function buttonByText(text: string, scope = ''): HTMLButtonElement | undefined {
-    return queryAll<HTMLButtonElement>(`${scope} button`).find((button) => button.textContent?.trim() === text);
+    return queryAll<HTMLButtonElement>(`${scope} button`).find(
+      (button) => (button.getAttribute('aria-label') ?? button.textContent?.trim()) === text,
+    );
   }
 
   function toasts() {
@@ -111,7 +113,7 @@ describe('Categories', () => {
   }
 
   function deleteButtons(): HTMLButtonElement[] {
-    return queryAll<HTMLButtonElement>('tbody .row-actions button.icon-button');
+    return queryAll<HTMLButtonElement>('tbody .row-actions button.icon-button.danger');
   }
 
   function rowNames(): string[] {
@@ -139,10 +141,12 @@ describe('Categories', () => {
     await click(query<HTMLButtonElement>('.modal-actions button.primary-button'));
   }
 
-  it('abre com Situação = Ativos contando em "Filtros (1)" e com o rótulo "Ativos"', async () => {
+  it('abre com Situação = Ativos contando no botão Filtros e com o rótulo "Ativos"', async () => {
     await render();
 
-    expect(query('.filter-toggle').textContent?.trim()).toBe('Filtros (1)');
+    expect(query('h1.page-title').textContent?.trim()).toBe('Categorias');
+    expect(query('.page-subtitle').textContent?.trim()).toBe('Organize receitas e despesas por categoria');
+    expect(query('.filter-toggle').getAttribute('aria-label')).toBe('Filtros, 1 ativo');
     expect(chipTexts()).toEqual(['Situação: Ativos']);
     expect(query('form')).toBeNull();
     expect(queryAll('tbody input, tbody select')).toHaveLength(0);
@@ -156,23 +160,22 @@ describe('Categories', () => {
 
   it('oferece Situação Ativos, Inativos e Todos; remover o rótulo = Todos e "Limpar filtros" volta a Ativos', async () => {
     await render();
-    await click(query('.filter-toggle'));
 
     const options = queryAll<HTMLOptionElement>('select[name="filterActive"] option').map((option) =>
       option.textContent?.trim(),
     );
     expect(options).toEqual(['Ativos', 'Inativos', 'Todos']);
-    expect(buttonByText('Limpar filtros', '.filter-actions')?.disabled).toBe(true);
+    expect(buttonByText('Limpar filtros', '.active-filters')).toBeUndefined();
 
-    await click(query('.filter-chip-remove'));
+    await click(query('.filter-chip'));
     httpMock.expectOne(`${API_BASE}/categories?page=1&size=10`).flush(page([CATEGORY, INACTIVE_CATEGORY]));
     await settle();
 
-    expect(query('.filter-toggle').textContent?.trim()).toBe('Filtros');
+    expect(query('.filter-toggle').getAttribute('aria-label')).toBe('Filtros');
     expect(chipTexts()).toEqual([]);
     expect(query<HTMLSelectElement>('select[name="filterActive"]').value).toBe('');
 
-    await click(buttonByText('Limpar filtros', '.filter-actions') as HTMLButtonElement);
+    await click(buttonByText('Limpar filtros', '.active-filters') as HTMLButtonElement);
     httpMock.expectOne(DEFAULT_URL).flush(page([CATEGORY]));
     await settle();
 
@@ -181,7 +184,6 @@ describe('Categories', () => {
 
   it('combina Nome, Tipo e Situação e volta à página 1 ao filtrar', async () => {
     await render(true, [CATEGORY]);
-    await click(query('.filter-toggle'));
 
     await selectValue('select[name="filterType"]', 'INCOME');
     httpMock.expectOne(`${API_BASE}/categories?page=1&size=10&type=INCOME&active=true`).flush(page([OTHER_CATEGORY]));
@@ -196,7 +198,7 @@ describe('Categories', () => {
       .flush(page([OTHER_CATEGORY]));
     await settle();
 
-    expect(query('.filter-toggle').textContent?.trim()).toBe('Filtros (3)');
+    expect(query('.filter-toggle').getAttribute('aria-label')).toBe('Filtros, 3 ativos');
     expect(chipTexts()).toEqual(['Nome: sal', 'Tipo: Receita', 'Situação: Ativos']);
   });
 
@@ -209,7 +211,6 @@ describe('Categories', () => {
 
   it('filtro diferente do padrão sem resultado oferece "Limpar filtros"', async () => {
     await render();
-    await click(query('.filter-toggle'));
     await selectValue('select[name="filterActive"]', 'false');
     httpMock.expectOne(`${API_BASE}/categories?page=1&size=10&active=false`).flush(page([]));
     await settle();
@@ -223,11 +224,11 @@ describe('Categories', () => {
 
   it('sem registros e sem filtro mostra o vazio atual', async () => {
     await render();
-    await click(query('.filter-chip-remove'));
+    await click(query('.filter-chip'));
     httpMock.expectOne(`${API_BASE}/categories?page=1&size=10`).flush(page([]));
     await settle();
 
-    expect(query('.empty-state').textContent?.trim()).toBe('Nenhuma categoria cadastrada');
+    expect(query('.list-state strong').textContent?.trim()).toBe('Nenhuma categoria cadastrada');
   });
 
   it('pagina e restaura filtros e página ao voltar do cadastro', async () => {
@@ -240,7 +241,7 @@ describe('Categories', () => {
     await click(buttonByText('Próxima') as HTMLButtonElement);
     httpMock.expectOne(`${API_BASE}/categories?page=2&size=10&active=true`).flush(page([OTHER_CATEGORY], 11, 2, 2));
     await settle();
-    await click(buttonByText('Editar', 'tbody') as HTMLButtonElement);
+    await click(buttonByText('Editar categoria', 'tbody') as HTMLButtonElement);
     expect(router.navigate).toHaveBeenCalledWith(['/categories', 'cat-2', 'edit']);
     fixture.destroy();
 
@@ -249,19 +250,19 @@ describe('Categories', () => {
     expect(chipTexts()).toEqual(['Situação: Ativos']);
   });
 
-  it('mostra "Incluir" com CREATE e navega para a inclusão', async () => {
+  it('mostra "Nova categoria" com CREATE e navega para a inclusão', async () => {
     await render();
 
-    await click(buttonByText('Incluir', '.list-toolbar') as HTMLButtonElement);
+    await click(buttonByText('Nova categoria', '.page-header') as HTMLButtonElement);
 
     expect(router.navigate).toHaveBeenCalledWith(['/categories/new']);
   });
 
-  it('não mostra Incluir, Editar nem lixeira sem permissão de escrita', async () => {
+  it('não mostra Nova categoria, Editar categoria nem lixeira sem permissão de escrita', async () => {
     await render(false);
 
-    expect(buttonByText('Incluir')).toBeUndefined();
-    expect(buttonByText('Editar')).toBeUndefined();
+    expect(buttonByText('Nova categoria')).toBeUndefined();
+    expect(buttonByText('Editar categoria')).toBeUndefined();
     expect(deleteButtons()).toHaveLength(0);
   });
 
@@ -279,16 +280,16 @@ describe('Categories', () => {
     expect(toasts()[0].title).toBe('Falha');
   });
 
-  it('exibe a lixeira nas linhas ativas e inativas com rótulo Excluir e ícone de 20px', async () => {
+  it('exibe a lixeira nas linhas ativas e inativas com rótulo "Excluir categoria" e ícone de 18px', async () => {
     await render(true, [CATEGORY, INACTIVE_CATEGORY]);
 
     const buttons = deleteButtons();
     expect(buttons).toHaveLength(2);
     buttons.forEach((button) => {
-      expect(button.getAttribute('aria-label')).toBe('Excluir');
-      expect(button.getAttribute('title')).toBe('Excluir');
+      expect(button.getAttribute('aria-label')).toBe('Excluir categoria');
+      expect(button.getAttribute('title')).toBe('Excluir categoria');
       expect(button.getAttribute('type')).toBe('button');
-      expect(button.querySelector('svg')?.getAttribute('width')).toBe('20');
+      expect(button.querySelector('svg')?.getAttribute('width')).toBe('18');
     });
   });
 
@@ -296,14 +297,14 @@ describe('Categories', () => {
     await renderWithPermissions([categoriesPermission({ canDelete: true })]);
 
     expect(deleteButtons()).toHaveLength(1);
-    expect(buttonByText('Editar')).toBeUndefined();
+    expect(buttonByText('Editar categoria')).toBeUndefined();
   });
 
   it('não coloca a lixeira no DOM sem a permissão de excluir', async () => {
     await renderWithPermissions([categoriesPermission({ canCreate: true, canEdit: true })]);
 
-    expect(buttonByText('Editar', 'tbody')).toBeTruthy();
-    expect(buttonByText('Incluir')).toBeTruthy();
+    expect(buttonByText('Editar categoria', 'tbody')).toBeTruthy();
+    expect(buttonByText('Nova categoria')).toBeTruthy();
     expect(deleteButtons()).toHaveLength(0);
   });
 
