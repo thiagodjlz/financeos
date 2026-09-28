@@ -1,0 +1,140 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "Categorias.dc.html": {
+      "h": 840,
+      "title": "Categorias — desktop (padrão das listagens)",
+      "w": 1440,
+      "x": 4560,
+      "y": 0
+    },
+    "Componentes.dc.html": {
+      "h": 1700,
+      "title": "Componentes e estados",
+      "w": 1440,
+      "x": 0,
+      "y": 2664
+    },
+    "LancamentoForm.dc.html": {
+      "h": 900,
+      "title": "Novo lançamento — desktop (com erro de validação)",
+      "w": 1440,
+      "x": 3040,
+      "y": 0
+    },
+    "Lancamentos.dc.html": {
+      "h": 960,
+      "title": "Lançamentos — desktop",
+      "w": 1440,
+      "x": 1520,
+      "y": 0
+    },
+    "Login.dc.html": {
+      "h": 900,
+      "title": "Entrar",
+      "w": 1440,
+      "x": 1520,
+      "y": 2664
+    },
+    "Main.dc.html": {
+      "h": 900,
+      "title": "Resumo — desktop",
+      "w": 1440,
+      "x": 0,
+      "y": 0
+    },
+    "MobileFiltros.dc.html": {
+      "h": 844,
+      "title": "Filtros — celular (painel inferior)",
+      "w": 390,
+      "x": 940,
+      "y": 1400
+    },
+    "MobileForm.dc.html": {
+      "h": 844,
+      "title": "Novo lançamento — celular",
+      "w": 390,
+      "x": 1410,
+      "y": 1400
+    },
+    "MobileLancamentos.dc.html": {
+      "h": 844,
+      "title": "Lançamentos — celular (lista em cartões)",
+      "w": 390,
+      "x": 470,
+      "y": 1400
+    },
+    "MobileResumo.dc.html": {
+      "h": 844,
+      "title": "Resumo — celular",
+      "w": 390,
+      "x": 0,
+      "y": 1400
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-09-24T21:34:19Z",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "view": "canvas"
+  },
+  "notes": {
+    "decisoes": {
+      "fill": "orange",
+      "size": 24,
+      "text": "Pontos para você decidir\n\n1. Menu lateral claro e sempre aberto no desktop (com botão para recolher em trilho), com seções visíveis no lugar dos grupos em acordeão.\n2. No celular, barra de navegação inferior (Resumo, Lançamentos, +, Cadastros, Mais) no lugar da gaveta.\n3. Botão \"Incluir\" passa a nomear o registro: \"Novo lançamento\", \"Nova categoria\"…\n4. Datas exibidas como dd/mm/aaaa na listagem (hoje aparece aaaa-mm-dd).\n5. Filtros sempre visíveis no desktop; no celular abrem em painel inferior com \"Aplicar\".",
+      "w": 580,
+      "x": -700,
+      "y": 0
+    },
+    "regras": {
+      "fill": "blue",
+      "size": 24,
+      "text": "O que NÃO muda\n\nPermissões por tela e ação continuam escondendo itens de menu e botões; status só existe para despesa; cancelar lançamento continua sem excluir; confirmação ao sair com alterações; mesmos textos de validação vindos do back-end; paginação de 10 itens.",
+      "w": 580,
+      "x": -700,
+      "y": 1400
+    },
+    "tDesktop": {
+      "kind": "title1",
+      "maxW": 6000,
+      "text": "Desktop",
+      "w": 240,
+      "x": 0,
+      "y": -300
+    },
+    "tMobile": {
+      "kind": "title1",
+      "maxW": 1800,
+      "text": "Celular",
+      "w": 240,
+      "x": 0,
+      "y": 1140
+    },
+    "tSystem": {
+      "kind": "title1",
+      "maxW": 2960,
+      "text": "Componentes, estados e login",
+      "w": 240,
+      "x": 0,
+      "y": 2404
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "Lancamentos.dc.html",
+    "LancamentoForm.dc.html",
+    "Categorias.dc.html",
+    "MobileResumo.dc.html",
+    "MobileLancamentos.dc.html",
+    "MobileFiltros.dc.html",
+    "MobileForm.dc.html",
+    "Componentes.dc.html",
+    "Login.dc.html"
+  ],
+  "pages": [],
+  "title": "FinanceOS — Modernização visual"
+}

@@ -28,20 +28,21 @@ final class ProfilesAreaContent {
                                 + "tela de Usuários."),
                 DocumentationBlock.paragraph(
                         "A tela abre na tabela de perfis, com até 10 por página. O nome do perfil e a matriz de "
-                                + "permissões ficam numa tela própria de cadastro, aberta pelo botão Incluir ou pelo "
-                                + "botão Editar da linha."));
+                                + "permissões ficam numa tela própria de cadastro, aberta pelo botão Novo perfil ou "
+                                + "pelo botão Editar perfil da linha."));
     }
 
     private static DocumentationSection funcionalidades() {
         return DocumentationSection.of(
                 "Funcionalidades",
                 DocumentationBlock.list(
-                        "Criar um perfil pelo botão Incluir e marcar, na matriz, o que ele pode fazer em cada "
-                                + "tela.",
-                        "Alterar as permissões de um perfil existente pelo botão Editar da linha.",
-                        "Excluir um perfil que não esteja sendo usado por ninguém.",
-                        "Encontrar perfis pelo botão Filtros, buscando pelo Nome, e percorrer a lista com os "
-                                + "botões Anterior e Próxima."));
+                        "Criar um perfil pelo botão Novo perfil e marcar, na matriz, o que ele pode fazer em "
+                                + "cada tela.",
+                        "Alterar as permissões de um perfil existente pelo botão Editar perfil da linha.",
+                        "Excluir um perfil que não esteja sendo usado por ninguém, pelo botão Excluir perfil.",
+                        "Encontrar perfis pela busca por nome acima da tabela, que aparece em Filtros ativos "
+                                + "enquanto estiver aplicada, e percorrer a lista com os botões Anterior e "
+                                + "Próxima."));
     }
 
     private static DocumentationSection campos() {
@@ -91,7 +92,8 @@ final class ProfilesAreaContent {
         return DocumentationSection.of(
                 "Comportamentos e particularidades",
                 DocumentationBlock.list(
-                        "Sair do cadastro pelo botão Cancelar com alguma alteração ainda não salva, inclusive um "
+                        "Sair do cadastro pelo botão Cancelar, ou pela seta de voltar do cabeçalho, com alguma "
+                                + "alteração ainda não salva, inclusive um "
                                 + "único interruptor da matriz, abre a confirmação Deseja sair sem salvar? antes de "
                                 + "descartar. Sem alteração, o Cancelar volta direto à tabela.",
                         "Ao voltar do cadastro, a tabela reabre com o mesmo filtro e na mesma página.",
@@ -109,21 +111,22 @@ final class ProfilesAreaContent {
                 DocumentationBlock.table(
                         List.of("Ação", "O que acontece"),
                         List.of(
-                                List.of("Incluir", "Abre o cadastro Novo perfil numa tela própria."),
-                                List.of("Editar (linha)",
+                                List.of("Novo perfil", "Abre o cadastro Novo perfil numa tela própria."),
+                                List.of("Editar perfil (linha)",
                                         "Abre o cadastro Editar perfil, já preenchido, numa tela própria."),
-                                List.of("Salvar (cadastro)",
+                                List.of("Salvar perfil (cadastro)",
                                         "Grava o nome e a matriz inteira de permissões do perfil e volta à "
                                                 + "tabela."),
-                                List.of("Cancelar (cadastro)", "Volta à tabela sem gravar; se houver "
+                                List.of("Cancelar ou voltar (cadastro)", "Volta à tabela sem gravar; se houver "
                                         + "alteração pendente, pede confirmação antes de descartá-la."),
-                                List.of("Excluir (linha)",
+                                List.of("Excluir perfil (linha)",
                                         "Remove o perfil, desde que nenhum usuário o esteja usando."),
-                                List.of("Filtros", "Mostra a busca por Nome; o filtro aplicado vira um rótulo que "
-                                        + "pode ser removido."),
+                                List.of("Busca por nome", "Fica sempre visível acima da tabela; aplicada, vira um "
+                                        + "rótulo em Filtros ativos, que pode ser removido."),
                                 List.of("Anterior / Próxima", "Troca de página mantendo o filtro."))),
                 DocumentationBlock.paragraph(
                         "Cada botão só aparece se o seu perfil tiver a permissão correspondente na tela de "
-                                + "Perfis."));
+                                + "Perfis: Incluir para Novo perfil, Alterar para Editar perfil e Excluir para "
+                                + "Excluir perfil."));
     }
 }

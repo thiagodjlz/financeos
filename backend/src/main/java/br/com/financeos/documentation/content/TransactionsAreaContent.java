@@ -25,24 +25,26 @@ final class TransactionsAreaContent {
                 "Descrição",
                 DocumentationBlock.paragraph(
                         "A tela de Lançamentos é onde você registra cada entrada e cada saída de dinheiro. Ela "
-                                + "abre na tabela Últimos lançamentos, do mais recente para o mais antigo, com até 10 "
-                                + "registros por página."),
+                                + "abre na tabela de lançamentos, do mais recente para o mais antigo, com até 10 "
+                                + "registros por página; o rodapé mostra quais estão na tela, como Mostrando 1–10 "
+                                + "de 23."),
                 DocumentationBlock.paragraph(
-                        "A inclusão e a correção acontecem numa tela própria de cadastro: o botão Incluir, acima "
-                                + "da tabela, abre o cadastro em branco, e o botão Editar de cada linha abre o "
-                                + "cadastro já preenchido com aquele lançamento."));
+                        "A inclusão e a correção acontecem numa tela própria de cadastro: o botão Novo "
+                                + "lançamento, no alto da tela, abre o cadastro em branco, e o botão Editar "
+                                + "lançamento (o lápis de cada linha) abre o cadastro já preenchido com aquele "
+                                + "lançamento."));
     }
 
     private static DocumentationSection funcionalidades() {
         return DocumentationSection.of(
                 "Funcionalidades",
                 DocumentationBlock.list(
-                        "Registrar uma receita ou uma despesa pelo botão Incluir.",
-                        "Corrigir um lançamento já registrado pelo botão Editar da linha, que abre o cadastro "
-                                + "numa tela própria.",
-                        "Cancelar um lançamento pelo botão Cancelar da linha.",
-                        "Encontrar lançamentos pelo botão Filtros: Descrição, Categoria, Tipo, Status e período "
-                                + "de Data, combinados entre si.",
+                        "Registrar uma receita ou uma despesa pelo botão Novo lançamento.",
+                        "Corrigir um lançamento já registrado pelo botão Editar lançamento da linha, que abre o "
+                                + "cadastro numa tela própria.",
+                        "Cancelar um lançamento pelo botão Cancelar lançamento da linha.",
+                        "Encontrar lançamentos pela busca por descrição e pelos Filtros que ficam acima da "
+                                + "tabela: Tipo, Categoria, Status e período de Data, combinados entre si.",
                         "Percorrer o histórico página a página, com os botões Anterior e Próxima."));
     }
 
@@ -54,17 +56,20 @@ final class TransactionsAreaContent {
                         List.of(
                                 List.of("Data", "Obrigatória. Começa preenchida com o dia de hoje."),
                                 List.of("Descrição",
-                                        "Obrigatória, com no máximo 255 caracteres."),
-                                List.of("Valor", "Obrigatório e maior que zero."),
-                                List.of("Tipo", "Obrigatório. Despesa ou Receita."),
+                                        "Obrigatória, com no máximo 255 caracteres. Um contador abaixo do "
+                                                + "campo mostra quantos já foram usados."),
+                                List.of("Valor", "Obrigatório e maior que zero, digitado ao lado de R$."),
+                                List.of("Tipo", "Obrigatório. Despesa ou Receita, escolhido entre dois botões."),
                                 List.of("Status",
-                                        "Pendente ou Pago. O campo só existe quando o Tipo é Despesa."),
+                                        "Pendente ou Pago, escolhido entre dois botões. O campo só existe quando "
+                                                + "o Tipo é Despesa."),
                                 List.of("Categoria",
                                         "Obrigatória. A lista traz apenas categorias ativas do mesmo tipo. Se o "
                                                 + "seu perfil não puder ver a tela de Categorias, a lista dá "
                                                 + "lugar a um aviso de que não é possível escolher a categoria: "
                                                 + "na edição, a categoria já gravada é mantida enquanto o Tipo "
-                                                + "não for trocado."))));
+                                                + "não for trocado. Ao lado da lista, uma bolinha mostra a cor "
+                                                + "da categoria escolhida."))));
     }
 
     private static DocumentationSection regras() {
@@ -94,8 +99,18 @@ final class TransactionsAreaContent {
                                 + "servir para o novo tipo.",
                         "Editar um lançamento cancelado e salvar o reativa: ele volta à situação escolhida no "
                                 + "campo Status.",
-                        "Sair do cadastro pelo botão Cancelar com alguma alteração ainda não salva abre a "
-                                + "confirmação Deseja sair sem salvar? antes de descartar.",
+                        "Sair do cadastro pelo botão Cancelar, ou pela seta de voltar do cabeçalho, com alguma "
+                                + "alteração ainda não salva abre a confirmação Deseja sair sem salvar? antes de "
+                                + "descartar.",
+                        "Na tabela, a data aparece como dia/mês/ano, cada categoria tem uma bolinha na cor dela "
+                                + "(categorias sem cor ficam sem bolinha), a receita sem situação mostra um traço na "
+                                + "coluna Status e o lançamento cancelado aparece com o valor riscado.",
+                        "Em telas estreitas, como as de celular, a tabela vira uma lista de cartões agrupados "
+                                + "por dia, com os títulos Hoje, Ontem e a data dos demais dias. O botão + da "
+                                + "barra inferior também abre o cadastro Novo lançamento.",
+                        "Em telas estreitas, como as de celular, os filtros ficam num painel aberto pelo botão "
+                                + "Filtros ao lado da busca: as escolhas só valem ao tocar em Aplicar, e fechar o "
+                                + "painel sem aplicar mantém os filtros anteriores.",
                         "Ao voltar do cadastro, a tabela reabre com os mesmos filtros e na mesma página em que "
                                 + "você estava.",
                         "A busca por Descrição encontra o texto em qualquer parte e não diferencia maiúsculas nem "
@@ -115,23 +130,24 @@ final class TransactionsAreaContent {
                 DocumentationBlock.table(
                         List.of("Ação", "O que acontece"),
                         List.of(
-                                List.of("Incluir", "Abre o cadastro Novo lançamento numa tela própria."),
-                                List.of("Editar (linha)",
+                                List.of("Novo lançamento", "Abre o cadastro Novo lançamento numa tela própria."),
+                                List.of("Editar lançamento (linha)",
                                         "Abre o cadastro Editar lançamento, já preenchido, numa tela própria."),
-                                List.of("Salvar (cadastro)",
+                                List.of("Salvar lançamento (cadastro)",
                                         "Grava o lançamento e volta à tabela. Se algum campo for recusado, o "
                                                 + "cadastro continua aberto com o campo destacado."),
-                                List.of("Cancelar (cadastro)", "Volta à tabela sem gravar; se houver "
+                                List.of("Cancelar ou voltar (cadastro)", "Volta à tabela sem gravar; se houver "
                                         + "alteração pendente, pede confirmação antes de descartá-la."),
-                                List.of("Cancelar (linha)",
+                                List.of("Cancelar lançamento (linha)",
                                         "Passa o lançamento à situação Cancelado, sem apagá-lo."),
-                                List.of("Filtros", "Mostra os critérios de busca. Com filtro aplicado, o botão "
-                                        + "indica quantos estão ativos e cada um vira um rótulo que pode ser "
-                                        + "removido."),
+                                List.of("Filtros", "Ficam sempre visíveis acima da tabela e valem assim que são "
+                                        + "escolhidos; cada filtro aplicado vira um rótulo em Filtros ativos, que "
+                                        + "pode ser removido. No celular, abrem num painel com o botão Aplicar."),
                                 List.of("Limpar filtros", "Remove todos os filtros e volta à primeira página."),
                                 List.of("Anterior / Próxima", "Troca de página mantendo os filtros."))),
                 DocumentationBlock.paragraph(
                         "Cada botão só aparece se o seu perfil tiver a permissão correspondente na tela de "
-                                + "Lançamentos."));
+                                + "Lançamentos: Incluir para Novo lançamento, Alterar para Editar lançamento e "
+                                + "Excluir para Cancelar lançamento."));
     }
 }

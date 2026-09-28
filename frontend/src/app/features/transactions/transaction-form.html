@@ -1,113 +1,197 @@
-<h2 class="page-title">{{ id ? 'Editar lançamento' : 'Novo lançamento' }}</h2>
+<header class="page-header form-header">
+  <div class="page-heading">
+    <button type="button" class="back-link" aria-label="Voltar para Lançamentos" title="Voltar para Lançamentos" (click)="requestCancel()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M15 6l-6 6 6 6"></path>
+      </svg>
+      <span class="back-link-text">Lançamentos</span>
+    </button>
+    <h1 class="page-title">{{ id ? 'Editar lançamento' : 'Novo lançamento' }}</h1>
+    <p class="page-subtitle">{{ id ? 'Altere os dados do lançamento' : 'Registre uma receita ou despesa' }}</p>
+  </div>
+</header>
 
 <div class="form-page" [attr.aria-busy]="loading()">
   <p class="loading-state" *ngIf="loading()"><span class="sr-only">Carregando...</span></p>
   <p class="load-error" role="alert" *ngIf="!loading() && loadError()">{{ loadError() }}</p>
 
-  <form class="panel form-panel" *ngIf="!loading() && !loadError()" #transactionForm (ngSubmit)="save()">
-    <label>
-      Data
-      <input
-        type="date"
-        name="transactionDate"
-        [(ngModel)]="form.transactionDate"
-        required
-        [class.invalid]="fieldErrors.invalid('transactionDate')"
-        (input)="fieldErrors.clear('transactionDate')"
-      />
-      <small class="field-error" *ngIf="fieldErrors.invalid('transactionDate')">
-        {{ fieldErrors.message('transactionDate') }}
-      </small>
-    </label>
-    <label>
-      Descrição
-      <input
-        name="description"
-        [(ngModel)]="form.description"
-        maxlength="255"
-        required
-        [class.invalid]="fieldErrors.invalid('description')"
-        (input)="fieldErrors.clear('description')"
-      />
-      <small class="field-error" *ngIf="fieldErrors.invalid('description')">
-        {{ fieldErrors.message('description') }}
-      </small>
-    </label>
-    <label>
-      Valor
-      <input
-        type="number"
-        name="amount"
-        [(ngModel)]="form.amount"
-        min="0.01"
-        step="0.01"
-        required
-        [class.invalid]="fieldErrors.invalid('amount')"
-        (input)="fieldErrors.clear('amount')"
-      />
-      <small class="field-error" *ngIf="fieldErrors.invalid('amount')">{{ fieldErrors.message('amount') }}</small>
-    </label>
-    <div class="two-cols">
-      <label>
-        Tipo
-        <select
-          name="type"
-          [(ngModel)]="form.type"
-          (ngModelChange)="onTypeChange()"
-          [class.invalid]="fieldErrors.invalid('type')"
-          (change)="fieldErrors.clear('type')"
-        >
-          <option value="EXPENSE">Despesa</option>
-          <option value="INCOME">Receita</option>
-        </select>
+  <form class="panel form-card" *ngIf="!loading() && !loadError()" #transactionForm (ngSubmit)="save()">
+    <div class="form-card-body">
+      <fieldset class="type-choice">
+        <legend>Tipo</legend>
+        <div class="type-choice-options">
+          <label>
+            <input
+              type="radio"
+              name="type"
+              value="EXPENSE"
+              [(ngModel)]="form.type"
+              (ngModelChange)="onTypeChange()"
+              (change)="fieldErrors.clear('type')"
+            />
+            <span class="choice">
+              <span class="choice-icon expense" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 5v14M5.5 12.5L12 19l6.5-6.5"></path>
+                </svg>
+              </span>
+              Despesa
+            </span>
+          </label>
+          <label>
+            <input
+              type="radio"
+              name="type"
+              value="INCOME"
+              [(ngModel)]="form.type"
+              (ngModelChange)="onTypeChange()"
+              (change)="fieldErrors.clear('type')"
+            />
+            <span class="choice">
+              <span class="choice-icon income" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 19V5M5.5 11.5L12 5l6.5 6.5"></path>
+                </svg>
+              </span>
+              Receita
+            </span>
+          </label>
+        </div>
         <small class="field-error" *ngIf="fieldErrors.invalid('type')">{{ fieldErrors.message('type') }}</small>
+      </fieldset>
+
+      <label>
+        Valor
+        <span class="input-affix amount-field">
+          <span class="affix-text">R$</span>
+          <input
+            type="number"
+            name="amount"
+            inputmode="decimal"
+            [(ngModel)]="form.amount"
+            min="0.01"
+            step="0.01"
+            required
+            [class.invalid]="fieldErrors.invalid('amount')"
+            (input)="fieldErrors.clear('amount')"
+          />
+        </span>
+        <small class="field-error" *ngIf="fieldErrors.invalid('amount')">{{ fieldErrors.message('amount') }}</small>
       </label>
-      <label *ngIf="form.type !== 'INCOME'">
-        Status
-        <select
-          name="status"
-          [(ngModel)]="form.status"
-          [class.invalid]="fieldErrors.invalid('status')"
-          (change)="fieldErrors.clear('status')"
-        >
-          <option value="PENDING">Pendente</option>
-          <option value="PAID">Pago</option>
-        </select>
-        <small class="field-error" *ngIf="fieldErrors.invalid('status')">{{ fieldErrors.message('status') }}</small>
+
+      <div class="two-cols">
+        <label>
+          Data
+          <input
+            type="date"
+            name="transactionDate"
+            [(ngModel)]="form.transactionDate"
+            required
+            [class.invalid]="fieldErrors.invalid('transactionDate')"
+            (input)="fieldErrors.clear('transactionDate')"
+          />
+          <small class="field-error" *ngIf="fieldErrors.invalid('transactionDate')">
+            {{ fieldErrors.message('transactionDate') }}
+          </small>
+        </label>
+        <fieldset class="segmented" *ngIf="form.type !== 'INCOME'">
+          <legend>Status</legend>
+          <div class="segmented-track">
+            <label>
+              <input
+                type="radio"
+                name="status"
+                value="PENDING"
+                [(ngModel)]="form.status"
+                (change)="fieldErrors.clear('status')"
+              />
+              <span class="segment">Pendente</span>
+            </label>
+            <label>
+              <input
+                type="radio"
+                name="status"
+                value="PAID"
+                [(ngModel)]="form.status"
+                (change)="fieldErrors.clear('status')"
+              />
+              <span class="segment">Pago</span>
+            </label>
+          </div>
+          <small class="field-error" *ngIf="fieldErrors.invalid('status')">{{ fieldErrors.message('status') }}</small>
+        </fieldset>
+      </div>
+
+      <label>
+        Descrição
+        <input
+          name="description"
+          placeholder="Ex.: Compras do mês"
+          [(ngModel)]="form.description"
+          maxlength="255"
+          required
+          [class.invalid]="fieldErrors.invalid('description')"
+          (input)="fieldErrors.clear('description')"
+        />
+        <span class="field-meta">
+          <small class="field-error" *ngIf="fieldErrors.invalid('description')">
+            {{ fieldErrors.message('description') }}
+          </small>
+          <span class="field-counter">{{ form.description.length }}/255</span>
+        </span>
+      </label>
+
+      <label *ngIf="categoryUnavailable()">
+        Categoria
+        <span class="field-notice">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="5" y="10.5" width="14" height="10" rx="2.5"></rect>
+            <path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"></path>
+          </svg>
+          <span>Seu perfil não tem permissão para ver Categorias, por isso não é possível escolher a categoria.</span>
+        </span>
+        <small class="field-error" *ngIf="fieldErrors.invalid('categoryId')">
+          {{ fieldErrors.message('categoryId') }}
+        </small>
+      </label>
+      <label *ngIf="!categoryUnavailable()">
+        Categoria
+        <span class="category-select" [class.with-dot]="selectedCategoryColor()">
+          <span
+            class="category-dot"
+            *ngIf="selectedCategoryColor() as color"
+            [style.background]="color"
+            aria-hidden="true"
+          ></span>
+          <select
+            name="categoryId"
+            [(ngModel)]="form.categoryId"
+            (ngModelChange)="onCategoryIdChange()"
+            required
+            [class.invalid]="fieldErrors.invalid('categoryId')"
+            (change)="fieldErrors.clear('categoryId')"
+          >
+            <option value="">Selecione</option>
+            <option *ngIf="preselectedInactiveCategory() as inactiveCategory" [value]="inactiveCategory.id">
+              {{ inactiveCategory.name }} (Inativo)
+            </option>
+            <option *ngFor="let category of categories()" [value]="category.id">{{ category.name }}</option>
+          </select>
+        </span>
+        <small class="field-error" *ngIf="fieldErrors.invalid('categoryId')">
+          {{ fieldErrors.message('categoryId') }}
+        </small>
       </label>
     </div>
-    <label *ngIf="categoryUnavailable()">
-      Categoria
-      <span class="field-notice">
-        Seu perfil não tem permissão para ver Categorias, por isso não é possível escolher a categoria.
-      </span>
-      <small class="field-error" *ngIf="fieldErrors.invalid('categoryId')">
-        {{ fieldErrors.message('categoryId') }}
-      </small>
-    </label>
-    <label *ngIf="!categoryUnavailable()">
-      Categoria
-      <select
-        name="categoryId"
-        [(ngModel)]="form.categoryId"
-        (ngModelChange)="onCategoryIdChange()"
-        required
-        [class.invalid]="fieldErrors.invalid('categoryId')"
-        (change)="fieldErrors.clear('categoryId')"
-      >
-        <option value="">Selecione</option>
-        <option *ngIf="preselectedInactiveCategory() as inactiveCategory" [value]="inactiveCategory.id">
-          {{ inactiveCategory.name }} (Inativo)
-        </option>
-        <option *ngFor="let category of categories()" [value]="category.id">{{ category.name }}</option>
-      </select>
-      <small class="field-error" *ngIf="fieldErrors.invalid('categoryId')">
-        {{ fieldErrors.message('categoryId') }}
-      </small>
-    </label>
-    <div class="two-cols form-actions">
-      <button class="primary-button" type="submit" [disabled]="saving()">Salvar</button>
+
+    <div class="form-card-footer form-actions">
       <button class="ghost-button" type="button" (click)="requestCancel()">Cancelar</button>
+      <button class="primary-button" type="submit" [disabled]="saving()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M5 12.5l4.5 4.5L19 7.5"></path>
+        </svg>
+        <span>Salvar lançamento</span>
+      </button>
     </div>
   </form>
 </div>

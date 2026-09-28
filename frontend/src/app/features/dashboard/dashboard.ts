@@ -11,7 +11,6 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { longMonthName, money, monthName, shortMoney } from '../../core/formatters';
 import { CategoryBreakdown, MonthlySummary, TransactionType } from '../../core/models';
 import { AuthService } from '../../core/services/auth.service';
@@ -26,7 +25,6 @@ import {
 } from './greeting';
 
 const MONTHS_IN_YEAR = 12;
-const ALL_MONTHS = Array.from({ length: MONTHS_IN_YEAR }, (_, index) => index + 1);
 const CHART_HEIGHT = 240;
 const PLOT_TOP = 16;
 const PLOT_BOTTOM = 196;
@@ -50,6 +48,11 @@ const TOOLTIP_WIDTH = 196;
 const COMPACT_MONTH_LABEL_WIDTH = 30;
 
 type ActiveSource = 'mouse' | 'touch' | 'keyboard' | null;
+
+interface SelectedPeriod {
+  year: number;
+  month: number;
+}
 
 interface ChartMonth {
   index: number;
@@ -111,7 +114,7 @@ const LOAD_FALLBACK = 'Não foi possível carregar o resumo.';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
 })
@@ -144,14 +147,62 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
 
   private readonly activeSource = signal<ActiveSource>(null);
 
-  protected period = {
-    year: new Date().getFullYear(),
-    month: new Date().getMonth() + 1,
-  };
+  protected readonly selected = signal<SelectedPeriod>(currentPeriod());
+
+  // Só os períodos de hoje: os devolvidos por /periods mais o mês corrente, que sempre existe.
+  // Sem /periods (falhou ou ainda não chegou), a lista é só o mês corrente.
+  protected readonly periodOptions = computed<SelectedPeriod[]>(() => {
+    const current = currentPeriod();
+    const options = [current];
+
+    for (const period of this.dashboardService.periods()) {
+      for (const month of period.months) {
+        if (!options.some((option) => option.year === period.year && option.month === month)) {
+          options.push({ year: period.year, month });
+        }
+      }
+    }
+
+    return options.sort((first, second) => periodKey(first) - periodKey(second));
+  });
+
+  private readonly selectedIndex = computed(() => {
+    const key = periodKey(this.selected());
+    return this.periodOptions().findIndex((option) => periodKey(option) === key);
+  });
+
+  protected readonly canStepBack = computed(() => this.selectedIndex() > 0);
+  protected readonly canStepForward = computed(() => {
+    const index = this.selectedIndex();
+    return index >= 0 && index < this.periodOptions().length - 1;
+  });
+
+  protected readonly periodLabel = computed(
+    () => `${longMonthName(this.selected().month)} de ${this.selected().year}`,
+  );
+
+  protected readonly breakdownType = signal<TransactionType>('EXPENSE');
+
+  protected readonly breakdownItems = computed<CategoryBreakdown[]>(
+    () => this.summary()?.categoryBreakdown.filter((item) => item.type === this.breakdownType()) ?? [],
+  );
+
+  protected readonly breakdownMax = computed(
+    () => this.breakdownItems().reduce((max, item) => Math.max(max, item.totalAmount), 0) || 1,
+  );
+
+  protected readonly breakdownTotal = computed(() =>
+    this.breakdownItems().reduce((total, item) => total + item.totalAmount, 0),
+  );
+
+  protected readonly breakdownCountLabel = computed(() => {
+    const count = this.breakdownItems().length;
+    return `${count} ${count === 1 ? 'categoria' : 'categorias'}`;
+  });
 
   private readonly monthlySeries = computed<MonthlySummary[]>(() => {
     const received = this.summary()?.monthlyEvolution ?? [];
-    const year = received[0]?.year ?? this.period.year;
+    const year = received[0]?.year ?? this.selected().year;
 
     return Array.from({ length: MONTHS_IN_YEAR }, (_, index) => {
       const month = index + 1;
@@ -318,7 +369,8 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
     this.closeTooltip();
 
     try {
-      await this.dashboardService.refresh(this.period.year, this.period.month);
+      const { year, month } = this.selected();
+      await this.dashboardService.refresh(year, month);
     } catch (err) {
       this.loadError.set(LOAD_FALLBACK);
       this.toast.fromHttpError(err, LOAD_FALLBACK);
@@ -414,53 +466,14 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
     return money(value);
   }
 
-  protected formatMonthName(month: number): string {
-    return longMonthName(month);
-  }
-
-  protected availableYears(): number[] {
-    const years = this.dashboardService.periods().map((period) => period.year);
-
-    if (!years.includes(this.period.year)) {
-      return [...years, this.period.year].sort((first, second) => second - first);
+  protected step(delta: number): void {
+    const target = this.periodOptions()[this.selectedIndex() + delta];
+    if (!target) {
+      return;
     }
 
-    return years;
-  }
-
-  protected availableMonths(): number[] {
-    const months = this.dashboardService.periods().find(
-      (period) => period.year === this.period.year,
-    )?.months;
-
-    if (!months?.length) {
-      return ALL_MONTHS;
-    }
-
-    const now = new Date();
-    if (this.period.year !== now.getFullYear() || months.includes(now.getMonth() + 1)) {
-      return months;
-    }
-
-    return [...months, now.getMonth() + 1].sort((first, second) => first - second);
-  }
-
-  protected async onYearChange(): Promise<void> {
-    const months = this.availableMonths();
-
-    if (!months.includes(this.period.month)) {
-      this.period.month = Math.max(...months);
-    }
-
-    await this.load();
-  }
-
-  protected categoriesByType(type: TransactionType): CategoryBreakdown[] {
-    return this.summary()?.categoryBreakdown.filter((item) => item.type === type) ?? [];
-  }
-
-  protected maxAmount(type: TransactionType): number {
-    return this.categoriesByType(type).reduce((max, item) => Math.max(max, item.totalAmount), 0) || 1;
+    this.selected.set(target);
+    void this.load();
   }
 
   private syncGreetingPeriod(): void {
@@ -484,6 +497,15 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
     this.activeSource.set(null);
   }
 
+}
+
+function currentPeriod(): SelectedPeriod {
+  const now = new Date();
+  return { year: now.getFullYear(), month: now.getMonth() + 1 };
+}
+
+function periodKey(period: SelectedPeriod): number {
+  return period.year * 12 + period.month;
 }
 
 export function monthAxisLabel(month: number, groupWidth: number): string {

@@ -85,7 +85,7 @@ public class TransactionResource {
         repository.persistAndFlush(transaction);
 
         return Response.created(URI.create("/api/transactions/" + transaction.id))
-                .entity(TransactionResponse.from(transaction, nameOf(category)))
+                .entity(TransactionResponse.from(transaction, nameOf(category), colorOf(category)))
                 .build();
     }
 
@@ -100,7 +100,7 @@ public class TransactionResource {
         validateStatus(request, transaction);
         Category category = validateCategory(request, transaction);
         apply(transaction, request);
-        return TransactionResponse.from(transaction, nameOf(category));
+        return TransactionResponse.from(transaction, nameOf(category), colorOf(category));
     }
 
     @DELETE
@@ -141,6 +141,10 @@ public class TransactionResource {
 
     private static String nameOf(Category category) {
         return category == null ? null : category.name;
+    }
+
+    private static String colorOf(Category category) {
+        return category == null ? null : category.color;
     }
 
     private static void validateStatus(TransactionRequest request, FinancialTransaction existing) {

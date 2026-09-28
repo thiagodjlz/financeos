@@ -63,6 +63,7 @@ public class DashboardRepository {
                 select
                     t.category_id,
                     coalesce(c.name, 'Sem categoria') as category_name,
+                    c.color as category_color,
                     t.type,
                     coalesce(sum(t.amount), 0) as total_amount,
                     count(*) as transaction_count
@@ -71,7 +72,7 @@ public class DashboardRepository {
                 where t.user_id = ?
                   and ((t.type = 'INCOME' and (t.status is null or t.status <> 'CANCELED')) or (t.type = 'EXPENSE' and t.status = 'PAID'))
                   and t.transaction_date between ? and ?
-                group by t.category_id, c.name, t.type
+                group by t.category_id, c.name, c.color, t.type
                 order by total_amount desc, category_name
                 """;
 
@@ -88,6 +89,7 @@ public class DashboardRepository {
                     items.add(new CategoryBreakdownResponse(
                             resultSet.getObject("category_id", UUID.class),
                             resultSet.getString("category_name"),
+                            resultSet.getString("category_color"),
                             TransactionType.valueOf(resultSet.getString("type")),
                             resultSet.getBigDecimal("total_amount"),
                             resultSet.getLong("transaction_count")));

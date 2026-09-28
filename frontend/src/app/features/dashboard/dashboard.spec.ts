@@ -26,20 +26,6 @@ function evolution(values: Partial<Record<number, MonthValues>> = {}): MonthlySu
 }
 
 const ALL_MONTHS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
-const MONTH_NAMES = [
-  'Janeiro',
-  'Fevereiro',
-  'Março',
-  'Abril',
-  'Maio',
-  'Junho',
-  'Julho',
-  'Agosto',
-  'Setembro',
-  'Outubro',
-  'Novembro',
-  'Dezembro',
-];
 
 function defaultPeriods(): AvailablePeriod[] {
   const year = new Date().getFullYear();
@@ -502,14 +488,14 @@ describe('Dashboard', () => {
     it('exibe o título e o rótulo acessível acentuados', async () => {
       await render();
 
-      expect(label(one('.chart-panel h3'))).toBe('Evolução anual');
+      expect(label(one('.chart-panel h2'))).toBe('Evolução anual');
       expect(chart().getAttribute('aria-label')).toContain('Gráfico de evolução anual');
     });
 
     it('mantém a legenda das três séries com marcador de linha no saldo', async () => {
       await render();
 
-      expect(all('.chart-legend span').map(label)).toEqual(['Receita', 'Despesa', 'Saldo']);
+      expect(all('.chart-legend span').map(label)).toEqual(['Receitas', 'Despesas', 'Saldo']);
       expect(one('.chart-legend .legend-marker.balance')).not.toBeNull();
     });
   });
@@ -664,40 +650,114 @@ describe('Dashboard', () => {
   });
 
   describe('não-regressão do Resumo', () => {
-    it('recarrega o resumo ao trocar o mês, com uma única chamada', async () => {
+    it('recarrega só o resumo ao passar para o mês anterior, com uma única chamada', async () => {
       await render(evolution({ 1: [1000, 0, 1000] }));
 
-      const select = host().querySelector<HTMLSelectElement>('select[aria-label="Mês"]')!;
-      select.selectedIndex = 2;
-      select.dispatchEvent(new Event('change'));
+      (host().querySelector('button[aria-label="Mês anterior"]') as HTMLButtonElement).click();
       fixture.detectChanges();
 
       httpMock
         .expectOne((request) => request.url.startsWith(`${API_BASE}/dashboard/summary`))
         .flush(payload(evolution({ 1: [500, 0, 500], 2: [500, 0, 500] })));
+      httpMock.expectNone(`${API_BASE}/dashboard/periods`);
       await settle();
 
       expect(all('circle.balance-point')).toHaveLength(2);
     });
 
-    it('mantém os cards de métricas e o painel de detalhamento', async () => {
-      await render();
+    it('mostra os cards Saldo, Receitas, Despesas e Pendentes com os valores e as linhas de apoio', async () => {
+      summaryRequest().flush({
+        ...payload(evolution()),
+        totalIncome: 10550,
+        totalExpense: 2092.27,
+        paidExpense: 2092.27,
+        pendingExpense: 2514.9,
+        balance: 8457.73,
+      });
+      flushPeriods();
+      await settle();
 
       expect(all('.metric-card .metric-label').map(label)).toEqual([
+        'Saldo do mês',
         'Receitas',
         'Despesas',
         'Pendentes',
-        'Saldo',
       ]);
-      expect(label(one('.breakdown-panel h3'))).toBe('Detalhamento');
-      expect(all('.breakdown-panel .empty-state').map(label)).toEqual([
-        'Sem dados no período',
-        'Sem dados no período',
+      expect(all('.metric-card .metric-value').map(label)).toEqual([
+        'R$ 8.457,73',
+        'R$ 10.550,00',
+        'R$ 2.092,27',
+        'R$ 2.514,90',
       ]);
+      expect(all('.metric-card .metric-hint').map(label)).toEqual([
+        'Receitas menos despesas pagas',
+        'Entradas no mês',
+        'Já pagas no mês',
+        'Despesas a pagar',
+      ]);
+      expect(one('.metric-card')?.classList.contains('balance-card')).toBe(true);
+      expect(host().textContent).not.toContain('Pagas: R$');
     });
   });
 
-  describe('seleção de período', () => {
+  describe('Por categoria', () => {
+    const BREAKDOWN = [
+      { categoryId: 'moradia', categoryName: 'Moradia', categoryColor: '#7C6FD6', type: 'EXPENSE' as const, totalAmount: 2300, transactionCount: 1 },
+      { categoryId: 'mercado', categoryName: 'Alimentação', categoryColor: null, type: 'EXPENSE' as const, totalAmount: 575, transactionCount: 3 },
+      { categoryId: null, categoryName: 'Sem categoria', categoryColor: null, type: 'INCOME' as const, totalAmount: 8450, transactionCount: 1 },
+    ];
+
+    async function renderBreakdown(): Promise<void> {
+      summaryRequest().flush({ ...payload(evolution()), categoryBreakdown: BREAKDOWN });
+      flushPeriods();
+      await settle();
+    }
+
+    function toggleButtons(): HTMLButtonElement[] {
+      return all('.breakdown-toggle button') as HTMLButtonElement[];
+    }
+
+    it('abre em Despesas com R$, bolinha e barra por categoria, relativa à maior', async () => {
+      await renderBreakdown();
+
+      expect(label(one('.breakdown-panel h2'))).toBe('Por categoria');
+      expect(toggleButtons().map(label)).toEqual(['Despesas', 'Receitas']);
+      expect(toggleButtons().map((button) => button.getAttribute('aria-pressed'))).toEqual(['true', 'false']);
+      expect(all('.category-row .category-name').map(label)).toEqual(['Moradia', 'Alimentação']);
+      expect(all('.category-row .category-amount').map(label)).toEqual(['R$ 2.300,00', 'R$ 575,00']);
+
+      const rows = all('.category-row') as HTMLElement[];
+      expect((rows[0].querySelector('.category-dot') as HTMLElement).style.background).toBe('rgb(124, 111, 214)');
+      expect(rows[1].querySelector('.category-dot')).toBeNull();
+      const bars = all('.category-bar') as HTMLElement[];
+      expect(bars.map((bar) => bar.style.width)).toEqual(['100%', '25%']);
+      expect(bars[0].style.background).toBe('rgb(124, 111, 214)');
+      expect(bars[1].style.background).toBe('');
+
+      expect(all('.breakdown-panel .panel-footer > *').map(label)).toEqual(['2 categorias', 'R$ 2.875,00']);
+    });
+
+    it('alterna para Receitas sem nova requisição', async () => {
+      await renderBreakdown();
+
+      toggleButtons()[1].click();
+      await settle();
+
+      expect(toggleButtons().map((button) => button.getAttribute('aria-pressed'))).toEqual(['false', 'true']);
+      expect(all('.category-row .category-name').map(label)).toEqual(['Sem categoria']);
+      expect(all('.breakdown-panel .panel-footer > *').map(label)).toEqual(['1 categoria', 'R$ 8.450,00']);
+      httpMock.expectNone(() => true);
+    });
+
+    it('mostra "Sem dados no período" quando o tipo não tem categorias', async () => {
+      await render();
+
+      expect(all('.breakdown-panel .empty-state').map(label)).toEqual(['Sem dados no período']);
+      expect(all('.breakdown-panel .panel-footer > *').map(label)).toEqual(['0 categorias', 'R$ 0,00']);
+    });
+  });
+
+  describe('passo de mês', () => {
     let periodFixture: ComponentFixture<Dashboard>;
 
     beforeEach(() => {
@@ -729,193 +789,104 @@ describe('Dashboard', () => {
       return (periodFixture.nativeElement as HTMLElement).querySelector<T>(selector)!;
     }
 
-    function options(selector: string): string[] {
-      return Array.from(
-        (periodFixture.nativeElement as HTMLElement).querySelectorAll(`${selector} option`),
-      ).map((option) => (option.textContent ?? '').replace(/ /g, ' ').trim());
+    function previous(): HTMLButtonElement {
+      return pick<HTMLButtonElement>('button[aria-label="Mês anterior"]');
     }
 
-    function monthOptions(): string[] {
-      return options('select[aria-label="Mês"]');
+    function next(): HTMLButtonElement {
+      return pick<HTMLButtonElement>('button[aria-label="Próximo mês"]');
+    }
+
+    function monthLabel(): string {
+      return (pick('.month-label').textContent ?? '').replace(/ /g, ' ').trim();
     }
 
     function pendingSummary() {
-      return httpMock.expectOne((request) =>
-        request.url.startsWith(`${API_BASE}/dashboard/summary`),
-      );
+      return httpMock.expectOne((request) => request.url.startsWith(`${API_BASE}/dashboard/summary`));
     }
 
-    function change(selector: string, index: number): void {
-      const select = pick<HTMLSelectElement>(selector);
-      select.selectedIndex = index;
-      select.dispatchEvent(new Event('change'));
+    async function stepTo(button: HTMLButtonElement, url: string): Promise<void> {
+      button.click();
       periodFixture.detectChanges();
+      const request = pendingSummary();
+      expect(request.request.url).toBe(url);
+      request.flush(payload(evolution()));
+      await settlePeriod();
     }
 
-    async function renderPeriods(
-      periods: AvailablePeriod[],
-      monthlyEvolution: MonthlySummary[] = evolution(),
-    ): Promise<void> {
+    async function renderPeriods(periods: AvailablePeriod[] | 'error'): Promise<void> {
       periodFixture = TestBed.createComponent(Dashboard);
       periodFixture.detectChanges();
-      pendingSummary().flush(payload(monthlyEvolution));
-      httpMock.expectOne(`${API_BASE}/dashboard/periods`).flush(periods);
+      pendingSummary().flush(payload(evolution()));
+      const request = httpMock.expectOne(`${API_BASE}/dashboard/periods`);
+      if (periods === 'error') {
+        request.flush(null, { status: 500, statusText: 'Server Error' });
+      } else {
+        request.flush(periods);
+      }
       await settlePeriod();
     }
 
-    it('exibe os meses por extenso, sem abreviação', async () => {
-      await renderPeriods([{ year: 2026, months: [...ALL_MONTHS] }]);
+    it('abre no mês corrente, por extenso, com o próximo desabilitado na ponta', async () => {
+      await renderPeriods([{ year: 2026, months: [7, 8, 9] }]);
 
-      expect(monthOptions()).toEqual(MONTH_NAMES);
-
-      for (const name of monthOptions()) {
-        expect(name).not.toMatch(/^[A-Za-zÀ-ÿ]{3}\.?$/);
-        expect(name).not.toContain('.');
-      }
+      expect(monthLabel()).toBe('Setembro de 2026');
+      expect(next().disabled).toBe(true);
+      expect(previous().disabled).toBe(false);
+      expect(pick('select')).toBeNull();
     });
 
-    it('exibe mês por extenso e ano no título do cabeçalho', async () => {
-      await renderPeriods([{ year: 2026, months: [...ALL_MONTHS] }]);
-
-      expect((pick('.topbar h2').textContent ?? '').replace(/ /g, ' ').trim()).toBe(
-        'Setembro 2026',
-      );
-    });
-
-    it('envia o mês como número ao escolher "Março"', async () => {
-      await renderPeriods([{ year: 2026, months: [...ALL_MONTHS] }]);
-
-      change('select[aria-label="Mês"]', 2);
-      const request = pendingSummary();
-
-      expect(request.request.url).toBe(`${API_BASE}/dashboard/summary?year=2026&month=3`);
-
-      request.flush(payload(evolution()));
-      await settlePeriod();
-    });
-
-    it('lista apenas os meses do ano selecionado', async () => {
+    it('percorre a lista de períodos em ordem, atravessando o ano, e desabilita o anterior na ponta', async () => {
       await renderPeriods([
-        { year: 2026, months: [1, 2, 3, 4, 5, 6] },
-        { year: 2025, months: [7, 11] },
+        { year: 2026, months: [2, 9] },
+        { year: 2025, months: [11] },
       ]);
 
-      change('select[aria-label="Ano"]', 1);
-      pendingSummary().flush(payload(evolution()));
-      await settlePeriod();
+      await stepTo(previous(), `${API_BASE}/dashboard/summary?year=2026&month=2`);
+      expect(monthLabel()).toBe('Fevereiro de 2026');
 
-      expect(monthOptions()).toEqual(['Julho', 'Novembro']);
+      await stepTo(previous(), `${API_BASE}/dashboard/summary?year=2025&month=11`);
+      expect(monthLabel()).toBe('Novembro de 2025');
+      expect(previous().disabled).toBe(true);
+      expect(next().disabled).toBe(false);
+
+      await stepTo(next(), `${API_BASE}/dashboard/summary?year=2026&month=2`);
+      expect(monthLabel()).toBe('Fevereiro de 2026');
     });
 
-    it('inclui o mês corrente na lista do ano corrente', async () => {
-      await renderPeriods([{ year: 2026, months: [1, 2, 3, 4, 5, 6] }]);
+    it('inclui o mês corrente mesmo quando /periods não o traz', async () => {
+      await renderPeriods([{ year: 2026, months: [3] }]);
 
-      expect(monthOptions()).toEqual([
-        'Janeiro',
-        'Fevereiro',
-        'Março',
-        'Abril',
-        'Maio',
-        'Junho',
-        'Setembro',
-      ]);
+      expect(monthLabel()).toBe('Setembro de 2026');
+      expect(next().disabled).toBe(true);
+
+      await stepTo(previous(), `${API_BASE}/dashboard/summary?year=2026&month=3`);
+      expect(previous().disabled).toBe(true);
     });
 
-    it('cai nos 12 meses quando o ano não tem nenhum mês com dados', async () => {
-      await renderPeriods([{ year: 2026, months: [] }]);
+    it('com /periods em falha fica só no mês corrente, com as duas pontas desabilitadas', async () => {
+      await renderPeriods('error');
 
-      const select = pick<HTMLSelectElement>('select[aria-label="Mês"]');
-
-      expect(monthOptions()).toEqual(MONTH_NAMES);
-      expect((select.options[select.selectedIndex].textContent ?? '').trim()).toBe('Setembro');
-      expect(select.disabled).toBe(false);
+      expect(monthLabel()).toBe('Setembro de 2026');
+      expect(previous().disabled).toBe(true);
+      expect(next().disabled).toBe(true);
+      expect(toasts().map((toast) => toast.title)).toEqual(['Falha']);
     });
 
-    it('reposiciona o mês para o maior disponível ao trocar de ano', async () => {
-      await renderPeriods([
-        { year: 2026, months: [1, 2, 3, 4, 5, 6, 7, 8, 9] },
-        { year: 2025, months: [7, 11] },
-      ]);
+    it('busca os períodos uma única vez: o passo pede só o resumo', async () => {
+      await renderPeriods(defaultPeriods());
 
-      change('select[aria-label="Ano"]', 1);
-      const request = pendingSummary();
-
-      expect(request.request.url).toBe(`${API_BASE}/dashboard/summary?year=2025&month=11`);
-
-      request.flush(payload(evolution()));
-      await settlePeriod();
-
-      httpMock.expectNone((pending) => pending.url.includes('month=9'));
-
-      const select = pick<HTMLSelectElement>('select[aria-label="Mês"]');
-
-      expect((select.options[select.selectedIndex].textContent ?? '').trim()).toBe('Novembro');
-      expect((pick('.topbar h2').textContent ?? '').replace(/ /g, ' ').trim()).toBe(
-        'Novembro 2025',
-      );
-    });
-
-    it('mantém o mês quando ele existe no ano escolhido', async () => {
-      await renderPeriods([
-        { year: 2026, months: [...ALL_MONTHS] },
-        { year: 2025, months: [3, 7] },
-      ]);
-
-      change('select[aria-label="Mês"]', 2);
-      pendingSummary().flush(payload(evolution()));
-      await settlePeriod();
-
-      change('select[aria-label="Ano"]', 1);
-      const request = pendingSummary();
-
-      expect(request.request.url).toBe(`${API_BASE}/dashboard/summary?year=2025&month=3`);
-
-      request.flush(payload(evolution()));
-      await settlePeriod();
-    });
-
-    it('lista apenas os anos devolvidos pelo endpoint, em ordem decrescente', async () => {
-      await renderPeriods([
-        { year: 2026, months: [...ALL_MONTHS] },
-        { year: 2025, months: [...ALL_MONTHS] },
-        { year: 2023, months: [...ALL_MONTHS] },
-      ]);
-
-      expect(options('select[aria-label="Ano"]')).toEqual(['2026', '2025', '2023']);
-
-      change('select[aria-label="Ano"]', 1);
-      const request = pendingSummary();
-
-      expect(request.request.url).toBe(`${API_BASE}/dashboard/summary?year=2025&month=9`);
-
-      request.flush(payload(evolution()));
-      await settlePeriod();
-    });
-
-    it('busca os períodos uma única vez por carregamento da tela', async () => {
-      await renderPeriods([
-        { year: 2026, months: [...ALL_MONTHS] },
-        { year: 2025, months: [...ALL_MONTHS] },
-      ]);
-
-      change('select[aria-label="Ano"]', 1);
-      pendingSummary().flush(payload(evolution()));
-      await settlePeriod();
-
-      change('select[aria-label="Mês"]', 2);
-      pendingSummary().flush(payload(evolution()));
-      await settlePeriod();
+      await stepTo(previous(), `${API_BASE}/dashboard/summary?year=2026&month=8`);
+      await stepTo(previous(), `${API_BASE}/dashboard/summary?year=2026&month=7`);
 
       httpMock.expectNone((pending) => pending.url.startsWith(`${API_BASE}/dashboard/periods`));
     });
 
-    it('exibe a mensagem do backend quando o ano é recusado', async () => {
-      await renderPeriods([
-        { year: 2026, months: [...ALL_MONTHS] },
-        { year: 2019, months: [...ALL_MONTHS] },
-      ]);
+    it('exibe a mensagem do backend quando o período é recusado', async () => {
+      await renderPeriods([{ year: 2019, months: [12] }]);
 
-      change('select[aria-label="Ano"]', 1);
+      previous().click();
+      periodFixture.detectChanges();
       pendingSummary().flush(
         { message: 'Não há lançamentos no ano informado.' },
         { status: 400, statusText: 'Bad Request' },
@@ -1000,15 +971,15 @@ describe('Dashboard', () => {
       await settleGreeting();
     }
 
-    it('posiciona a saudação entre o rótulo do painel e o título de mês e ano', async () => {
+    it('mostra a saudação como título da página, com a frase de apoio abaixo', async () => {
       await renderAt(10, 0);
 
-      const header = pick('.topbar > div');
-      const order = Array.from(header.children).map(
-        (child) => child.className || child.tagName.toLowerCase(),
-      );
+      const header = pick('.page-header .page-heading');
+      const order = Array.from(header.children).map((child) => child.tagName.toLowerCase());
 
-      expect(order).toEqual(['eyebrow', 'greeting', 'h2']);
+      expect(order).toEqual(['h1', 'p']);
+      expect(pick('h1').classList.contains('greeting-headline')).toBe(true);
+      expect(pick('h1').classList.contains('page-title')).toBe(true);
       expect(lines().headline).toContain(FIRST_NAME);
       expect(lines().headline).not.toContain('Dos Santos');
       expect(lines().subline.length).toBeGreaterThan(0);
@@ -1036,22 +1007,18 @@ describe('Dashboard', () => {
       httpMock.expectNone(() => true);
     });
 
-    it('mantém a mesma frase ao trocar o ano, o mês e ao abrir o informativo', async () => {
+    it('mantém a mesma frase ao passar de mês e ao abrir o informativo', async () => {
       await renderAt(14, 0);
       const original = lines();
 
-      const year = pick<HTMLSelectElement>('select[aria-label="Ano"]');
-      year.selectedIndex = 1;
-      year.dispatchEvent(new Event('change'));
+      pick<HTMLButtonElement>('button[aria-label="Mês anterior"]').click();
       greetingFixture.detectChanges();
       flushSummary();
       await settleGreeting();
 
       expect(lines()).toEqual(original);
 
-      const month = pick<HTMLSelectElement>('select[aria-label="Mês"]');
-      month.selectedIndex = 2;
-      month.dispatchEvent(new Event('change'));
+      pick<HTMLButtonElement>('button[aria-label="Mês anterior"]').click();
       greetingFixture.detectChanges();
       flushSummary();
       await settleGreeting();

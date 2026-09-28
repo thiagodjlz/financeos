@@ -3,7 +3,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  gap: 22px;
+  gap: 24px;
   min-height: 100vh;
   min-height: 100dvh;
   padding: calc(24px + env(safe-area-inset-top)) calc(24px + env(safe-area-inset-right))
@@ -11,50 +11,59 @@
 }
 
 .auth-card {
-  width: min(380px, 100%);
-  gap: 18px;
+  width: min(420px, 100%);
   margin-top: auto;
   border: 1px solid var(--border-card);
-  border-radius: var(--radius-xl);
-  padding: 32px;
-  background: var(--surface-login);
+  border-radius: var(--radius-login);
+  background: var(--surface);
   box-shadow: var(--shadow-login);
+}
 
-  input {
-    padding: 12px 14px;
-    background: var(--surface-login-input);
+.auth-form {
+  display: grid;
+  gap: 20px;
+  padding: 36px;
+
+  .input-affix {
+    min-height: var(--control-h-touch);
     scroll-margin-block: 24px;
+
+    input {
+      height: calc(var(--control-h-touch) - 2px);
+    }
   }
 
   .primary-button {
     width: 100%;
-    margin-top: 4px;
-    padding: 13px;
-    font-size: 14.5px;
+    min-height: var(--control-h-touch);
+    font-size: 15px;
   }
+}
+
+.password-field {
+  padding-right: 4px;
 }
 
 .app-footer {
   margin-bottom: auto;
-  color: var(--text-faint);
 }
 
 .brand-block {
-  display: flex;
-  gap: 14px;
-  align-items: center;
-  margin-bottom: 6px;
+  display: grid;
+  justify-items: start;
+  gap: 16px;
 
   h1 {
     margin: 0;
-    font-size: 20px;
-    font-weight: 800;
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
   }
 
   p {
-    margin: 2px 0 0;
+    margin: 4px 0 0;
     color: var(--text-muted);
-    font-size: 13px;
+    font-size: var(--fs-page-subtitle);
   }
 }
 
@@ -66,9 +75,9 @@
   flex-shrink: 0;
   border-radius: var(--radius-mark);
   background: var(--accent);
-  color: var(--surface);
-  font-size: 19px;
-  font-weight: 800;
+  color: var(--on-accent);
+  font-size: 22px;
+  font-weight: 700;
 }
 
 @media (max-width: 480px) {
@@ -76,7 +85,7 @@
     gap: 18px;
   }
 
-  .auth-card {
+  .auth-form {
     padding: 24px;
   }
 }

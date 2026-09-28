@@ -29,19 +29,22 @@ final class UsersAreaContent {
                 DocumentationBlock.paragraph(
                         "A tela abre na tabela de usuários, com até 10 pessoas por página e, de início, só as "
                                 + "ativas. O cadastro e a alteração acontecem numa tela própria, aberta pelo botão "
-                                + "Incluir ou pelo botão Editar da linha."));
+                                + "Novo usuário ou pelo botão Editar usuário da linha."));
     }
 
     private static DocumentationSection funcionalidades() {
         return DocumentationSection.of(
                 "Funcionalidades",
                 DocumentationBlock.list(
-                        "Cadastrar uma pessoa com nome, e-mail, senha e perfil, pelo botão Incluir.",
-                        "Alterar nome, e-mail, perfil e situação de quem já está cadastrado, pelo botão Editar.",
+                        "Cadastrar uma pessoa com nome, e-mail, senha e perfil, pelo botão Novo usuário.",
+                        "Alterar nome, e-mail, perfil e situação de quem já está cadastrado, pelo botão Editar "
+                                + "usuário.",
                         "Redefinir a senha de uma pessoa, sem precisar saber a senha atual.",
-                        "Desativar o acesso de quem não deve mais entrar no sistema.",
-                        "Encontrar pessoas pelo botão Filtros: Nome, E-mail, Perfil e Situação (Ativos, Inativos "
-                                + "ou Todos), e percorrer a lista com os botões Anterior e Próxima."));
+                        "Desativar o acesso de quem não deve mais entrar no sistema, pelo botão Desativar "
+                                + "usuário da linha.",
+                        "Encontrar pessoas pela busca por nome e pelos Filtros acima da tabela, E-mail, Perfil e "
+                                + "Situação (Ativos, Inativos ou Todos), e percorrer a lista com os botões Anterior "
+                                + "e Próxima."));
     }
 
     private static DocumentationSection campos() {
@@ -85,7 +88,7 @@ final class UsersAreaContent {
                                 + "na lista com a situação Inativo.",
                         "Quem está inativo não consegue entrar, mesmo com a senha correta."),
                 DocumentationBlock.highlight(
-                        "Você não pode desativar a sua própria conta, nem pelo botão Desativar nem mudando o "
+                        "Você não pode desativar a sua própria conta, nem pelo botão Desativar usuário nem mudando o "
                                 + "Status para Inativo no seu cadastro: o sistema recusa com a mensagem Você não pode "
                                 + "desativar a própria conta. Da mesma forma, ninguém altera o próprio perfil: "
                                 + "escolher outro Perfil no seu cadastro é recusado com Você não pode alterar o "
@@ -97,16 +100,19 @@ final class UsersAreaContent {
         return DocumentationSection.of(
                 "Comportamentos e particularidades",
                 DocumentationBlock.list(
-                        "A lista abre filtrando a Situação Ativos, e por isso o botão mostra Filtros (1). Remover "
-                                + "esse rótulo mostra também quem está inativo; Limpar filtros volta a mostrar só "
-                                + "as pessoas ativas.",
+                        "A lista abre filtrando a Situação Ativos, que aparece como rótulo em Filtros ativos. "
+                                + "Remover esse rótulo mostra também quem está inativo; Limpar filtros volta a "
+                                + "mostrar só as pessoas ativas.",
+                        "Em telas estreitas, como as de celular, os filtros ficam num painel aberto pelo botão "
+                                + "Filtros ao lado da busca: as escolhas só valem ao tocar em Aplicar, e fechar o "
+                                + "painel sem aplicar mantém os filtros anteriores.",
                         "As buscas por Nome e por E-mail encontram o texto em qualquer parte e não diferenciam "
                                 + "maiúsculas nem acentos.",
-                        "Sair do cadastro pelo botão Cancelar com alguma alteração ainda não salva abre a "
-                                + "confirmação Deseja sair sem salvar? antes de descartar. Deixar a senha em branco "
-                                + "não conta como alteração.",
+                        "Sair do cadastro pelo botão Cancelar, ou pela seta de voltar do cabeçalho, com alguma "
+                                + "alteração ainda não salva abre a confirmação Deseja sair sem salvar? antes de "
+                                + "descartar. Deixar a senha em branco não conta como alteração.",
                         "Ao voltar do cadastro, a tabela reabre com os mesmos filtros e na mesma página.",
-                        "O botão Desativar aparece somente nas linhas de quem está ativo.",
+                        "O botão Desativar usuário aparece somente nas linhas de quem está ativo.",
                         "Trocar o perfil de uma pessoa muda o que ela vê no menu assim que ela entrar novamente no "
                                 + "sistema.",
                         "O filtro de Perfil só aparece se o seu perfil puder ver a tela de Perfis. Sem essa "
@@ -121,23 +127,24 @@ final class UsersAreaContent {
                 DocumentationBlock.table(
                         List.of("Ação", "O que acontece"),
                         List.of(
-                                List.of("Incluir", "Abre o cadastro Novo usuário numa tela própria."),
-                                List.of("Editar (linha)",
+                                List.of("Novo usuário", "Abre o cadastro Novo usuário numa tela própria."),
+                                List.of("Editar usuário (linha)",
                                         "Abre o cadastro Editar usuário, já preenchido, numa tela própria."),
-                                List.of("Salvar (cadastro)",
+                                List.of("Salvar usuário (cadastro)",
                                         "Grava o cadastro e volta à tabela. Se algum campo for recusado, o "
                                                 + "cadastro continua aberto com o campo destacado."),
-                                List.of("Cancelar (cadastro)", "Volta à tabela sem gravar; se houver "
+                                List.of("Cancelar ou voltar (cadastro)", "Volta à tabela sem gravar; se houver "
                                         + "alteração pendente, pede confirmação antes de descartá-la."),
-                                List.of("Desativar (linha)",
+                                List.of("Desativar usuário (linha)",
                                         "Tira o acesso da pessoa, sem apagar o cadastro."),
-                                List.of("Filtros", "Mostra os critérios de busca; cada filtro aplicado vira um "
-                                        + "rótulo que pode ser removido."),
+                                List.of("Filtros", "Ficam sempre visíveis acima da tabela; cada filtro aplicado "
+                                        + "vira um rótulo em Filtros ativos, que pode ser removido."),
                                 List.of("Limpar filtros", "Volta aos filtros iniciais (só as pessoas ativas) e à "
                                         + "primeira página."),
                                 List.of("Anterior / Próxima", "Troca de página mantendo os filtros."))),
                 DocumentationBlock.paragraph(
                         "Cada botão só aparece se o seu perfil tiver a permissão correspondente na tela de "
-                                + "Usuários."));
+                                + "Usuários: Incluir para Novo usuário, Alterar para Editar usuário e Excluir para "
+                                + "Desativar usuário."));
     }
 }

@@ -49,18 +49,22 @@ final class OverviewContent {
         return DocumentationSection.of(
                 "Como navegar",
                 DocumentationBlock.paragraph(
-                        "O menu à esquerda dá acesso a todas as telas. Ele fica recolhido como uma faixa de "
-                                + "ícones e se abre quando o ponteiro entra nele ou quando o foco do teclado chega "
-                                + "ali. Ao escolher uma tela, o menu se recolhe sozinho."),
+                        "O menu à esquerda fica sempre aberto e dá acesso a todas as telas, organizadas em "
+                                + "seções. O botão Recolher menu, ao lado do nome do sistema, reduz o menu a uma "
+                                + "faixa de ícones; o mesmo botão, agora Expandir menu, o abre de novo. No rodapé "
+                                + "do menu ficam as suas iniciais, o seu nome, a versão do sistema e o botão Sair."),
                 DocumentationBlock.list(
                         "Resumo: os totais e os gráficos do mês escolhido.",
                         "Lançamentos: o cadastro das receitas e despesas.",
-                        "Cadastros: reúne a tela de Categorias.",
-                        "Configurações: reúne as telas de Usuários e Perfis.",
-                        "Sobre: reúne esta Central de Documentação e a tela de Novidades por versão."),
+                        "Cadastros: seção com a tela de Categorias.",
+                        "Configurações: seção com as telas de Usuários e Perfis.",
+                        "Sobre: seção com esta Central de Documentação e a tela de Novidades por versão."),
                 DocumentationBlock.paragraph(
-                        "Em telas estreitas, como as de celular, o menu vira uma gaveta que abre pelo botão Menu "
-                                + "no alto da tela e fecha ao escolher um item ou ao pressionar a tecla Esc."),
+                        "Em telas estreitas, como as de celular, o menu dá lugar a uma barra fixa na parte de "
+                                + "baixo da tela, com Resumo, Lançamentos, o botão + (Novo lançamento) e Mais. O "
+                                + "item Mais abre um painel com as demais telas, nas mesmas seções do menu "
+                                + "(Cadastros, Configurações e Sobre); o painel fecha ao escolher um item, ao tocar "
+                                + "fora dele ou ao pressionar a tecla Esc. O botão Sair fica no painel Mais."),
                 DocumentationBlock.paragraph(
                         "Nas telas longas, ao rolar a página aparece no canto inferior direito o botão Voltar ao "
                                 + "topo, que leva de volta ao início da tela."));
@@ -72,6 +76,9 @@ final class OverviewContent {
                 DocumentationBlock.list(
                         "O menu mostra somente as telas que o seu perfil pode ver: sem a permissão Ver, a tela não "
                                 + "aparece na lista.",
+                        "No celular, o botão + só aparece para quem pode incluir lançamentos, e o painel Mais "
+                                + "mostra só as telas que o seu perfil pode ver. O item Mais aparece sempre, porque "
+                                + "é nele que fica o botão Sair.",
                         "Esconder o item do menu não é a trava: digitar o endereço da tela também é recusado, com "
                                 + "um aviso e o retorno para uma tela permitida.",
                         "Quem confere cada permissão é o servidor, a cada pedido de informação; a tela apenas "

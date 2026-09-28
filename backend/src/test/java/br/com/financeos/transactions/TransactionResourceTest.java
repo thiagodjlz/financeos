@@ -50,11 +50,16 @@ class TransactionResourceTest {
     }
 
     Category createCategory(CategoryType type, boolean active) {
+        return createCategory(type, active, null);
+    }
+
+    Category createCategory(CategoryType type, boolean active, String color) {
         return QuarkusTransaction.requiringNew().call(() -> {
             Category category = new Category();
             category.name = "Teste TX Categoria " + UUID.randomUUID();
             category.type = type;
             category.active = active;
+            category.color = color;
             categoryRepository.persist(category);
             return category;
         });
@@ -557,6 +562,96 @@ class TransactionResourceTest {
                 .then()
                 .statusCode(200)
                 .body("categoryName", equalTo(secondCategory.name));
+    }
+
+    @Test
+    void shouldReturnCategoryColorInListDetailAndResponses() {
+        String prefix = "Teste mercado cor categoria " + UUID.randomUUID();
+        Category colored = createCategory(CategoryType.EXPENSE, true, "#3B5BDB");
+        Category otherColored = createCategory(CategoryType.EXPENSE, true, "#177245");
+        Category colorless = createCategory(CategoryType.EXPENSE, true);
+        UUID withColor = createTransaction(TEST_USER_ID, prefix + " com cor", LocalDate.of(2026, 1, 3),
+                TransactionType.EXPENSE, TransactionStatus.PENDING, colored.id);
+        createTransaction(TEST_USER_ID, prefix + " sem cor", LocalDate.of(2026, 1, 2),
+                TransactionType.EXPENSE, TransactionStatus.PENDING, colorless.id);
+        UUID legacy = createTransaction(TEST_USER_ID, prefix + " legado", LocalDate.of(2026, 1, 1),
+                TransactionType.EXPENSE, TransactionStatus.PENDING, null);
+
+        given()
+                .queryParam("description", prefix)
+                .when().get("/transactions")
+                .then()
+                .statusCode(200)
+                .body("totalItems", equalTo(3))
+                .body("items[0].categoryColor", equalTo("#3B5BDB"))
+                .body("items[1].categoryId", equalTo(colorless.id.toString()))
+                .body("items[1].categoryColor", nullValue())
+                .body("items[2].categoryColor", nullValue());
+
+        given()
+                .when().get("/transactions/{id}", withColor)
+                .then()
+                .statusCode(200)
+                .body("categoryColor", equalTo("#3B5BDB"));
+
+        given()
+                .when().get("/transactions/{id}", legacy)
+                .then()
+                .statusCode(200)
+                .body("categoryColor", nullValue());
+
+        String id = given()
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "transactionDate": "2026-06-30",
+                          "description": "%s criado",
+                          "amount": 10.00,
+                          "type": "EXPENSE",
+                          "status": "PENDING",
+                          "categoryId": "%s"
+                        }
+                        """.formatted(prefix, colored.id))
+                .when().post("/transactions")
+                .then()
+                .statusCode(201)
+                .body("categoryColor", equalTo("#3B5BDB"))
+                .extract()
+                .path("id");
+
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "transactionDate": "2026-06-30",
+                          "description": "%s editado",
+                          "amount": 10.00,
+                          "type": "EXPENSE",
+                          "status": "PENDING",
+                          "categoryId": "%s"
+                        }
+                        """.formatted(prefix, otherColored.id))
+                .when().put("/transactions/{id}", id)
+                .then()
+                .statusCode(200)
+                .body("categoryColor", equalTo("#177245"));
+
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "transactionDate": "2026-06-30",
+                          "description": "%s editado sem cor",
+                          "amount": 10.00,
+                          "type": "EXPENSE",
+                          "status": "PENDING",
+                          "categoryId": "%s"
+                        }
+                        """.formatted(prefix, colorless.id))
+                .when().put("/transactions/{id}", id)
+                .then()
+                .statusCode(200)
+                .body("categoryColor", nullValue());
     }
 
     @Test

@@ -36,6 +36,9 @@ public class FinancialTransaction extends PanacheEntityBase {
     @Formula("(select c.name from categories c where c.id = category_id)")
     public String categoryName;
 
+    @Formula("(select c.color from categories c where c.id = category_id)")
+    public String categoryColor;
+
     @Column(name = "transaction_date", nullable = false)
     public LocalDate transactionDate;
 

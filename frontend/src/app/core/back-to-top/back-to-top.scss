@@ -11,8 +11,8 @@
   border-radius: var(--radius-pill);
   padding: 0;
   background: var(--accent);
-  color: var(--surface);
-  box-shadow: var(--shadow-card);
+  color: var(--on-accent);
+  box-shadow: var(--shadow-fab);
   cursor: pointer;
   opacity: 0;
   visibility: hidden;
@@ -46,7 +46,7 @@
 @media (max-width: 680px) {
   .back-to-top {
     right: calc(16px + env(safe-area-inset-right));
-    bottom: calc(16px + env(safe-area-inset-bottom));
+    bottom: calc(var(--bottom-bar-h) + 16px + env(safe-area-inset-bottom));
   }
 }
 

@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
@@ -275,16 +276,57 @@ class DocumentationContentTest {
                 area.title() + " ainda descreve formulário lateral ou edição na linha"));
     }
 
+    private static final Map<String, List<String>> REGISTRATION_BUTTONS = Map.of(
+            "Lançamentos", List.of("Novo lançamento", "Editar lançamento", "Cancelar lançamento"),
+            "Categorias", List.of("Nova categoria", "Editar categoria", "Excluir categoria"),
+            "Usuários", List.of("Novo usuário", "Editar usuário", "Desativar usuário"),
+            "Perfis", List.of("Novo perfil", "Editar perfil", "Excluir perfil"));
+
     @Test
-    void shouldDescribeIncludeEditFiltersAndPaginationInRegistrationAreas() {
+    void shouldDescribeNamedButtonsVisibleFiltersAndPaginationInRegistrationAreas() {
         CONTENT.areas().stream()
                 .filter(area -> REGISTRATION_AREAS.contains(area.title()))
                 .forEach(area -> {
                     String text = areaText(area);
 
-                    List.of("Incluir", "Editar", "tela própria", "Filtros", "Anterior", "Próxima", "por página")
+                    Stream.concat(REGISTRATION_BUTTONS.get(area.title()).stream(),
+                            Stream.of("tela própria", "Filtros ativos", "Anterior", "Próxima", "por página",
+                                    "seta de voltar"))
                             .forEach(expected -> assertTrue(text.contains(expected),
                                     area.title() + " sem mencionar " + expected));
                 });
+    }
+
+    private static final Pattern REMOVED_INTERFACE = Pattern.compile(
+            "botão Incluir|Filtros \\(1\\)|Últimos registros|Últimos lançamentos|Detalhamento|gaveta"
+                    + "|botão Menu|campos Ano e Mês|Trocar o Ano|Seleção de Ano");
+
+    @Test
+    void shouldNotDescribeTheInterfaceReplacedByTheRedesign() {
+        displayedTexts().forEach(text -> assertFalse(
+                REMOVED_INTERFACE.matcher(text).find(), "Texto da interface antiga: " + text));
+    }
+
+    @Test
+    void shouldDescribeCollapsibleMenuAndBottomBarInHowToNavigate() {
+        String navegacao = CONTENT.introduction().sections().stream()
+                .filter(section -> "Como navegar".equals(section.title()))
+                .flatMap(section -> section.blocks().stream())
+                .map(block -> block.text() == null ? String.join("\n", block.items()) : block.text())
+                .reduce("", (left, right) -> left + "\n" + right);
+
+        List.of("Recolher menu", "Expandir menu", "barra fixa", "(Novo lançamento) e Mais", "painel Mais", "Sair")
+                .forEach(expected -> assertTrue(navegacao.contains(expected), "Sem mencionar " + expected));
+    }
+
+    @Test
+    void shouldDescribeMonthStepAndCategoryPanelInSummary() {
+        String summary = areaText(CONTENT.areas().stream()
+                .filter(area -> "Resumo".equals(area.title()))
+                .findFirst()
+                .orElseThrow());
+
+        List.of("Mês anterior", "Próximo mês", "Por categoria", "Saldo do mês", "desabilitado", "bolinha")
+                .forEach(expected -> assertTrue(summary.contains(expected), "Resumo sem mencionar " + expected));
     }
 }

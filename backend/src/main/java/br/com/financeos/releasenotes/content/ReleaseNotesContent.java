@@ -27,20 +27,29 @@ public final class ReleaseNotesContent {
         addIfPresent(categories, Kind.NEW,
                 "Nova área \"Novidades por versão\", no menu Sobre, reunindo o que muda em cada versão.",
                 "Central de Documentação: manual do sistema dentro do próprio FinanceOS, no menu Sobre.",
-                "Uso completo pelo celular: menu em gaveta, tabelas em cartão, campos maiores para toque.",
+                "Visual novo em todas as telas: cores, textos, botões e campos redesenhados, com menu lateral "
+                        + "em seções que pode ser recolhido.",
+                "Uso completo pelo celular: barra de navegação na parte de baixo da tela, listas em cartões, "
+                        + "filtros num painel com Aplicar e campos maiores para toque.",
                 "Publicar o FinanceOS na internet com endereço próprio (HTTPS automático) ou pela rede privada "
                         + "do Tailscale, sem custo de hospedagem.");
 
         addIfPresent(categories, Kind.IMPROVEMENT,
                 "Painel Resumo: saudação personalizada com o seu nome, conforme o horário do dia.",
-                "Período do Resumo: mês por extenso; ano e mês só listam datas com lançamentos existentes.",
+                "Período do Resumo: botões Mês anterior e Próximo mês, que percorrem só os meses com "
+                        + "lançamentos e o mês atual.",
+                "Resumo: painel Por categoria, alternando entre Despesas e Receitas, com a cor de cada categoria.",
                 "Mais segurança nas contas ao publicar na internet: administrador com nome fixo, contas de "
                         + "teste removidas do ambiente publicado.",
                 "Botão \"Voltar ao topo\" nas telas longas: aparece ao rolar a página e leva de volta ao início.",
-                "Tela de Categorias: botão Excluir em cada linha. Remove de vez a categoria sem lançamentos e, "
+                "Tela de Categorias: botão Excluir categoria em cada linha. Remove de vez a categoria sem "
+                        + "lançamentos e, "
                         + "se ela estiver em uso, avisa quantos lançamentos a usam.",
-                "Lançamentos, Categorias, Usuários e Perfis: Incluir e Editar abrem o cadastro numa tela "
-                        + "própria, e as listas mostram 10 registros por página, com botão Filtros para buscar.",
+                "Lançamentos, Categorias, Usuários e Perfis: os botões Novo e Editar abrem o cadastro numa "
+                        + "tela própria, e as listas mostram 10 registros por página, com Filtros sempre visíveis "
+                        + "acima da tabela.",
+                "Tabela de Lançamentos: data em dia/mês/ano, bolinha com a cor da categoria e valor riscado no "
+                        + "lançamento cancelado.",
                 "Quando uma tela não consegue carregar, o aviso aparece no lugar do conteúdo, em vez de uma "
                         + "lista vazia.");
 

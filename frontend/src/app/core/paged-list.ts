@@ -1,4 +1,4 @@
-import { WritableSignal, computed, signal } from '@angular/core';
+import { Signal, WritableSignal, computed, signal } from '@angular/core';
 import { classifyHttpError } from './http-error';
 import { ListFilters, Page } from './models';
 import { ListStateService } from './services/list-state.service';
@@ -7,6 +7,18 @@ import { ToastService } from './services/toast.service';
 export interface FilterChip {
   key: string;
   label: string;
+}
+
+// O que o painel de filtros precisa da listagem, sem depender do tipo dos filtros de cada tela.
+export interface FilterControls {
+  readonly activeCount: Signal<number>;
+  readonly differsFromDefault: Signal<boolean>;
+  remove(key: string): void;
+  clear(): void;
+  beginDraft(): void;
+  applyDraft(): void;
+  discardDraft(): void;
+  clearDraft(): void;
 }
 
 export interface PagedListOptions<F extends ListFilters, T> {
@@ -24,7 +36,9 @@ function sameFilters(a: ListFilters, b: ListFilters): boolean {
 
 // Estado e regras comuns das listagens paginadas: filtros aplicados, página, carga, erro de carga
 // e persistência no ListStateService. `filters` é o rascunho ligado aos campos; só `applied` vai à API.
-export class PagedList<F extends ListFilters, T> {
+// No celular os campos ficam num painel com "Aplicar": enquanto ele está aberto (`drafting`), o
+// `change` de cada campo não aplica nada, e fechar sem aplicar descarta o rascunho.
+export class PagedList<F extends ListFilters, T> implements FilterControls {
   readonly items = signal<T[]>([]);
   readonly loading = signal(true);
   readonly loadError = signal<string | null>(null);
@@ -32,6 +46,7 @@ export class PagedList<F extends ListFilters, T> {
   readonly totalPages = signal(0);
   readonly totalItems = signal(0);
   readonly applied: WritableSignal<F>;
+  readonly drafting = signal(false);
 
   filters: F;
 
@@ -89,7 +104,7 @@ export class PagedList<F extends ListFilters, T> {
   }
 
   apply(): void {
-    if (sameFilters(this.filters, this.applied())) {
+    if (this.drafting() || sameFilters(this.filters, this.applied())) {
       return;
     }
 
@@ -107,6 +122,25 @@ export class PagedList<F extends ListFilters, T> {
   clear(): void {
     this.filters = { ...this.options.defaults };
     this.apply();
+  }
+
+  beginDraft(): void {
+    this.filters = { ...this.applied() };
+    this.drafting.set(true);
+  }
+
+  applyDraft(): void {
+    this.drafting.set(false);
+    this.apply();
+  }
+
+  discardDraft(): void {
+    this.drafting.set(false);
+    this.filters = { ...this.applied() };
+  }
+
+  clearDraft(): void {
+    this.filters = { ...this.options.defaults };
   }
 
   goTo(page: number): void {

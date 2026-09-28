@@ -1,78 +1,97 @@
-<h2 class="page-title">{{ id ? 'Editar perfil' : 'Novo perfil' }}</h2>
+<header class="page-header form-header">
+  <div class="page-heading">
+    <button type="button" class="back-link" aria-label="Voltar para Perfis" title="Voltar para Perfis" (click)="requestCancel()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M15 6l-6 6 6 6"></path>
+      </svg>
+      <span class="back-link-text">Perfis</span>
+    </button>
+    <h1 class="page-title">{{ id ? 'Editar perfil' : 'Novo perfil' }}</h1>
+    <p class="page-subtitle">Defina o que o perfil pode ver e fazer em cada tela</p>
+  </div>
+</header>
 
-<div [attr.aria-busy]="loading()">
+<div class="form-page" [attr.aria-busy]="loading()">
   <p class="loading-state" *ngIf="loading()"><span class="sr-only">Carregando...</span></p>
   <p class="load-error" role="alert" *ngIf="!loading() && loadError()">{{ loadError() }}</p>
 
   <form
-    class="panel form-panel form-page-wide"
+    class="panel form-card"
     *ngIf="!loading() && !loadError()"
     #profileForm
     (ngSubmit)="save()"
   >
-    <label class="name-field">
-      Nome
-      <input
-        name="name"
-        [(ngModel)]="name"
-        required
-        [class.invalid]="fieldErrors.invalid('name')"
-        (input)="fieldErrors.clear('name')"
-      />
-      <small class="field-error" *ngIf="fieldErrors.invalid('name')">{{ fieldErrors.message('name') }}</small>
-    </label>
+    <div class="form-card-body form-grid">
+      <label>
+        Nome
+        <input
+          name="name"
+          [(ngModel)]="name"
+          required
+          [class.invalid]="fieldErrors.invalid('name')"
+          (input)="fieldErrors.clear('name')"
+        />
+        <small class="field-error" *ngIf="fieldErrors.invalid('name')">{{ fieldErrors.message('name') }}</small>
+      </label>
 
-    <div class="table-wrap">
-      <table class="permissions-table">
-        <thead>
-          <tr>
-            <th>Tela</th>
-            <th class="perm-col">Ver</th>
-            <th class="perm-col">Incluir</th>
-            <th class="perm-col">Alterar</th>
-            <th class="perm-col">Excluir</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let permission of permissions">
-            <td class="screen-cell">{{ screenLabel(permission.screen) }}</td>
-            <td class="checkbox-cell" data-label="Ver">
-              <label class="perm-switch">
-                <input type="checkbox" [(ngModel)]="permission.canView" [name]="permission.screen + '-view'" />
-                <span class="perm-switch-label">Ver {{ screenLabel(permission.screen) }}</span>
-              </label>
-            </td>
-            <td class="checkbox-cell" *ngIf="!isViewOnly(permission.screen)" data-label="Incluir">
-              <label class="perm-switch">
-                <input type="checkbox" [(ngModel)]="permission.canCreate" [name]="permission.screen + '-create'" />
-                <span class="perm-switch-label">Incluir em {{ screenLabel(permission.screen) }}</span>
-              </label>
-            </td>
-            <td class="checkbox-cell" *ngIf="!isViewOnly(permission.screen)" data-label="Alterar">
-              <label class="perm-switch">
-                <input type="checkbox" [(ngModel)]="permission.canEdit" [name]="permission.screen + '-edit'" />
-                <span class="perm-switch-label">Alterar em {{ screenLabel(permission.screen) }}</span>
-              </label>
-            </td>
-            <td class="checkbox-cell" *ngIf="!isViewOnly(permission.screen)" data-label="Excluir">
-              <label class="perm-switch">
-                <input type="checkbox" [(ngModel)]="permission.canDelete" [name]="permission.screen + '-delete'" />
-                <span class="perm-switch-label">Excluir em {{ screenLabel(permission.screen) }}</span>
-              </label>
-            </td>
-            <!-- Células vazias sem data-label de propósito: no modo cartão de 680px o rótulo global
-                 viria de attr(data-label) e anunciaria ações que esta linha não oferece. -->
-            <td class="checkbox-cell" *ngIf="isViewOnly(permission.screen)"></td>
-            <td class="checkbox-cell" *ngIf="isViewOnly(permission.screen)"></td>
-            <td class="checkbox-cell" *ngIf="isViewOnly(permission.screen)"></td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="table-wrap field-wide">
+        <table class="permissions-table">
+          <thead>
+            <tr>
+              <th>Tela</th>
+              <th class="perm-col">Ver</th>
+              <th class="perm-col">Incluir</th>
+              <th class="perm-col">Alterar</th>
+              <th class="perm-col">Excluir</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let permission of permissions">
+              <td class="screen-cell">{{ screenLabel(permission.screen) }}</td>
+              <td class="checkbox-cell" data-label="Ver">
+                <label class="perm-switch">
+                  <input type="checkbox" [(ngModel)]="permission.canView" [name]="permission.screen + '-view'" />
+                  <span class="perm-switch-label">Ver {{ screenLabel(permission.screen) }}</span>
+                </label>
+              </td>
+              <td class="checkbox-cell" *ngIf="!isViewOnly(permission.screen)" data-label="Incluir">
+                <label class="perm-switch">
+                  <input type="checkbox" [(ngModel)]="permission.canCreate" [name]="permission.screen + '-create'" />
+                  <span class="perm-switch-label">Incluir em {{ screenLabel(permission.screen) }}</span>
+                </label>
+              </td>
+              <td class="checkbox-cell" *ngIf="!isViewOnly(permission.screen)" data-label="Alterar">
+                <label class="perm-switch">
+                  <input type="checkbox" [(ngModel)]="permission.canEdit" [name]="permission.screen + '-edit'" />
+                  <span class="perm-switch-label">Alterar em {{ screenLabel(permission.screen) }}</span>
+                </label>
+              </td>
+              <td class="checkbox-cell" *ngIf="!isViewOnly(permission.screen)" data-label="Excluir">
+                <label class="perm-switch">
+                  <input type="checkbox" [(ngModel)]="permission.canDelete" [name]="permission.screen + '-delete'" />
+                  <span class="perm-switch-label">Excluir em {{ screenLabel(permission.screen) }}</span>
+                </label>
+              </td>
+              <!-- Células vazias sem data-label de propósito: no modo cartão de 680px o rótulo global
+                   viria de attr(data-label) e anunciaria ações que esta linha não oferece. -->
+              <td class="checkbox-cell" *ngIf="isViewOnly(permission.screen)"></td>
+              <td class="checkbox-cell" *ngIf="isViewOnly(permission.screen)"></td>
+              <td class="checkbox-cell" *ngIf="isViewOnly(permission.screen)"></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
     </div>
 
-    <div class="two-cols form-actions">
-      <button class="primary-button" type="submit" [disabled]="saving()">Salvar</button>
+    <div class="form-card-footer form-actions">
       <button class="ghost-button" type="button" (click)="requestCancel()">Cancelar</button>
+      <button class="primary-button" type="submit" [disabled]="saving()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M5 12.5l4.5 4.5L19 7.5"></path>
+        </svg>
+        <span>Salvar perfil</span>
+      </button>
     </div>
   </form>
 </div>

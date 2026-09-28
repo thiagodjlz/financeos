@@ -20,6 +20,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import br.com.financeos.categories.Category;
+import br.com.financeos.categories.CategoryRepository;
+import br.com.financeos.categories.CategoryType;
 import br.com.financeos.transactions.FinancialTransaction;
 import br.com.financeos.transactions.TransactionRepository;
 import br.com.financeos.transactions.TransactionSource;
@@ -48,12 +51,38 @@ class DashboardResourceTest {
     @Inject
     TransactionRepository repository;
 
+    @Inject
+    CategoryRepository categoryRepository;
+
     // Apaga por descricao em qualquer usuario: filtrar pelo usuario do teste deixaria o lancamento
     // do outro usuario vivo e tornaria as assercoes de periodos dependentes da ordem dos metodos.
     @AfterEach
     @Transactional
     void cleanup() {
         repository.delete("description like ?1", "Teste dashboard%");
+        categoryRepository.delete("name like ?1", "Teste dashboard categoria%");
+    }
+
+    @Test
+    void shouldReturnCategoryColorInBreakdown() {
+        UUID colored = createCategory(CategoryType.EXPENSE, "#B93A2E");
+        UUID colorless = createCategory(CategoryType.EXPENSE, null);
+        setCategory(createTransaction("2026-05-05", "Teste dashboard cor com", 100, "EXPENSE", "PAID"), colored);
+        setCategory(createTransaction("2026-05-06", "Teste dashboard cor sem", 50, "EXPENSE", "PAID"), colorless);
+        createTransaction("2026-05-07", "Teste dashboard cor legado", 20, "EXPENSE", "PAID");
+
+        given()
+                .queryParam("year", 2026)
+                .queryParam("month", 5)
+                .when().get("/dashboard/summary")
+                .then()
+                .statusCode(200)
+                .body("categoryBreakdown.find { it.categoryId == '%s' }.categoryColor".formatted(colored),
+                        equalTo("#B93A2E"))
+                .body("categoryBreakdown.find { it.categoryId == '%s' }.categoryColor".formatted(colorless),
+                        nullValue())
+                .body("categoryBreakdown.find { it.categoryName == 'Sem categoria' }.categoryColor", nullValue())
+                .body("categoryBreakdown.find { it.categoryName == 'Sem categoria' }.totalAmount", equalTo(20.00F));
     }
 
     @Test
@@ -293,6 +322,22 @@ class DashboardResourceTest {
             repository.persist(transaction);
             return transaction.id.toString();
         });
+    }
+
+    private UUID createCategory(CategoryType type, String color) {
+        return QuarkusTransaction.requiringNew().call(() -> {
+            Category category = new Category();
+            category.name = "Teste dashboard categoria " + UUID.randomUUID();
+            category.type = type;
+            category.color = color;
+            categoryRepository.persist(category);
+            return category.id;
+        });
+    }
+
+    private void setCategory(String transactionId, UUID categoryId) {
+        QuarkusTransaction.requiringNew().run(() -> repository.findByIdOptional(UUID.fromString(transactionId))
+                .ifPresent(transaction -> transaction.categoryId = categoryId));
     }
 
     private static void cancelTransaction(String id) {

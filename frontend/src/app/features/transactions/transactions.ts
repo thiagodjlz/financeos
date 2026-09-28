@@ -4,7 +4,7 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { FilterPanel } from '../../core/filter-panel/filter-panel';
-import { money, transactionStatusLabel } from '../../core/formatters';
+import { dayHeading, isoDate, money, shortDate, transactionStatusLabel } from '../../core/formatters';
 import { ListFeedback } from '../../core/list-feedback/list-feedback';
 import { Category, Transaction, TransactionStatus } from '../../core/models';
 import { FilterChip, PagedList } from '../../core/paged-list';
@@ -28,9 +28,9 @@ const DEFAULT_FILTERS = {
 
 const TYPE_LABELS: Record<string, string> = { EXPENSE: 'Despesa', INCOME: 'Receita' };
 
-function shortDate(value: string): string {
-  const [year, month, day] = value.split('-');
-  return day && month && year ? `${day}/${month}/${year}` : value;
+interface TransactionRow {
+  transaction: Transaction;
+  heading: string | null;
 }
 
 @Component({
@@ -90,6 +90,20 @@ export class Transactions implements OnInit {
     }
 
     return chips;
+  });
+
+  // Cabeçalho por dia só aparece no celular (o CSS esconde `tr.day-row` acima de 680px): a mesma
+  // tabela vira a lista em cartões agrupada por data, sem template por largura.
+  protected readonly rows = computed<TransactionRow[]>(() => {
+    const today = isoDate(new Date());
+    let previousDate: string | null = null;
+
+    return this.list.items().map((transaction) => {
+      const heading =
+        transaction.transactionDate !== previousDate ? dayHeading(transaction.transactionDate, today) : null;
+      previousDate = transaction.transactionDate;
+      return { transaction, heading };
+    });
   });
 
   ngOnInit(): void {
@@ -182,6 +196,10 @@ export class Transactions implements OnInit {
     return money(value);
   }
 
+  protected formatDate(value: string): string {
+    return shortDate(value);
+  }
+
   protected statusLabel(status: TransactionStatus | null): string {
     return transactionStatusLabel(status);
   }
@@ -198,7 +216,7 @@ export class Transactions implements OnInit {
   }
 
   protected signedMoney(transaction: Transaction): string {
-    const sign = transaction.type === 'EXPENSE' ? '- ' : '+ ';
+    const sign = transaction.type === 'EXPENSE' ? '− ' : '+ ';
     return `${sign}${money(transaction.amount)}`;
   }
 }

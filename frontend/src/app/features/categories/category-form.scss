@@ -1,10 +1,12 @@
 input[type='color'] {
-  height: 42px;
+  width: 88px;
+  height: var(--field-h);
   padding: 4px;
+  cursor: pointer;
 }
 
 @media (max-width: 480px) {
   input[type='color'] {
-    height: var(--touch-target);
+    height: var(--field-h-mobile);
   }
 }

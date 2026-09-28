@@ -8,6 +8,7 @@ import br.com.financeos.transactions.TransactionType;
 public record CategoryBreakdownResponse(
         UUID categoryId,
         String categoryName,
+        String categoryColor,
         TransactionType type,
         BigDecimal totalAmount,
         long transactionCount) {

@@ -85,6 +85,43 @@ describe('PagedList', () => {
     expect(calls.at(-1)?.filters).toEqual(DEFAULTS);
   });
 
+  it('com o painel aberto o change não aplica; "Aplicar" aplica o rascunho de uma vez', () => {
+    const list = create();
+
+    list.beginDraft();
+    list.filters.name = 'mer';
+    list.apply();
+    list.filters.active = 'false';
+    list.apply();
+
+    expect(calls).toEqual([]);
+    expect(list.applied()).toEqual(DEFAULTS);
+
+    list.applyDraft();
+
+    expect(list.drafting()).toBe(false);
+    expect(calls).toEqual([{ filters: { name: 'mer', active: 'false' }, page: 1 }]);
+    expect(list.applied()).toEqual({ name: 'mer', active: 'false' });
+  });
+
+  it('fechar o painel sem aplicar descarta o rascunho e mantém os filtros anteriores', () => {
+    const list = create();
+    list.filters.name = 'mer';
+    list.apply();
+    calls = [];
+
+    list.beginDraft();
+    list.filters.name = 'outro';
+    list.clearDraft();
+    expect(list.filters).toEqual(DEFAULTS);
+    list.discardDraft();
+
+    expect(calls).toEqual([]);
+    expect(list.drafting()).toBe(false);
+    expect(list.applied()).toEqual({ name: 'mer', active: 'true' });
+    expect(list.filters).toEqual({ name: 'mer', active: 'true' });
+  });
+
   it('restaura filtros e página de uma instância anterior', () => {
     const first = create();
     first.filters.name = 'mer';

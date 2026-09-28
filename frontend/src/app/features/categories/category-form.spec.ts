@@ -108,7 +108,7 @@ describe('CategoryForm', () => {
     await setup(null);
     await fillText('input[name="name"]', 'Lazer');
 
-    await click(button('Salvar'));
+    await click(button('Salvar categoria'));
 
     const request = httpMock.expectOne(`${API_BASE}/categories`);
     expect(request.request.method).toBe('POST');
@@ -129,7 +129,7 @@ describe('CategoryForm', () => {
     expect(selectedText('select[name="active"]')).toBe('Inativo');
 
     await selectIndex('select[name="active"]', 0);
-    await click(button('Salvar'));
+    await click(button('Salvar categoria'));
 
     const request = httpMock.expectOne(`${API_BASE}/categories/cat-3`);
     expect(request.request.method).toBe('PUT');
@@ -151,7 +151,7 @@ describe('CategoryForm', () => {
     await renderEdit();
     await fillText('input[name="name"]', 'Mercado');
 
-    await click(button('Salvar'));
+    await click(button('Salvar categoria'));
     httpMock
       .expectOne(`${API_BASE}/categories/cat-3`)
       .flush({ message: 'Já existe uma categoria com esse nome e tipo.' }, { status: 409, statusText: 'Conflict' });
@@ -166,7 +166,7 @@ describe('CategoryForm', () => {
   it('no 400 destaca e foca o campo citado', async () => {
     await setup(null);
 
-    await click(button('Salvar'));
+    await click(button('Salvar categoria'));
     httpMock.expectOne(`${API_BASE}/categories`).flush(
       {
         violations: [{ field: 'create.request.name', message: 'O nome é obrigatório.' }],
@@ -210,5 +210,21 @@ describe('CategoryForm', () => {
 
     expect(toasts().map((toast) => [toast.title, toast.message])).toEqual([['Alerta', 'Categoria não encontrada.']]);
     expect(router.navigate).toHaveBeenCalledWith(['/categories']);
+  });
+
+  it('mostra o cadastro em cartão com "Salvar categoria" e o voltar do cabeçalho age como o Cancelar', async () => {
+    await setup(null);
+
+    expect(query('form').classList.contains('form-card')).toBe(true);
+    expect(button('Salvar categoria').getAttribute('type')).toBe('submit');
+    const back = query<HTMLButtonElement>('button.back-link');
+    expect(back.getAttribute('aria-label')).toBe('Voltar para Categorias');
+
+    await click(back);
+
+    expect(query('.modal-card')).toBeNull();
+    expect(router.navigate).toHaveBeenCalledWith(['/categories']);
+    expect(toasts()).toEqual([]);
+    httpMock.expectNone(() => true);
   });
 });

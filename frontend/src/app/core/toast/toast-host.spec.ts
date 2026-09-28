@@ -115,7 +115,7 @@ describe('ToastHost', () => {
     render();
 
     const close = query<HTMLButtonElement>('.toast-close');
-    expect(close?.getAttribute('aria-label')).toBe('Fechar');
+    expect(close?.getAttribute('aria-label')).toBe('Fechar aviso');
 
     close?.click();
     render();

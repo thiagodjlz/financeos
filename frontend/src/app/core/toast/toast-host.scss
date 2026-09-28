@@ -43,7 +43,7 @@
   z-index: 999;
   display: flex;
   flex-direction: column;
-  width: 340px;
+  width: 360px;
   max-width: calc(100vw - 32px);
 }
 
@@ -63,10 +63,10 @@
   align-items: flex-start;
   gap: 12px;
   border: 1px solid var(--border-card);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-toast);
   background: var(--surface);
-  box-shadow: var(--shadow-login);
-  padding: 16px 16px 18px;
+  box-shadow: var(--shadow-toast);
+  padding: 14px 12px 14px 14px;
   overflow: hidden;
 }
 
@@ -75,9 +75,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius-icon);
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-pill);
 }
 
 .toast-body {
@@ -88,30 +88,40 @@
 
 .toast-title {
   font-size: var(--fs-body);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .toast-message {
-  margin-top: 3px;
-  color: var(--text-muted);
+  margin-top: 2px;
+  color: var(--text-label);
   font-size: var(--fs-toast-msg);
-  line-height: 1.4;
+  line-height: 1.45;
   white-space: pre-line;
 }
 
 .toast-close {
+  display: grid;
   flex: 0 0 auto;
-  margin-top: 1px;
-  border: 0;
-  padding: 2px;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 0;
   background: transparent;
-  color: var(--text-faint);
+  color: var(--text-muted);
   cursor: pointer;
+}
+
+@media (hover: hover) {
+  .toast-close:hover {
+    background: var(--neutral-soft);
+  }
 }
 
 @media (max-width: 680px) {
   .toast-stack {
-    top: calc(var(--mobile-topbar-h) + env(safe-area-inset-top) + 10px);
+    top: calc(12px + env(safe-area-inset-top));
     right: calc(12px + env(safe-area-inset-right));
     left: calc(12px + env(safe-area-inset-left));
     width: auto;
@@ -119,14 +129,12 @@
   }
 
   .toast-card {
-    padding: 14px 14px 16px;
+    padding: 12px 10px 12px 12px;
   }
 }
 
 @media (max-width: 480px) {
   .toast-close {
-    display: grid;
-    place-items: center;
     width: var(--touch-target);
     height: var(--touch-target);
     margin-top: -8px;
