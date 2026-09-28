@@ -4,7 +4,7 @@ url: https://github.com/thiagodjlz/financeos/issues/93
 title: "Modernização do sistema"
 domains: [auth, users, categories, transactions, dashboard, documentation]
 target: main
-stage: validated
+stage: pr-open
 branch: feature/issue-93-modernizacao-sistema
 created: 2026-09-24
 ---
