@@ -46,13 +46,27 @@ public final class ReleaseNotesContent {
                 "Tabela de Lançamentos: a data aparece em dia/mês/ano, cada categoria ganhou uma bolinha com a sua "
                         + "cor e o lançamento cancelado mostra o valor riscado.",
                 "Avisos de erro: quando uma tela não consegue carregar, o aviso aparece no lugar do conteúdo, em "
-                        + "vez de uma lista vazia.");
+                        + "vez de uma lista vazia.",
+                "Busca nas listas: Lançamentos, Categorias, Usuários e Perfis ganharam busca por texto, que "
+                        + "encontra o que foi digitado em qualquer parte, sem diferenciar maiúsculas nem acentos.",
+                "Filtros ativos: cada filtro aplicado vira um rótulo acima da lista, que pode ser removido, e a "
+                        + "busca sem resultado mostra Nenhum registro encontrado, com o botão Limpar filtros.",
+                "Volta do cadastro: ao sair do cadastro, a lista reabre com os mesmos filtros e na mesma página "
+                        + "em que você estava.",
+                "Mostrar senha: na tela de entrada, um botão no campo Senha mostra ou esconde o que foi digitado.",
+                "Contador na Descrição: o cadastro de lançamento mostra quantos dos 255 caracteres da Descrição "
+                        + "já foram usados.",
+                "Lançamentos por dia no celular: a lista de lançamentos é agrupada por dia, com os títulos Hoje, "
+                        + "Ontem e a data dos demais dias.");
 
         addIfPresent(categories, Kind.FIX,
                 "Campos de formulário: o contraste da borda foi corrigido, para que ela seja visível sob luz forte ou "
                         + "com baixa visão.",
                 "Usuários: não é mais possível desativar a própria conta nem trocar o próprio perfil ao editar "
-                        + "o seu cadastro.");
+                        + "o seu cadastro.",
+                "Entrada no sistema: quem não pode ver o Resumo passa a entrar direto na primeira tela que o seu "
+                        + "perfil permite, em vez de ficar preso sem conseguir abrir nenhuma tela; sem nenhuma tela "
+                        + "permitida, aparece a tela Sem acesso.");
 
         return new ReleaseNoteVersion("1.0.2", List.copyOf(categories));
     }

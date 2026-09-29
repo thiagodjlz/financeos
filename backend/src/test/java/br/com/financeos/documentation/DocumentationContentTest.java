@@ -327,6 +327,31 @@ class DocumentationContentTest {
     }
 
     @Test
+    void shouldCoverLoginNoAccessNoticesListsCentralAndReleaseNotes() {
+        List<String> introductionTitles = CONTENT.introduction().sections().stream()
+                .map(DocumentationSection::title)
+                .toList();
+
+        List.of("Entrar no sistema", "Tela Sem acesso", "Avisos do sistema", "Listas sem resultado ou com falha",
+                "Como usar esta Central", "Novidades por versão")
+                .forEach(expected -> assertTrue(introductionTitles.contains(expected),
+                        "Introdução sem a seção " + expected));
+
+        String published = String.join("\n", displayedTexts());
+
+        List.of("Mostrar senha", "Ocultar senha", "Credenciais inválidas", "Sem acesso",
+                "Seu perfil não tem acesso a nenhuma tela", "Correções", "Nenhuma novidade publicada ainda",
+                "Buscar na documentação", "Nenhuma área corresponde à busca", "Nenhum registro encontrado",
+                "Limpar filtros", "Fechar aviso", "Sua sessão expirou", "Você não tem permissão para acessar esta tela",
+                "sem confirmação", "Lançamento cancelado com sucesso", "Usuário desativado com sucesso",
+                "Perfil excluído com sucesso")
+                .forEach(expected -> assertTrue(published.contains(expected), "Central sem mencionar " + expected));
+
+        assertFalse(published.contains("não diferencia maiúsculas de minúsculas nem acentos"),
+                "A busca da Central diferencia acentos");
+    }
+
+    @Test
     void shouldDescribeMonthStepAndCategoryPanelInSummary() {
         String summary = areaText(CONTENT.areas().stream()
                 .filter(area -> "Resumo".equals(area.title()))

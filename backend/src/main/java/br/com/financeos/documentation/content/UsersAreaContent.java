@@ -136,7 +136,8 @@ final class UsersAreaContent {
                                 List.of("Cancelar ou voltar (cadastro)", "Volta à tabela sem gravar; se houver "
                                         + "alteração pendente, pede confirmação antes de descartá-la."),
                                 List.of("Desativar usuário (linha)",
-                                        "Tira o acesso da pessoa, sem apagar o cadastro."),
+                                        "Tira o acesso da pessoa, sem apagar o cadastro. Age na hora, sem "
+                                                + "confirmação, e avisa Usuário desativado com sucesso."),
                                 List.of("Filtros", "Ficam sempre visíveis acima da tabela; cada filtro aplicado "
                                         + "vira um rótulo em Filtros ativos, que pode ser removido."),
                                 List.of("Limpar filtros", "Volta aos filtros iniciais (só as pessoas ativas) e à "

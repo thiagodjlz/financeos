@@ -120,7 +120,8 @@ final class ProfilesAreaContent {
                                 List.of("Cancelar ou voltar (cadastro)", "Volta à tabela sem gravar; se houver "
                                         + "alteração pendente, pede confirmação antes de descartá-la."),
                                 List.of("Excluir perfil (linha)",
-                                        "Remove o perfil, desde que nenhum usuário o esteja usando."),
+                                        "Remove o perfil, desde que nenhum usuário o esteja usando. Age na hora, "
+                                                + "sem confirmação, e avisa Perfil excluído com sucesso."),
                                 List.of("Busca por nome", "Fica sempre visível acima da tabela; aplicada, vira um "
                                         + "rótulo em Filtros ativos, que pode ser removido."),
                                 List.of("Anterior / Próxima", "Troca de página mantendo o filtro."))),

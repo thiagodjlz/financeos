@@ -139,7 +139,8 @@ final class TransactionsAreaContent {
                                 List.of("Cancelar ou voltar (cadastro)", "Volta à tabela sem gravar; se houver "
                                         + "alteração pendente, pede confirmação antes de descartá-la."),
                                 List.of("Cancelar lançamento (linha)",
-                                        "Passa o lançamento à situação Cancelado, sem apagá-lo."),
+                                        "Passa o lançamento à situação Cancelado, sem apagá-lo. Age na hora, sem "
+                                                + "confirmação, e avisa Lançamento cancelado com sucesso."),
                                 List.of("Filtros", "Ficam sempre visíveis acima da tabela e valem assim que são "
                                         + "escolhidos; cada filtro aplicado vira um rótulo em Filtros ativos, que "
                                         + "pode ser removido. No celular, abrem num painel com o botão Aplicar."),
