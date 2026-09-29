@@ -41,7 +41,6 @@ public final class ReleaseNotesContent {
                 "Resumo: painel Por categoria, alternando entre Despesas e Receitas, com a cor de cada categoria.",
                 "Mais segurança nas contas ao publicar na internet: administrador com nome fixo, contas de "
                         + "teste removidas do ambiente publicado.",
-                "Botão \"Voltar ao topo\" nas telas longas: aparece ao rolar a página e leva de volta ao início.",
                 "Tela de Categorias: botão Excluir categoria em cada linha. Remove de vez a categoria sem "
                         + "lançamentos e, "
                         + "se ela estiver em uso, avisa quantos lançamentos a usam.",

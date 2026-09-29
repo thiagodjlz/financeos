@@ -531,7 +531,7 @@ describe('MainLayout', () => {
     });
   });
 
-  it('monta um único botão Voltar ao topo e navegar entre telas não cria outro listener de scroll', async () => {
+  it('não monta botão flutuante de rolagem nem registra listener de scroll ao navegar entre telas', async () => {
     const addSpy = vi.spyOn(window, 'addEventListener');
     asSuperAdmin();
     const fixture = createFixture();
@@ -542,9 +542,13 @@ describe('MainLayout', () => {
     await router.navigateByUrl('/documentation');
     fixture.detectChanges();
 
-    expect(root(fixture).querySelectorAll('app-back-to-top')).toHaveLength(1);
-    expect(root(fixture).querySelectorAll('.back-to-top')).toHaveLength(1);
-    expect(addSpy.mock.calls.filter(([type]) => type === 'scroll')).toHaveLength(1);
+    Object.defineProperty(window, 'scrollY', { value: 500, configurable: true });
+    window.dispatchEvent(new Event('scroll'));
+    fixture.detectChanges();
+
+    expect(root(fixture).querySelectorAll('button[title*="topo" i], button[aria-label*="topo" i]')).toHaveLength(0);
+    expect(addSpy.mock.calls.filter(([type]) => type === 'scroll')).toHaveLength(0);
+    Object.defineProperty(window, 'scrollY', { value: 0, configurable: true });
     addSpy.mockRestore();
   });
 });
