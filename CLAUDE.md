@@ -14,6 +14,7 @@ Regras de negocio e modelo de dados nao ficam aqui — ficam em [knowledge/](kno
 - **Toda regra de negocio e validacao e obrigatoriamente imposta no back-end** (Bean Validation no DTO ou checagem no `Resource`, com erro tratado em portugues). O front-end pode espelhar a regra como UX (`required`, `maxlength`, filtro de dropdown), mas nunca ser o unico lugar dela. Constraints do banco (not null, unique, check) sao so rede de seguranca — quem valida e responde e o back-end; as unicas regras que podem viver apenas no banco sao PKs e FKs.
 - Sem comentarios no codigo a menos que expliquem um "porque" nao-obvio.
 - Todo endpoint novo do backend comeca chamando `accessControl.require(Screen.X, Action.Y)` — ver [knowledge/auth-and-permissions.md](knowledge/auth-and-permissions.md).
+- Texto das telas Documentação e Novidades por versão (`documentation/content/`, `releasenotes/content/`) e escrito para o usuario final: invoque a skill `pipeline:revisar-textos` antes de grava-lo. O hook `pre-commit` recusa o commit sem `FINANCEOS_TEXTOS_REVISADOS=1` — ver [knowledge/documentation.md](knowledge/documentation.md).
 - Detalhes de stack e comandos de build: [knowledge/architecture.md](knowledge/architecture.md); padroes de teste: [knowledge/testing.md](knowledge/testing.md).
 
 ## Versionamento e branches

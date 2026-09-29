@@ -127,6 +127,8 @@ Criterio de aceite esquecido descoberto aqui custa um paragrafo; descoberto na v
 
 Regra de negocio, calculo, validacao, mensagem, campo ou rotulo que mude tem **dois** consumidores escritos a mao que nada no build acusa quando ficam desatualizados: a **Central de Documentacao** (`documentation/content/<Area>Content.java`, o que o sistema faz hoje — issue #70) e **Novidades por versao** (`releasenotes/content/ReleaseNotesContent.java`, o que mudou nesta versao — issue #71). Se a mudanca toca uma tela documentada, inclua o ajuste do `<Area>Content.java` correspondente. Se a mudanca e visivel ao usuario final (tela nova, regra de negocio que ele percebe, correcao de bug perceptivel), avalie se ela merece uma linha no bloco da versao corrente de `ReleaseNotesContent.java` e inclua a tarefa se sim — em ambos os casos, mesmo que `domains` nao liste `documentation` (ver `knowledge/documentation.md`).
 
+Texto que vai para `documentation/content/` ou `releasenotes/content/` (o que o usuario le nas telas Documentacao e Novidades por versao) passa antes pela skill `pipeline:revisar-textos`, que separa o funcional do tecnico. Quando a tarefa tocar esses textos, cite a skill nela.
+
 ## Se for um replanejamento por lacuna de cobertura
 
 Acrescente ao `plan.md` existente as tarefas e os arquivos que cobrem exatamente os criterios apontados, sem reescrever o que ja estava certo, e refaca a matriz. Se um criterio nao tiver como ser coberto (ex.: depende de decisao de produto que a spec deixou em aberto), diga isso na resposta em vez de inventar abordagem.

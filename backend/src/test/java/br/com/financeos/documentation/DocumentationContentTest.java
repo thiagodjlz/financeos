@@ -26,6 +26,11 @@ class DocumentationContentTest {
             "INCOME|EXPENSE|PENDING|PAID|CANCELED|Screen\\.|Action\\.|accessControl|@NotNull|@NotBlank"
                     + "|Panache|Flyway|ProfilePermission|localStorage|JWT");
 
+    private static final Pattern INFRASTRUCTURE_TERM = Pattern.compile(
+            "Tailscale|HTTPS|Docker|deploy|hospedagem|Flyway|migration|endpoint|\\bAPI\\b|banco de dados"
+                    + "|\\btoken\\b|Caddy|Swagger|framework|JWT",
+            Pattern.CASE_INSENSITIVE);
+
     private static final DocumentationResponse CONTENT = DocumentationContent.build();
 
     private static Stream<DocumentationArea> allAreas() {
@@ -125,8 +130,10 @@ class DocumentationContentTest {
 
     @Test
     void shouldNotExposeTechnicalIdentifiers() {
-        displayedTexts().forEach(text -> assertFalse(
-                TECHNICAL_IDENTIFIER.matcher(text).find(), "Identificador técnico exibido: " + text));
+        displayedTexts().forEach(text -> {
+            assertFalse(TECHNICAL_IDENTIFIER.matcher(text).find(), "Identificador técnico exibido: " + text);
+            assertFalse(INFRASTRUCTURE_TERM.matcher(text).find(), "Termo de infraestrutura exibido: " + text);
+        });
     }
 
     @Test

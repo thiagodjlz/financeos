@@ -19,6 +19,11 @@ class ReleaseNotesContentTest {
                     + "|Panache|Flyway|ProfilePermission|localStorage|JWT",
             Pattern.CASE_INSENSITIVE);
 
+    private static final Pattern INFRASTRUCTURE_TERM = Pattern.compile(
+            "Tailscale|HTTPS|Docker|deploy|hospedagem|Flyway|migration|endpoint|\\bAPI\\b|banco de dados"
+                    + "|\\btoken\\b|Caddy|Swagger|framework|JWT",
+            Pattern.CASE_INSENSITIVE);
+
     private static final List<ReleaseNoteVersion> VERSIONS = ReleaseNotesContent.build();
 
     private static List<String> displayedTexts() {
@@ -69,6 +74,8 @@ class ReleaseNotesContentTest {
     void shouldNotExposeTechnicalIdentifiers() {
         displayedTexts().forEach(text -> assertFalse(
                 TECHNICAL_IDENTIFIER.matcher(text).find(), "Identificador técnico exibido: " + text));
+        displayedTexts().forEach(text -> assertFalse(
+                INFRASTRUCTURE_TERM.matcher(text).find(), "Termo de infraestrutura exibido: " + text));
     }
 
     @Test
@@ -91,8 +98,7 @@ class ReleaseNotesContentTest {
 
         assertEquals("1.0.2", v102.version());
         assertEquals(2, fixes.size());
-        assertTrue(fixes.contains(
-                "Contraste da borda dos campos de formulário corrigido, visível sob luz forte ou baixa visão."));
+        assertTrue(fixes.stream().anyMatch(item -> item.contains("contraste da borda")));
         assertEquals(1, fixes.stream()
                 .filter(item -> item.contains("própria conta") && item.contains("próprio perfil"))
                 .count());

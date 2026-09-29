@@ -93,8 +93,8 @@ final class SummaryAreaContent {
                         "Um lançamento cancelado continua contando como período disponível: o mês dele permanece na "
                                 + "lista, ainda que não some nada nos indicadores."),
                 DocumentationBlock.highlight(
-                        "Oferecer um mês é disponibilidade de lista, não validação: o mês oferecido pode estar "
-                                + "zerado, e isso é esperado."));
+                        "Um mês aparecer na lista não significa que ele tenha movimento: o mês oferecido pode "
+                                + "estar zerado, e isso é esperado."));
     }
 
     private static DocumentationSection particularidades() {
