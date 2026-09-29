@@ -4,7 +4,7 @@ url: https://github.com/thiagodjlz/financeos/issues/97
 title: "Melhorar documentação e notas de versão para linguagem orientada ao usuário"
 domains: [documentation]
 target: main
-stage: validated
+stage: pr-open
 branch: feature/issue-97-linguagem-usuario-documentacao-notas
 created: 2026-09-28
 ---
