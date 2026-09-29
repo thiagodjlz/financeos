@@ -78,8 +78,8 @@ final class OverviewContent {
                                 + "é nele que fica o botão Sair.",
                         "Esconder o item do menu não é a trava: digitar o endereço da tela também é recusado, com "
                                 + "um aviso e o retorno para uma tela permitida.",
-                        "Quem confere cada permissão é o servidor, a cada pedido de informação; a tela apenas "
-                                + "reflete o que ele autoriza.",
+                        "O sistema confere a permissão a cada acesso; a tela apenas reflete o que ele "
+                                + "autoriza.",
                         "A sessão dura 12 horas. Depois disso o sistema pede que você entre novamente."),
                 DocumentationBlock.highlight(
                         "Se uma tela ou um botão de que você precisa não aparece, fale com o administrador do "

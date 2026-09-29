@@ -25,37 +25,34 @@ public final class ReleaseNotesContent {
         List<ReleaseNoteCategory> categories = new ArrayList<>();
 
         addIfPresent(categories, Kind.NEW,
-                "Nova área \"Novidades por versão\", no menu Sobre, reunindo o que muda em cada versão.",
+                "Novidades por versão: nova área, no menu Sobre, que reúne o que muda em cada versão.",
                 "Central de Documentação: manual do sistema dentro do próprio FinanceOS, no menu Sobre.",
-                "Visual novo em todas as telas: cores, textos, botões e campos redesenhados, com menu lateral "
+                "Visual novo: cores, textos, botões e campos redesenhados em todas as telas, com menu lateral "
                         + "em seções que pode ser recolhido.",
                 "Uso completo pelo celular: barra de navegação na parte de baixo da tela, listas em cartões, "
-                        + "filtros num painel com Aplicar e campos maiores para toque.",
-                "Publicar o FinanceOS na internet com endereço próprio (HTTPS automático) ou pela rede privada "
-                        + "do Tailscale, sem custo de hospedagem.");
+                        + "filtros num painel com Aplicar e campos maiores para toque.");
 
         addIfPresent(categories, Kind.IMPROVEMENT,
-                "Painel Resumo: saudação personalizada com o seu nome, conforme o horário do dia.",
-                "Período do Resumo: botões Mês anterior e Próximo mês, que percorrem só os meses com "
+                "Saudação no Resumo: o painel cumprimenta você pelo nome, conforme o horário do dia.",
+                "Período do Resumo: botões Mês anterior e Próximo mês percorrem só os meses com "
                         + "lançamentos e o mês atual.",
-                "Resumo: painel Por categoria, alternando entre Despesas e Receitas, com a cor de cada categoria.",
-                "Mais segurança nas contas ao publicar na internet: administrador com nome fixo, contas de "
-                        + "teste removidas do ambiente publicado.",
-                "Tela de Categorias: botão Excluir categoria em cada linha. Remove de vez a categoria sem "
-                        + "lançamentos e, "
-                        + "se ela estiver em uso, avisa quantos lançamentos a usam.",
-                "Lançamentos, Categorias, Usuários e Perfis: os botões Novo e Editar abrem o cadastro numa "
-                        + "tela própria, e as listas mostram 10 registros por página, com Filtros sempre visíveis "
-                        + "acima da tabela.",
-                "Tabela de Lançamentos: data em dia/mês/ano, bolinha com a cor da categoria e valor riscado no "
-                        + "lançamento cancelado.",
-                "Quando uma tela não consegue carregar, o aviso aparece no lugar do conteúdo, em vez de uma "
-                        + "lista vazia.");
+                "Painel Por categoria: no Resumo, alterna entre Despesas e Receitas e mostra a cor de cada "
+                        + "categoria.",
+                "Excluir categoria: a tela de Categorias ganhou o botão Excluir em cada linha. Ele remove de vez "
+                        + "a categoria sem lançamentos e, se ela estiver em uso, avisa quantos lançamentos a usam.",
+                "Cadastros e listas: em Lançamentos, Categorias, Usuários e Perfis, os botões Novo e Editar abrem "
+                        + "o cadastro numa tela própria, e as listas mostram 10 registros por página, com Filtros "
+                        + "sempre visíveis acima da tabela.",
+                "Tabela de Lançamentos: a data aparece em dia/mês/ano, cada categoria ganhou uma bolinha com a sua "
+                        + "cor e o lançamento cancelado mostra o valor riscado.",
+                "Avisos de erro: quando uma tela não consegue carregar, o aviso aparece no lugar do conteúdo, em "
+                        + "vez de uma lista vazia.");
 
         addIfPresent(categories, Kind.FIX,
-                "Contraste da borda dos campos de formulário corrigido, visível sob luz forte ou baixa visão.",
-                "Tela de Usuários: não é mais possível desativar a própria conta nem trocar o próprio perfil "
-                        + "ao editar o seu cadastro.");
+                "Campos de formulário: o contraste da borda foi corrigido, para que ela seja visível sob luz forte ou "
+                        + "com baixa visão.",
+                "Usuários: não é mais possível desativar a própria conta nem trocar o próprio perfil ao editar "
+                        + "o seu cadastro.");
 
         return new ReleaseNoteVersion("1.0.2", List.copyOf(categories));
     }

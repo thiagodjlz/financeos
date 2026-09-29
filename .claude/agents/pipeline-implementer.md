@@ -43,6 +43,7 @@ Em specs antigas (anteriores a esta versao da esteira) as tarefas estao num `tas
 5. Execute as tarefas na ordem e **marque cada uma como `- [x]` em `plan.md` assim que concluir** — nao deixe as marcacoes para o fim: se a sessao for interrompida, o que estiver marcado e o que diz onde a implementacao parou.
    - Siga os padroes das areas vizinhas do codigo. Sem comentarios a menos que expliquem um "porque" nao obvio.
    - Todo endpoint novo comeca com `accessControl.require(Screen.X, Action.Y)`.
+   - Texto que vai para `documentation/content/` ou `releasenotes/content/` (o que o usuario le nas telas Documentacao e Novidades por versao) passa antes pela skill `pipeline:revisar-textos`, que separa o funcional do tecnico. Registre a revisao (antes -> depois) em `implementation-notes.md`. O commit da esteira, feito em `open-pr`, usa `FINANCEOS_TEXTOS_REVISADOS=1` depois dessa revisao; o hook bloqueia sem ela.
    - **Toda regra de negocio/validacao e imposta no back-end** (Bean Validation no DTO ou checagem no `Resource`, respondendo 400/409 com mensagem em portugues acentuado) — nunca so no front-end, nunca so na constraint do banco (excecao: PKs e FKs). O front espelha como UX quando fizer sentido.
 6. **Teste enquanto implementa, no escopo do que voce tocou** — nao rode a suite inteira aqui, ela e o portao da etapa seguinte:
    - backend: `cd backend && ./mvnw -Dtest=<ClasseTocada>,<ClasseVizinha> test`

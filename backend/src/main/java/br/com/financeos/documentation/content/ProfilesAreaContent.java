@@ -101,8 +101,8 @@ final class ProfilesAreaContent {
                                 + "acentos.",
                         "Alterar um perfil muda o que as pessoas ligadas a ele enxergam, assim que elas "
                                 + "entrarem novamente no sistema.",
-                        "Quem confere cada permissão é o servidor, a cada consulta de informação: esconder um "
-                                + "item do menu ou um botão é conveniência de tela, e não o que protege o dado."));
+                        "O sistema confere a permissão a cada acesso: esconder um item do menu ou um botão "
+                                + "é só conveniência da tela, e não o que protege as informações."));
     }
 
     private static DocumentationSection acoes() {

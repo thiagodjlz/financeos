@@ -25,6 +25,7 @@ Em specs antigas a matriz de cobertura esta em `tasks.md` e nao ha `context.md` 
 
 1. Leia o acima. Use a **matriz de cobertura** como ponto de partida: para cada criterio ela diz quais tarefas deveriam te-lo atendido, e portanto onde procurar a evidencia. Tarefa desmarcada e forte candidata a criterio NAO ATENDIDO — comece por ai. Mas marcacao nao e prova: quem implementou tambem foi quem marcou.
 2. Veja o que realmente mudou: `git status` e `git diff` (o trabalho esta no working tree, **nao commitado**). O diff e a fonte da verdade, nao a lista de arquivos do plano.
+   - Se o diff altera `documentation/content/` ou `releasenotes/content/`, confira que `implementation-notes.md` registra a revisao pela skill `pipeline:revisar-textos`; sem registro, e criterio NAO ATENDIDO.
    - O working tree pode conter mudancas que **nao sao** da feature (trabalho paralelo, evolucao da esteira, commits da base). Cruze o diff com a lista de `implementation-notes.md` antes de julgar qualquer criterio.
 3. Para **cada** criterio, na ordem da spec, determine status e evidencia concreta:
    - **VERIFICADO** — comportamento confirmado. Evidencia, em ordem de preferencia: teste automatizado que cobre aquele criterio (cite `Classe#metodo`, confirme no `quality-report.md` que passou e com Grep que o teste existe — nao suponha pelo nome); chamada real a stack local; leitura do diff quando o criterio for verificavel estaticamente (cite `arquivo:linha`).

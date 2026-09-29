@@ -5,6 +5,9 @@
 # Pular pontualmente:  FINANCEOS_SKIP_BUILD_BUMP=1 git commit ...
 # Instalar/desinstalar: scripts/install-hooks.ps1 [-Desinstalar]
 
+# Revisao de linguagem dos textos: independe do SKIP e do tipo de branch.
+"$(dirname "$0")/check-texts.sh" || exit 1
+
 [ "$FINANCEOS_SKIP_BUILD_BUMP" = "1" ] && exit 0
 
 # Merge/rebase em andamento: o commit nao e uma correcao nova, e sim a juncao de
