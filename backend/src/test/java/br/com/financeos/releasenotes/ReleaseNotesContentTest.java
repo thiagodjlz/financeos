@@ -97,7 +97,7 @@ class ReleaseNotesContentTest {
                 .toList();
 
         assertEquals("1.0.2", v102.version());
-        assertEquals(2, fixes.size());
+        assertEquals(3, fixes.size());
         assertTrue(fixes.stream().anyMatch(item -> item.contains("contraste da borda")));
         assertEquals(1, fixes.stream()
                 .filter(item -> item.contains("própria conta") && item.contains("próprio perfil"))
@@ -141,6 +141,30 @@ class ReleaseNotesContentTest {
                         && item.contains("por página"))
                 .count());
         assertTrue(improvements.stream().anyMatch(item -> item.contains("não consegue carregar")));
+    }
+
+    @Test
+    void shouldAnnounceListSearchFiltersPasswordCounterDayGroupsAndEntryFixIn102() {
+        ReleaseNoteVersion v102 = VERSIONS.get(0);
+
+        List<String> improvements = v102.categories().stream()
+                .filter(c -> c.kind() == ReleaseNoteCategory.Kind.IMPROVEMENT)
+                .flatMap(c -> c.items().stream())
+                .toList();
+        List<String> fixes = v102.categories().stream()
+                .filter(c -> c.kind() == ReleaseNoteCategory.Kind.FIX)
+                .flatMap(c -> c.items().stream())
+                .toList();
+
+        assertEquals("1.0.2", v102.version());
+        List.of("sem diferenciar maiúsculas nem acentos", "Filtros ativos", "Nenhum registro encontrado",
+                "mesmos filtros e na mesma página", "Mostrar senha", "caracteres da Descrição", "Hoje",
+                "agrupada por dia")
+                .forEach(expected -> assertTrue(improvements.stream().anyMatch(item -> item.contains(expected)),
+                        "Melhorias da 1.0.2 sem mencionar " + expected));
+        assertEquals(1, fixes.stream()
+                .filter(item -> item.contains("primeira tela") && item.contains("Sem acesso"))
+                .count());
     }
 
     private static final Pattern REPLACED_INTERFACE = Pattern.compile(

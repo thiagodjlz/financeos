@@ -16,7 +16,8 @@ final class OverviewContent {
                 "overview",
                 "Como utilizar o sistema",
                 "Para que serve o FinanceOS, os conceitos que aparecem em todas as telas e como circular entre elas.",
-                List.of(descricao(), conceitos(), navegacao(), acesso()));
+                List.of(descricao(), conceitos(), navegacao(), acesso(), entrada(), semAcesso(), avisos(),
+                        listas(), central(), novidades()));
     }
 
     private static DocumentationSection descricao() {
@@ -84,5 +85,101 @@ final class OverviewContent {
                 DocumentationBlock.highlight(
                         "Se uma tela ou um botão de que você precisa não aparece, fale com o administrador do "
                                 + "sistema: o ajuste é feito na tela de Perfis, e não nesta Central."));
+    }
+
+    private static DocumentationSection entrada() {
+        return DocumentationSection.of(
+                "Entrar no sistema",
+                DocumentationBlock.paragraph(
+                        "Para entrar, informe o seu E-mail e a sua Senha e use o botão Entrar. O botão Mostrar "
+                                + "senha, dentro do campo Senha, exibe o que foi digitado; usado de novo, agora como "
+                                + "Ocultar senha, volta a esconder a senha."),
+                DocumentationBlock.list(
+                        "E-mail ou senha errados são recusados com o Alerta Credenciais inválidas. Tente "
+                                + "novamente. O mesmo aviso aparece para quem está inativo, mesmo que a senha "
+                                + "esteja correta.",
+                        "Depois de entrar, abre a primeira tela que o seu perfil pode ver, na ordem do menu: "
+                                + "Resumo, Lançamentos, Categorias, Usuários, Perfis, Documentação e Novidades por "
+                                + "versão.",
+                        "Se o seu perfil não pode ver nenhuma tela, abre a tela Sem acesso."));
+    }
+
+    private static DocumentationSection semAcesso() {
+        return DocumentationSection.of(
+                "Tela Sem acesso",
+                DocumentationBlock.paragraph(
+                        "A tela Sem acesso aparece para quem entra com um perfil que não pode ver nenhuma tela. "
+                                + "Ela mostra a mensagem Seu perfil não tem acesso a nenhuma tela. Fale com o "
+                                + "administrador. O botão Sair continua disponível no rodapé do menu e, no celular, "
+                                + "no painel Mais. Quem libera as telas é o administrador, na tela de Perfis."));
+    }
+
+    private static DocumentationSection avisos() {
+        return DocumentationSection.of(
+                "Avisos do sistema",
+                DocumentationBlock.paragraph(
+                        "O resultado das ações aparece em avisos sobre a tela, cada um com um título que indica "
+                                + "o tipo:"),
+                DocumentationBlock.list(
+                        "Sucesso: a ação deu certo, como em Lançamento cancelado com sucesso. Fecha sozinho "
+                                + "depois de alguns segundos.",
+                        "Alerta: algo que você pode resolver, como um dado recusado, uma ação que o seu perfil "
+                                + "não permite ou a sessão encerrada. Também fecha sozinho, mas fica mais tempo "
+                                + "na tela.",
+                        "Falha: um erro inesperado ou a perda de conexão, como Erro inesperado do sistema. Tente "
+                                + "novamente em instantes. Não fecha sozinho.",
+                        "Todo aviso pode ser fechado pelo botão Fechar aviso. No máximo três ficam na tela ao "
+                                + "mesmo tempo: quando chega um quarto, o mais antigo sai."),
+                DocumentationBlock.paragraph("Algumas situações valem para todas as telas:"),
+                DocumentationBlock.list(
+                        "Quando a sessão de 12 horas termina, o sistema volta à tela de entrada com o Alerta Sua "
+                                + "sessão expirou. Entre novamente.",
+                        "Ao abrir pelo endereço uma tela que o seu perfil não pode ver, aparece o Alerta Você não "
+                                + "tem permissão para acessar esta tela. e o sistema abre a primeira tela permitida.",
+                        "Uma ação que o seu perfil não permite é recusada com o Alerta Você não tem permissão "
+                                + "para realizar esta ação.",
+                        "Cancelar lançamento, Desativar usuário e Excluir perfil agem na hora, sem confirmação, "
+                                + "e mostram o aviso de Sucesso. Entre os botões das linhas das listas, só Excluir "
+                                + "categoria pede confirmação antes de agir."));
+    }
+
+    private static DocumentationSection listas() {
+        return DocumentationSection.of(
+                "Listas sem resultado ou com falha",
+                DocumentationBlock.list(
+                        "Se uma lista não consegue carregar, a mensagem do problema aparece no lugar dela, em vez "
+                                + "de uma lista vazia.",
+                        "Quando a busca ou os filtros não encontram nenhum registro, a lista mostra Nenhum "
+                                + "registro encontrado. Se algum filtro estiver diferente do inicial, aparece junto "
+                                + "o botão Limpar filtros, que volta aos filtros iniciais."));
+    }
+
+    private static DocumentationSection central() {
+        return DocumentationSection.of(
+                "Como usar esta Central",
+                DocumentationBlock.paragraph(
+                        "O índice das áreas lista esta introdução e uma área para cada tela; escolha uma área "
+                                + "para ler o conteúdo dela."),
+                DocumentationBlock.paragraph(
+                        "O campo Buscar na documentação (Procure por uma tela, campo ou regra) filtra o conteúdo "
+                                + "enquanto você digita: ficam só as áreas em que o termo aparece e, quando ele não "
+                                + "está no nome nem no resumo da área, só as seções que o contêm. A busca não "
+                                + "diferencia maiúsculas de minúsculas, mas diferencia acentos: escreva a palavra "
+                                + "acentuada como ela aparece na tela. Se nada contém o termo, o índice mostra "
+                                + "Nenhuma área corresponde à busca. e o conteúdo mostra Nenhum conteúdo encontrado "
+                                + "para a sua busca."));
+    }
+
+    private static DocumentationSection novidades() {
+        return DocumentationSection.of(
+                "Novidades por versão",
+                DocumentationBlock.paragraph(
+                        "A tela Novidades por versão, no menu Sobre, reúne o que mudou no sistema. Cada versão tem "
+                                + "um bloco com o título Versão e o número, do mais recente para o mais antigo, e o "
+                                + "bloco da versão em uso leva o rótulo atual. Em cada bloco, as mudanças vêm em até "
+                                + "três grupos: Novidades, para o que passou a existir; Melhorias, para o que ficou "
+                                + "melhor; e Correções, para o que foi consertado. Grupo sem mudança não aparece. "
+                                + "Enquanto nenhuma versão tiver novidades publicadas, a tela mostra Nenhuma "
+                                + "novidade publicada ainda."));
     }
 }
