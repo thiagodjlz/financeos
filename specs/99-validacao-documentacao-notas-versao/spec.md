@@ -4,7 +4,7 @@ url: https://github.com/thiagodjlz/financeos/issues/99
 title: "Validação de documentação e notas de versão"
 domains: [documentation, auth]
 target: main
-stage: validated
+stage: pr-open
 branch: feature/issue-99-validacao-documentacao-notas-versao
 created: 2026-09-28
 ---
