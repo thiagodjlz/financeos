@@ -4,7 +4,7 @@ url: https://github.com/thiagodjlz/financeos/issues/96
 title: "Remover a funcionalidade do botão de volar ao topo da pagina"
 domains: [documentation]
 target: main
-stage: validated
+stage: pr-open
 branch: feature/issue-96-remover-botao-voltar-ao-topo
 created: 2026-09-28
 ---
