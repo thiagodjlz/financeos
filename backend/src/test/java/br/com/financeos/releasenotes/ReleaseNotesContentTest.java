@@ -111,14 +111,13 @@ class ReleaseNotesContentTest {
     }
 
     @Test
-    void shouldAnnounceTheBackToTopButtonAsImprovementIn102() {
+    void shouldNotAnnounceTheBackToTopButtonIn102() {
         ReleaseNoteVersion v102 = VERSIONS.get(0);
 
         assertEquals("1.0.2", v102.version());
         assertTrue(v102.categories().stream()
-                .filter(c -> c.kind() == ReleaseNoteCategory.Kind.IMPROVEMENT)
                 .flatMap(c -> c.items().stream())
-                .anyMatch(item -> item.contains("Voltar ao topo")));
+                .noneMatch(item -> item.contains("Voltar ao topo")));
     }
 
     @Test

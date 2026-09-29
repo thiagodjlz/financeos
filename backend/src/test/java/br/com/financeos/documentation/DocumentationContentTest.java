@@ -140,14 +140,14 @@ class DocumentationContentTest {
     }
 
     @Test
-    void shouldExplainTheBackToTopButtonInHowToNavigate() {
+    void shouldNotMentionTheBackToTopButtonInHowToNavigate() {
         DocumentationSection navegacao = CONTENT.introduction().sections().stream()
                 .filter(section -> "Como navegar".equals(section.title()))
                 .findFirst()
                 .orElseThrow();
 
         assertTrue(navegacao.blocks().stream()
-                .anyMatch(block -> block.text() != null && block.text().contains("Voltar ao topo")));
+                .noneMatch(block -> block.text() != null && block.text().contains("Voltar ao topo")));
     }
 
     @Test

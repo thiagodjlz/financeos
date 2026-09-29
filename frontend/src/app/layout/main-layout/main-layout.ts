@@ -14,7 +14,6 @@ import {
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { filter, map } from 'rxjs';
-import { BackToTop } from '../../core/back-to-top/back-to-top';
 import { initials } from '../../core/formatters';
 import { AuthService } from '../../core/services/auth.service';
 import { APP_NAME, APP_VERSION } from '../../core/version';
@@ -28,7 +27,7 @@ const MORE_ROUTE = /^\/(categories|users|profiles|documentation|release-notes)(?
 
 @Component({
   selector: 'app-main-layout',
-  imports: [BackToTop, CommonModule, RouterLink, RouterLinkActive, RouterOutlet],
+  imports: [CommonModule, RouterLink, RouterLinkActive, RouterOutlet],
   templateUrl: './main-layout.html',
   styleUrl: './main-layout.scss',
 })

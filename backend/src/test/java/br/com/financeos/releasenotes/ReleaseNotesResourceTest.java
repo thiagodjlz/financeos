@@ -6,6 +6,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.matchesPattern;
+import static org.hamcrest.Matchers.not;
 
 import org.junit.jupiter.api.Test;
 
@@ -33,14 +34,14 @@ class ReleaseNotesResourceTest {
     }
 
     @Test
-    void shouldListTheBackToTopButtonAmongThe102Improvements() {
+    void shouldNotListTheBackToTopButtonAmongThe102Improvements() {
         given()
                 .when().get("/release-notes")
                 .then()
                 .statusCode(200)
                 .body("versions[0].version", equalTo("1.0.2"))
                 .body("versions[0].categories.find { it.kind == 'IMPROVEMENT' }.items",
-                        hasItem(containsString("Voltar ao topo")));
+                        not(hasItem(containsString("Voltar ao topo"))));
     }
 
     @Test

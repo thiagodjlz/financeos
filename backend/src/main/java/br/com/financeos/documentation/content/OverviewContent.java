@@ -64,10 +64,7 @@ final class OverviewContent {
                                 + "baixo da tela, com Resumo, Lançamentos, o botão + (Novo lançamento) e Mais. O "
                                 + "item Mais abre um painel com as demais telas, nas mesmas seções do menu "
                                 + "(Cadastros, Configurações e Sobre); o painel fecha ao escolher um item, ao tocar "
-                                + "fora dele ou ao pressionar a tecla Esc. O botão Sair fica no painel Mais."),
-                DocumentationBlock.paragraph(
-                        "Nas telas longas, ao rolar a página aparece no canto inferior direito o botão Voltar ao "
-                                + "topo, que leva de volta ao início da tela."));
+                                + "fora dele ou ao pressionar a tecla Esc. O botão Sair fica no painel Mais."));
     }
 
     private static DocumentationSection acesso() {
