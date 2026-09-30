@@ -3,10 +3,24 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { ConfirmDialog } from '../../core/confirm-dialog/confirm-dialog';
 import { FilterPanel } from '../../core/filter-panel/filter-panel';
-import { dayHeading, isoDate, money, shortDate, transactionStatusLabel } from '../../core/formatters';
+import {
+  YearMonth,
+  currentMonth,
+  dayHeading,
+  isoDate,
+  money,
+  monthKey,
+  monthLabel,
+  monthRange,
+  parseMonthKey,
+  shortDate,
+  transactionStatusLabel,
+} from '../../core/formatters';
 import { ListFeedback } from '../../core/list-feedback/list-feedback';
-import { Category, Transaction, TransactionStatus } from '../../core/models';
+import { Category, ListFilters, Transaction, TransactionStatus } from '../../core/models';
+import { MonthPicker } from '../../core/month-picker/month-picker';
 import { FilterChip, PagedList } from '../../core/paged-list';
 import { Pagination } from '../../core/pagination/pagination';
 import { AuthService } from '../../core/services/auth.service';
@@ -17,14 +31,23 @@ import { TransactionService } from '../../core/services/transaction.service';
 
 export const TRANSACTIONS_LOAD_FALLBACK = 'Não foi possível carregar os lançamentos.';
 
+const DELETE_FALLBACK = 'Não foi possível excluir o lançamento.';
+
+// O período é uma chave só (`month`, `YYYY-MM`): o rótulo "Data" some com um único `remove`, e a
+// API continua recebendo `startDate`/`endDate`.
 const DEFAULT_FILTERS = {
   description: '',
   categoryId: '',
   type: '',
   status: '',
-  startDate: '',
-  endDate: '',
+  month: '',
 };
+
+export function transactionQuery(filters: ListFilters): ListFilters {
+  const { month, ...rest } = filters;
+  const range = monthRange(month ?? '');
+  return range ? { ...rest, ...range } : rest;
+}
 
 const TYPE_LABELS: Record<string, string> = { EXPENSE: 'Despesa', INCOME: 'Receita' };
 
@@ -35,7 +58,7 @@ interface TransactionRow {
 
 @Component({
   selector: 'app-transactions',
-  imports: [CommonModule, FormsModule, FilterPanel, ListFeedback, Pagination],
+  imports: [CommonModule, FormsModule, ConfirmDialog, FilterPanel, ListFeedback, MonthPicker, Pagination],
   templateUrl: './transactions.html',
   styleUrl: './transactions.scss',
 })
@@ -49,9 +72,10 @@ export class Transactions implements OnInit {
   protected readonly list = new PagedList({
     key: 'transactions',
     defaults: DEFAULT_FILTERS,
+    initial: { month: monthKey(currentMonth()) },
     fetch: (filters, page) => {
       this.loadCategories();
-      return this.transactionService.list(filters, page);
+      return this.transactionService.list(transactionQuery(filters), page);
     },
     loadErrorMessage: TRANSACTIONS_LOAD_FALLBACK,
     state: inject(ListStateService),
@@ -59,6 +83,8 @@ export class Transactions implements OnInit {
   });
 
   protected readonly saving = signal(false);
+  protected readonly deletingTransaction = signal<Transaction | null>(null);
+  private draftMonthCache: { key: string; value: YearMonth | null } = { key: '', value: null };
   protected readonly categories = signal<Category[]>([]);
   private readonly categoriesState = signal<'idle' | 'loading' | 'loaded' | 'failed'>('idle');
   private readonly categoriesDenied = signal(false);
@@ -82,11 +108,9 @@ export class Transactions implements OnInit {
     if (applied.status) {
       chips.push({ key: 'status', label: `Status: ${transactionStatusLabel(applied.status as TransactionStatus)}` });
     }
-    if (applied.startDate) {
-      chips.push({ key: 'startDate', label: `Data de: ${shortDate(applied.startDate)}` });
-    }
-    if (applied.endDate) {
-      chips.push({ key: 'endDate', label: `Data até: ${shortDate(applied.endDate)}` });
+    const month = parseMonthKey(applied.month);
+    if (month) {
+      chips.push({ key: 'month', label: `Data: ${monthLabel(month.year, month.month)}` });
     }
 
     return chips;
@@ -151,6 +175,21 @@ export class Transactions implements OnInit {
     return type ? this.categories().filter((category) => category.type === type) : this.categories();
   }
 
+  // O campo mostra o rascunho (`filters`), que no painel do celular muda antes do "Aplicar". A
+  // referência só muda com a chave, para o seletor não receber um objeto novo a cada verificação.
+  protected draftMonth(): YearMonth | null {
+    const key = this.list.filters.month;
+    if (key !== this.draftMonthCache.key) {
+      this.draftMonthCache = { key, value: parseMonthKey(key) };
+    }
+    return this.draftMonthCache.value;
+  }
+
+  protected onMonthChange(value: YearMonth): void {
+    this.list.filters.month = monthKey(value);
+    this.list.apply();
+  }
+
   protected onFilterTypeChange(): void {
     const category = this.categories().find((item) => item.id === this.list.filters.categoryId);
     if (category && this.list.filters.type && category.type !== this.list.filters.type) {
@@ -168,20 +207,39 @@ export class Transactions implements OnInit {
     void this.router.navigate(['/transactions', transaction.id, 'edit']);
   }
 
-  protected async cancelTransaction(transaction: Transaction): Promise<void> {
+  protected requestDelete(transaction: Transaction): void {
+    this.deletingTransaction.set(transaction);
+  }
+
+  protected cancelDelete(): void {
+    this.deletingTransaction.set(null);
+  }
+
+  protected async confirmDelete(): Promise<void> {
+    const transaction = this.deletingTransaction();
+    this.deletingTransaction.set(null);
+
+    if (!transaction) {
+      return;
+    }
+
     this.saving.set(true);
 
     try {
-      await this.transactionService.cancel(transaction.id);
+      await this.transactionService.delete(transaction.id);
     } catch (err) {
-      this.toast.fromHttpError(err, 'Não foi possível cancelar o lançamento.');
+      this.toast.fromHttpError(err, DELETE_FALLBACK);
       this.saving.set(false);
       return;
     }
 
-    this.toast.success('Lançamento cancelado com sucesso.');
+    this.toast.success('Lançamento excluído com sucesso.');
     await this.list.load(true);
     this.saving.set(false);
+  }
+
+  protected deleteMessage(transaction: Transaction): string {
+    return `Deseja excluir o lançamento "${transaction.description}"? A exclusão não pode ser desfeita.`;
   }
 
   protected categoryName(transaction: Transaction): string {

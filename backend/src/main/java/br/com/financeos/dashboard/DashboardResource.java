@@ -84,7 +84,7 @@ public class DashboardResource {
 
     // A checagem do mês vem antes da do ano de propósito: ano fixo em teste/URL antiga com mês inválido
     // tem de continuar respondendo o erro de mês, mesmo quando aquele ano deixar de ser o corrente.
-    private YearMonth resolvePeriod(String year, String month) throws Exception {
+    private static YearMonth resolvePeriod(String year, String month) {
         if (year == null && month == null) {
             return YearMonth.now();
         }
@@ -101,11 +101,6 @@ public class DashboardResource {
         Integer parsedYear = parseNumber(year);
         if (parsedYear == null || parsedYear < MIN_YEAR || parsedYear > MAX_YEAR) {
             throw new BadRequestException("O ano informado é inválido.");
-        }
-
-        if (parsedYear != Year.now().getValue()
-                && !repository.hasTransactionsInYear(currentUser.id(), parsedYear)) {
-            throw new BadRequestException("Não há lançamentos no ano informado.");
         }
 
         return YearMonth.of(parsedYear, parsedMonth);

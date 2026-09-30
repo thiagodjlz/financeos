@@ -41,8 +41,8 @@ final class SummaryAreaContent {
                                 + "um com uma linha que explica o que ele soma.",
                         "Gráfico Evolução anual, com os doze meses do ano do período escolhido.",
                         "Painel Por categoria, com as categorias do mês, alternando entre Despesas e Receitas.",
-                        "Botões Mês anterior e Próximo mês, que trocam o período e refazem todos os números da "
-                                + "tela.",
+                        "Campo do período, com um seletor de mês, e botões Mês anterior e Próximo mês, que trocam "
+                                + "o período e refazem todos os números da tela.",
                         "Saudação como título da tela, com o seu primeiro nome e um cumprimento que muda conforme "
                                 + "a hora do dia."));
     }
@@ -51,13 +51,16 @@ final class SummaryAreaContent {
         return DocumentationSection.of(
                 "Filtros",
                 DocumentationBlock.paragraph(
-                        "O período exibido aparece no alto da tela, como Setembro de 2026, entre os botões Mês "
-                                + "anterior e Próximo mês. A tela abre no mês corrente, e cada botão anda um "
-                                + "período por vez entre os que o sistema oferece, sem digitar."),
+                        "O período exibido aparece no alto da tela, como Setembro de 2026, num campo entre os "
+                                + "botões Mês anterior e Próximo mês. A tela abre no mês corrente."),
                 DocumentationBlock.list(
-                        "Os períodos oferecidos são os meses em que você tem lançamentos, em ordem de data, de "
-                                + "qualquer ano.",
-                        "Quando não há período antes ou depois do atual, o botão daquele lado fica desabilitado."));
+                        "Mês anterior e Próximo mês andam um mês por vez no calendário e viram o ano quando "
+                                + "preciso: de Dezembro de 2025, Próximo mês leva a Janeiro de 2026. Os dois "
+                                + "botões ficam sempre disponíveis.",
+                        "Tocar no campo do período abre um seletor com o ano no alto, os botões Ano anterior e "
+                                + "Próximo ano, que trocam de ano sem limite, e os doze meses, sem dias. Escolher um "
+                                + "mês fecha o seletor e atualiza a tela.",
+                        "Qualquer mês pode ser escolhido, tenha ele lançamentos ou não."));
     }
 
     private static DocumentationSection indicadores() {
@@ -66,7 +69,7 @@ final class SummaryAreaContent {
                 DocumentationBlock.table(
                         List.of("Indicador", "O que entra na conta"),
                         List.of(
-                                List.of("Receitas", "Soma das receitas do mês, exceto as canceladas."),
+                                List.of("Receitas", "Soma das receitas do mês."),
                                 List.of("Despesas", "Soma apenas das despesas com situação Pago no mês."),
                                 List.of("Pendentes", "Soma apenas das despesas com situação Pendente no mês."),
                                 List.of("Saldo do mês", "Receitas menos Despesas pagas."))),
@@ -82,19 +85,12 @@ final class SummaryAreaContent {
                 DocumentationBlock.list(
                         "O Saldo é sempre Receitas menos as Despesas pagas do mês; despesas em aberto ficam de fora.",
                         "Despesas pendentes aparecem em um único lugar da tela: o indicador Pendentes.",
-                        "Lançamentos cancelados não entram em nenhum total.",
-                        "Um mês sem lançamentos não é erro: a tela abre com todos os valores zerados e o painel "
-                                + "Por categoria exibe o aviso Sem dados no período."),
-                DocumentationBlock.paragraph(
-                        "Os botões Mês anterior e Próximo mês percorrem os períodos em que você tem lançamentos, "
-                                + "com duas exceções que valem sempre:"),
-                DocumentationBlock.list(
-                        "O mês corrente sempre faz parte dos períodos, tenha ele movimento ou não.",
-                        "Um lançamento cancelado continua contando como período disponível: o mês dele permanece na "
-                                + "lista, ainda que não some nada nos indicadores."),
+                        "Um lançamento excluído em Lançamentos deixa de contar em todos os totais.",
+                        "Um mês sem lançamentos não é erro, em qualquer ano: a tela mostra todos os valores "
+                                + "zerados e o painel Por categoria exibe o aviso Sem dados no período."),
                 DocumentationBlock.highlight(
-                        "Um mês aparecer na lista não significa que ele tenha movimento: o mês oferecido pode "
-                                + "estar zerado, e isso é esperado."));
+                        "Os botões e o seletor não pulam os meses sem movimento: chegar a um mês zerado é "
+                                + "esperado e não indica erro."));
     }
 
     private static DocumentationSection particularidades() {
@@ -122,7 +118,9 @@ final class SummaryAreaContent {
                 "Ações",
                 DocumentationBlock.list(
                         "Mês anterior e Próximo mês: recarregam os indicadores, o gráfico e o painel Por "
-                                + "categoria no período escolhido.",
+                                + "categoria no mês anterior ou no seguinte.",
+                        "Campo do período: abre o seletor de mês; escolher um mês recarrega os indicadores, o "
+                                + "gráfico e o painel Por categoria daquele mês.",
                         "Despesas e Receitas, no painel Por categoria: trocam as categorias exibidas, sem "
                                 + "recarregar a tela.",
                         "Abrir o informativo de um mês do gráfico, pelo ponteiro, pelo toque ou pelas setas do "

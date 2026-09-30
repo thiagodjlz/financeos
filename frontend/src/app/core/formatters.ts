@@ -17,8 +17,6 @@ export function transactionStatusLabel(status: TransactionStatus | null): string
       return 'Pendente';
     case 'PAID':
       return 'Pago';
-    case 'CANCELED':
-      return 'Cancelado';
     default:
       return '-';
   }
@@ -45,6 +43,51 @@ export function longMonthName(month: number): string {
     new Date(2026, month - 1, 1),
   );
   return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+export interface YearMonth {
+  year: number;
+  month: number;
+}
+
+export function currentMonth(today: Date = new Date()): YearMonth {
+  return { year: today.getFullYear(), month: today.getMonth() + 1 };
+}
+
+export function monthLabel(year: number, month: number): string {
+  return `${longMonthName(month)} de ${year}`;
+}
+
+// Mês no calendário, sem pular os que não têm lançamentos: dez/2025 + 1 = jan/2026.
+export function shiftMonth(value: YearMonth, delta: number): YearMonth {
+  const index = value.year * 12 + (value.month - 1) + delta;
+  return { year: Math.floor(index / 12), month: (index % 12) + 1 };
+}
+
+// Chave `YYYY-MM` guardada no filtro de Lançamentos; vazia quando não há período.
+export function monthKey(value: YearMonth): string {
+  return `${value.year}-${String(value.month).padStart(2, '0')}`;
+}
+
+export function parseMonthKey(key: string): YearMonth | null {
+  const match = /^(\d{4})-(\d{2})$/.exec(key.trim());
+  if (!match) {
+    return null;
+  }
+
+  const month = Number(match[2]);
+  return month >= 1 && month <= 12 ? { year: Number(match[1]), month } : null;
+}
+
+export function monthRange(key: string): { startDate: string; endDate: string } | null {
+  const value = parseMonthKey(key);
+  if (!value) {
+    return null;
+  }
+
+  const lastDay = new Date(value.year, value.month, 0).getDate();
+  const prefix = monthKey(value);
+  return { startDate: `${prefix}-01`, endDate: `${prefix}-${String(lastDay).padStart(2, '0')}` };
 }
 
 function shortNumber(value: number): string {

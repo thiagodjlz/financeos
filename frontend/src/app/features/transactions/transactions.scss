@@ -41,11 +41,6 @@ col.col-amount {
   }
 }
 
-.transaction-row.canceled .amount-cell {
-  color: var(--text-muted);
-  text-decoration: line-through;
-}
-
 @media (max-width: 680px) {
   .page-actions {
     display: none;

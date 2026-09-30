@@ -238,7 +238,7 @@ class DocumentationContentTest {
         assertTrue(categoryRules.contains("remove definitivamente"), categoryRules);
         assertTrue(categoryRules.contains("Não é possível excluir a categoria"), categoryRules);
         assertTrue(categoryRules.contains("qualquer que seja a pessoa"), categoryRules);
-        assertTrue(categoryRules.contains("cancelado"), categoryRules);
+        assertFalse(categoryRules.contains("cancelado"), categoryRules);
         assertTrue(categoryRules.contains("Situação"), categoryRules);
     }
 
@@ -284,7 +284,7 @@ class DocumentationContentTest {
     }
 
     private static final Map<String, List<String>> REGISTRATION_BUTTONS = Map.of(
-            "Lançamentos", List.of("Novo lançamento", "Editar lançamento", "Cancelar lançamento"),
+            "Lançamentos", List.of("Novo lançamento", "Editar lançamento", "Excluir lançamento"),
             "Categorias", List.of("Nova categoria", "Editar categoria", "Excluir categoria"),
             "Usuários", List.of("Novo usuário", "Editar usuário", "Desativar usuário"),
             "Perfis", List.of("Novo perfil", "Editar perfil", "Excluir perfil"));
@@ -343,7 +343,7 @@ class DocumentationContentTest {
                 "Seu perfil não tem acesso a nenhuma tela", "Correções", "Nenhuma novidade publicada ainda",
                 "Buscar na documentação", "Nenhuma área corresponde à busca", "Nenhum registro encontrado",
                 "Limpar filtros", "Fechar aviso", "Sua sessão expirou", "Você não tem permissão para acessar esta tela",
-                "sem confirmação", "Lançamento cancelado com sucesso", "Usuário desativado com sucesso",
+                "sem confirmação", "Lançamento excluído com sucesso", "Usuário desativado com sucesso",
                 "Perfil excluído com sucesso")
                 .forEach(expected -> assertTrue(published.contains(expected), "Central sem mencionar " + expected));
 
@@ -358,7 +358,30 @@ class DocumentationContentTest {
                 .findFirst()
                 .orElseThrow());
 
-        List.of("Mês anterior", "Próximo mês", "Por categoria", "Saldo do mês", "desabilitado", "bolinha")
+        List.of("Mês anterior", "Próximo mês", "Por categoria", "Saldo do mês", "sempre disponíveis", "bolinha",
+                "seletor", "Ano anterior", "Próximo ano", "Qualquer mês pode ser escolhido")
                 .forEach(expected -> assertTrue(summary.contains(expected), "Resumo sem mencionar " + expected));
+        List.of("desabilitado", "cancelad", "períodos em que você tem lançamentos")
+                .forEach(removed -> assertFalse(summary.contains(removed), "Resumo ainda menciona " + removed));
+    }
+
+    @Test
+    void shouldDescribeDefinitiveTransactionDeletionAndMonthFilter() {
+        String transactions = areaText(CONTENT.areas().stream()
+                .filter(area -> "Lançamentos".equals(area.title()))
+                .findFirst()
+                .orElseThrow());
+
+        List.of("Excluir lançamento", "Deseja excluir o lançamento", "Lançamento excluído com sucesso",
+                "apaga de vez", "pede confirmação", "mês atual", "filtro Data", "Ano anterior", "Próximo ano",
+                "rótulo Data", "Limpar filtros")
+                .forEach(expected -> assertTrue(transactions.contains(expected),
+                        "Lançamentos sem mencionar " + expected));
+
+        String published = String.join("\n", displayedTexts());
+        List.of("Cancelado", "cancelado", "Cancelar lançamento", "Lançamento cancelado com sucesso", "sem apagá-lo",
+                "não o apaga", "valor riscado", "Data de", "Data até", "Não há lançamentos no ano informado",
+                "um cancelamento em Lançamentos")
+                .forEach(removed -> assertFalse(published.contains(removed), "Central ainda menciona " + removed));
     }
 }
