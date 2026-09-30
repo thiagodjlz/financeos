@@ -26,6 +26,13 @@ class ReleaseNotesContentTest {
 
     private static final List<ReleaseNoteVersion> VERSIONS = ReleaseNotesContent.build();
 
+    private static ReleaseNoteVersion version(String number) {
+        return VERSIONS.stream()
+                .filter(version -> number.equals(version.version()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Bloco " + number + " ausente"));
+    }
+
     private static List<String> displayedTexts() {
         List<String> texts = new ArrayList<>();
 
@@ -80,7 +87,7 @@ class ReleaseNotesContentTest {
 
     @Test
     void shouldPublishTheThreeCategoriesInThe102Block() {
-        ReleaseNoteVersion v102 = VERSIONS.get(0);
+        ReleaseNoteVersion v102 = version("1.0.2");
 
         assertTrue(v102.categories().stream().anyMatch(c -> c.kind() == ReleaseNoteCategory.Kind.NEW));
         assertTrue(v102.categories().stream().anyMatch(c -> c.kind() == ReleaseNoteCategory.Kind.IMPROVEMENT));
@@ -89,7 +96,7 @@ class ReleaseNotesContentTest {
 
     @Test
     void shouldAnnounceOwnAccountProtectionsAsASingleFixIn102() {
-        ReleaseNoteVersion v102 = VERSIONS.get(0);
+        ReleaseNoteVersion v102 = version("1.0.2");
 
         List<String> fixes = v102.categories().stream()
                 .filter(c -> c.kind() == ReleaseNoteCategory.Kind.FIX)
@@ -106,7 +113,7 @@ class ReleaseNotesContentTest {
 
     @Test
     void shouldAnnounceCategoryDeletionAsImprovementIn102() {
-        ReleaseNoteVersion v102 = VERSIONS.get(0);
+        ReleaseNoteVersion v102 = version("1.0.2");
 
         assertEquals("1.0.2", v102.version());
         assertEquals(1, v102.categories().stream()
@@ -118,7 +125,7 @@ class ReleaseNotesContentTest {
 
     @Test
     void shouldNotAnnounceTheBackToTopButtonIn102() {
-        ReleaseNoteVersion v102 = VERSIONS.get(0);
+        ReleaseNoteVersion v102 = version("1.0.2");
 
         assertEquals("1.0.2", v102.version());
         assertTrue(v102.categories().stream()
@@ -128,7 +135,7 @@ class ReleaseNotesContentTest {
 
     @Test
     void shouldAnnounceRegistrationScreensWithFiltersAndPaginationAsImprovementIn102() {
-        ReleaseNoteVersion v102 = VERSIONS.get(0);
+        ReleaseNoteVersion v102 = version("1.0.2");
 
         List<String> improvements = v102.categories().stream()
                 .filter(c -> c.kind() == ReleaseNoteCategory.Kind.IMPROVEMENT)
@@ -145,7 +152,7 @@ class ReleaseNotesContentTest {
 
     @Test
     void shouldAnnounceListSearchFiltersPasswordCounterDayGroupsAndEntryFixIn102() {
-        ReleaseNoteVersion v102 = VERSIONS.get(0);
+        ReleaseNoteVersion v102 = version("1.0.2");
 
         List<String> improvements = v102.categories().stream()
                 .filter(c -> c.kind() == ReleaseNoteCategory.Kind.IMPROVEMENT)
@@ -169,7 +176,7 @@ class ReleaseNotesContentTest {
 
     @Test
     void shouldAnnounceMonthPickerDeletionAndMobileDateFieldIn102() {
-        ReleaseNoteVersion v102 = VERSIONS.get(0);
+        ReleaseNoteVersion v102 = version("1.0.2");
 
         List<String> improvements = v102.categories().stream()
                 .filter(c -> c.kind() == ReleaseNoteCategory.Kind.IMPROVEMENT)
@@ -203,7 +210,7 @@ class ReleaseNotesContentTest {
 
     @Test
     void shouldAnnounceTheRedesignWithoutDescribingTheReplacedInterfaceIn102() {
-        ReleaseNoteVersion v102 = VERSIONS.get(0);
+        ReleaseNoteVersion v102 = version("1.0.2");
         List<String> items = v102.categories().stream().flatMap(c -> c.items().stream()).toList();
 
         items.forEach(item -> assertFalse(REPLACED_INTERFACE.matcher(item).find(), item));

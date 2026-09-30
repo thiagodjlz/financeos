@@ -2,6 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { API_BASE, ReleaseNotesResponse } from '../../core/models';
+import { ReleaseNotesService } from '../../core/services/release-notes.service';
 import { ToastService } from '../../core/services/toast.service';
 import { ReleaseNotes } from './release-notes';
 
@@ -16,6 +17,16 @@ const CONTENT: ReleaseNotesResponse = {
         { kind: 'FIX', items: ['Contraste da borda dos campos corrigido.'] },
       ],
     },
+  ],
+};
+
+const EMPTY_BLOCK_MESSAGE = 'Ainda não há mudanças publicadas nesta versão.';
+
+const WITH_EMPTY_BLOCK: ReleaseNotesResponse = {
+  currentVersion: '1.0.3',
+  versions: [
+    { version: '1.0.3', categories: [] },
+    { version: '1.0.2', categories: [{ kind: 'FIX', items: ['Correção da 1.0.2.'] }] },
   ],
 };
 
@@ -164,5 +175,61 @@ describe('ReleaseNotes', () => {
     await settle();
 
     expect(query('.loading-state')).toBeNull();
+  });
+
+  it('mostra a mensagem de bloco vazio dentro do bloco sem categorias, abaixo do cabeçalho', async () => {
+    await render(WITH_EMPTY_BLOCK);
+
+    const [emptyBlock] = blocks();
+    const message = emptyBlock.querySelector('.release-empty');
+    const heading = emptyBlock.querySelector('.panel-heading');
+
+    expect(message?.textContent?.trim()).toBe(EMPTY_BLOCK_MESSAGE);
+    expect(heading?.compareDocumentPosition(message!) ?? 0).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(queryAll('.release-empty')).toHaveLength(1);
+    expect(query('.empty-state')).toBeNull();
+  });
+
+  it('não mostra a mensagem de bloco vazio em bloco com categorias', async () => {
+    await render(WITH_EMPTY_BLOCK);
+
+    const filledBlock = blocks()[1];
+    expect(filledBlock.querySelector('.release-empty')).toBeNull();
+    expect(categoryTitles(filledBlock)).toEqual(['Correções']);
+  });
+
+  it('não mostra a mensagem de bloco vazio antes da resposta', async () => {
+    TestBed.inject(ReleaseNotesService).content.set(WITH_EMPTY_BLOCK);
+    create();
+
+    expect(query('.loading-state')).not.toBeNull();
+    expect(blocks()).toHaveLength(2);
+    expect(query('.release-empty')).toBeNull();
+
+    httpMock.expectOne(`${API_BASE}/release-notes`).flush(WITH_EMPTY_BLOCK);
+    await settle();
+
+    expect(query('.release-empty')?.textContent?.trim()).toBe(EMPTY_BLOCK_MESSAGE);
+  });
+
+  it('não mostra a mensagem de bloco vazio quando a carga falha', async () => {
+    TestBed.inject(ReleaseNotesService).content.set(WITH_EMPTY_BLOCK);
+    create();
+    httpMock
+      .expectOne(`${API_BASE}/release-notes`)
+      .flush(null, { status: 500, statusText: 'Server Error' });
+    await settle();
+
+    expect(query('.load-error')).not.toBeNull();
+    expect(blocks()).toHaveLength(2);
+    expect(query('.release-empty')).toBeNull();
+  });
+
+  it('com a lista sem versões mostra Nenhuma novidade publicada ainda, e não a mensagem de bloco vazio', async () => {
+    await render({ currentVersion: '1.0.3', versions: [] });
+
+    expect(blocks()).toHaveLength(0);
+    expect(query('.empty-state')?.textContent?.trim()).toBe('Nenhuma novidade publicada ainda.');
+    expect(query('.release-empty')).toBeNull();
   });
 });

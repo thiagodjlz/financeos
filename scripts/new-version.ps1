@@ -108,6 +108,7 @@ try {
     Write-Host "Proximos passos:"
     Write-Host "  - corrigir bugs da versao: branch a partir de $branchVersao (a build sobe sozinha a cada commit)"
     Write-Host "  - publicar a versao no ambiente: powershell -File scripts/update-environment.ps1 -Versao $alvo"
+    Write-Host "  - abrir o bloco de Novidades da $proximaVersao na $Base, criando versao_$($proximaVersao -replace '\.', '_')() em ReleaseNotesContent antes do bloco anterior em build()"
 }
 catch {
     Write-Host ""
