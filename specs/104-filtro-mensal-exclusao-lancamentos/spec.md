@@ -4,7 +4,7 @@ url: https://github.com/thiagodjlz/financeos/issues/104
 title: "Ajustes de campos, filtros e funcionalidades (Resumo e Lancaçmento)"
 domains: [transactions, dashboard, documentation]
 target: v1.0.2
-stage: validated
+stage: pr-open
 branch: fix/issue-104-filtro-mensal-exclusao-lancamentos
 created: 2026-09-30
 ---
