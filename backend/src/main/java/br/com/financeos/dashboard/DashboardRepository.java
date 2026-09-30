@@ -29,11 +29,11 @@ public class DashboardRepository {
     public DashboardTotals totals(UUID userId, LocalDate startDate, LocalDate endDate) throws Exception {
         String sql = """
                 select
-                    coalesce(sum(case when type = 'INCOME' and (status is null or status <> 'CANCELED') then amount else 0 end), 0) as total_income,
+                    coalesce(sum(case when type = 'INCOME' then amount else 0 end), 0) as total_income,
                     coalesce(sum(case when type = 'EXPENSE' and status = 'PAID' then amount else 0 end), 0) as total_expense,
                     coalesce(sum(case when type = 'EXPENSE' and status = 'PAID' then amount else 0 end), 0) as paid_expense,
                     coalesce(sum(case when type = 'EXPENSE' and status = 'PENDING' then amount else 0 end), 0) as pending_expense,
-                    count(*) filter (where status is null or status <> 'CANCELED') as transaction_count
+                    count(*) as transaction_count
                 from transactions
                 where user_id = ?
                   and transaction_date between ? and ?
@@ -70,7 +70,7 @@ public class DashboardRepository {
                 from transactions t
                 left join categories c on c.id = t.category_id
                 where t.user_id = ?
-                  and ((t.type = 'INCOME' and (t.status is null or t.status <> 'CANCELED')) or (t.type = 'EXPENSE' and t.status = 'PAID'))
+                  and (t.type = 'INCOME' or (t.type = 'EXPENSE' and t.status = 'PAID'))
                   and t.transaction_date between ? and ?
                 group by t.category_id, c.name, c.color, t.type
                 order by total_amount desc, category_name
@@ -104,7 +104,7 @@ public class DashboardRepository {
         String sql = """
                 select
                     extract(month from transaction_date)::int as month,
-                    coalesce(sum(case when type = 'INCOME' and (status is null or status <> 'CANCELED') then amount else 0 end), 0) as income,
+                    coalesce(sum(case when type = 'INCOME' then amount else 0 end), 0) as income,
                     coalesce(sum(case when type = 'EXPENSE' and status = 'PAID' then amount else 0 end), 0) as expense
                 from transactions
                 where user_id = ?
@@ -165,31 +165,6 @@ public class DashboardRepository {
         return periods.entrySet().stream()
                 .map(entry -> new AvailablePeriodResponse(entry.getKey(), List.copyOf(entry.getValue())))
                 .toList();
-    }
-
-    // Mesmo criterio de availablePeriods (mesmo user_id, sem filtro de status): se divergirem, a tela
-    // ofereceria um ano que a validacao do resumo recusa.
-    public boolean hasTransactionsInYear(UUID userId, int year) throws Exception {
-        String sql = """
-                select exists (
-                    select 1
-                    from transactions
-                    where user_id = ?
-                      and transaction_date between ? and ?
-                ) as has_transactions
-                """;
-
-        try (Connection connection = dataSource.getConnection();
-                PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setObject(1, userId);
-            statement.setDate(2, Date.valueOf(LocalDate.of(year, 1, 1)));
-            statement.setDate(3, Date.valueOf(LocalDate.of(year, 12, 31)));
-
-            try (ResultSet resultSet = statement.executeQuery()) {
-                resultSet.next();
-                return resultSet.getBoolean("has_transactions");
-            }
-        }
     }
 
     public record DashboardTotals(

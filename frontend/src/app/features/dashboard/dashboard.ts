@@ -11,8 +11,9 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { longMonthName, money, monthName, shortMoney } from '../../core/formatters';
+import { YearMonth, currentMonth, longMonthName, money, monthName, shiftMonth, shortMoney } from '../../core/formatters';
 import { CategoryBreakdown, MonthlySummary, TransactionType } from '../../core/models';
+import { MonthPicker } from '../../core/month-picker/month-picker';
 import { AuthService } from '../../core/services/auth.service';
 import { DashboardService } from '../../core/services/dashboard.service';
 import { ToastService } from '../../core/services/toast.service';
@@ -48,11 +49,6 @@ const TOOLTIP_WIDTH = 196;
 const COMPACT_MONTH_LABEL_WIDTH = 30;
 
 type ActiveSource = 'mouse' | 'touch' | 'keyboard' | null;
-
-interface SelectedPeriod {
-  year: number;
-  month: number;
-}
 
 interface ChartMonth {
   index: number;
@@ -114,7 +110,7 @@ const LOAD_FALLBACK = 'Não foi possível carregar o resumo.';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [CommonModule],
+  imports: [CommonModule, MonthPicker],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
 })
@@ -147,39 +143,7 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
 
   private readonly activeSource = signal<ActiveSource>(null);
 
-  protected readonly selected = signal<SelectedPeriod>(currentPeriod());
-
-  // Só os períodos de hoje: os devolvidos por /periods mais o mês corrente, que sempre existe.
-  // Sem /periods (falhou ou ainda não chegou), a lista é só o mês corrente.
-  protected readonly periodOptions = computed<SelectedPeriod[]>(() => {
-    const current = currentPeriod();
-    const options = [current];
-
-    for (const period of this.dashboardService.periods()) {
-      for (const month of period.months) {
-        if (!options.some((option) => option.year === period.year && option.month === month)) {
-          options.push({ year: period.year, month });
-        }
-      }
-    }
-
-    return options.sort((first, second) => periodKey(first) - periodKey(second));
-  });
-
-  private readonly selectedIndex = computed(() => {
-    const key = periodKey(this.selected());
-    return this.periodOptions().findIndex((option) => periodKey(option) === key);
-  });
-
-  protected readonly canStepBack = computed(() => this.selectedIndex() > 0);
-  protected readonly canStepForward = computed(() => {
-    const index = this.selectedIndex();
-    return index >= 0 && index < this.periodOptions().length - 1;
-  });
-
-  protected readonly periodLabel = computed(
-    () => `${longMonthName(this.selected().month)} de ${this.selected().year}`,
-  );
+  protected readonly selected = signal<YearMonth>(currentMonth());
 
   protected readonly breakdownType = signal<TransactionType>('EXPENSE');
 
@@ -339,7 +303,6 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
   ngOnInit(): void {
     this.greetingTimer = setInterval(() => this.syncGreetingPeriod(), GREETING_TICK_MS);
     void this.load();
-    void this.loadPeriods();
   }
 
   ngAfterViewInit(): void {
@@ -376,14 +339,6 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
       this.toast.fromHttpError(err, LOAD_FALLBACK);
     } finally {
       this.loading.set(false);
-    }
-  }
-
-  private async loadPeriods(): Promise<void> {
-    try {
-      await this.dashboardService.loadPeriods();
-    } catch (err) {
-      this.toast.fromHttpError(err, 'Não foi possível carregar os períodos disponíveis.');
     }
   }
 
@@ -466,13 +421,14 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
     return money(value);
   }
 
+  // Mês a mês no calendário, sem ponta: mês sem lançamentos mostra o resumo zerado.
   protected step(delta: number): void {
-    const target = this.periodOptions()[this.selectedIndex() + delta];
-    if (!target) {
-      return;
-    }
+    this.selected.set(shiftMonth(this.selected(), delta));
+    void this.load();
+  }
 
-    this.selected.set(target);
+  protected choose(value: YearMonth): void {
+    this.selected.set(value);
     void this.load();
   }
 
@@ -497,15 +453,6 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
     this.activeSource.set(null);
   }
 
-}
-
-function currentPeriod(): SelectedPeriod {
-  const now = new Date();
-  return { year: now.getFullYear(), month: now.getMonth() + 1 };
-}
-
-function periodKey(period: SelectedPeriod): number {
-  return period.year * 12 + period.month;
 }
 
 export function monthAxisLabel(month: number, groupWidth: number): string {

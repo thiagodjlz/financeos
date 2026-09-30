@@ -26,7 +26,7 @@ export class TransactionService {
     return firstValueFrom(this.http.put<Transaction>(`${API_BASE}/transactions/${id}`, payload));
   }
 
-  async cancel(id: string): Promise<void> {
+  async delete(id: string): Promise<void> {
     await firstValueFrom(this.http.delete<void>(`${API_BASE}/transactions/${id}`));
   }
 }

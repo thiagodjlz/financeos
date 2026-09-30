@@ -97,7 +97,7 @@ class ReleaseNotesContentTest {
                 .toList();
 
         assertEquals("1.0.2", v102.version());
-        assertEquals(3, fixes.size());
+        assertEquals(4, fixes.size());
         assertTrue(fixes.stream().anyMatch(item -> item.contains("contraste da borda")));
         assertEquals(1, fixes.stream()
                 .filter(item -> item.contains("própria conta") && item.contains("próprio perfil"))
@@ -164,6 +164,37 @@ class ReleaseNotesContentTest {
                         "Melhorias da 1.0.2 sem mencionar " + expected));
         assertEquals(1, fixes.stream()
                 .filter(item -> item.contains("primeira tela") && item.contains("Sem acesso"))
+                .count());
+    }
+
+    @Test
+    void shouldAnnounceMonthPickerDeletionAndMobileDateFieldIn102() {
+        ReleaseNoteVersion v102 = VERSIONS.get(0);
+
+        List<String> improvements = v102.categories().stream()
+                .filter(c -> c.kind() == ReleaseNoteCategory.Kind.IMPROVEMENT)
+                .flatMap(c -> c.items().stream())
+                .toList();
+        List<String> fixes = v102.categories().stream()
+                .filter(c -> c.kind() == ReleaseNoteCategory.Kind.FIX)
+                .flatMap(c -> c.items().stream())
+                .toList();
+
+        assertEquals("1.0.2", v102.version());
+        assertEquals(1, improvements.stream()
+                .filter(item -> item.startsWith("Período do Resumo:") && item.contains("seletor")
+                        && item.contains("mesmo nos meses sem lançamentos"))
+                .count());
+        assertTrue(improvements.stream().noneMatch(item -> item.contains("percorrem só os meses")));
+        assertEquals(1, improvements.stream()
+                .filter(item -> item.startsWith("Filtro Data em Lançamentos:") && item.contains("mês atual"))
+                .count());
+        assertEquals(1, improvements.stream()
+                .filter(item -> item.startsWith("Excluir lançamento:") && item.contains("confirmação")
+                        && item.contains("de vez"))
+                .count());
+        assertEquals(1, fixes.stream()
+                .filter(item -> item.startsWith("Filtro de data no celular:") && item.contains("borda"))
                 .count());
     }
 

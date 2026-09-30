@@ -76,7 +76,7 @@ public class TransactionResource {
     @Transactional
     public Response create(@Valid TransactionRequest request) {
         accessControl.require(Screen.TRANSACTIONS, Action.CREATE);
-        validateStatus(request, null);
+        validateStatus(request);
         Category category = validateCategory(request, null);
 
         FinancialTransaction transaction = new FinancialTransaction();
@@ -97,7 +97,7 @@ public class TransactionResource {
         FinancialTransaction transaction = repository.findByUserAndId(currentUser.id(), id)
                 .orElseThrow(NotFoundException::new);
 
-        validateStatus(request, transaction);
+        validateStatus(request);
         Category category = validateCategory(request, transaction);
         apply(transaction, request);
         return TransactionResponse.from(transaction, nameOf(category), colorOf(category));
@@ -106,12 +106,12 @@ public class TransactionResource {
     @DELETE
     @Path("/{id}")
     @Transactional
-    public Response cancel(@PathParam("id") UUID id) {
+    public Response delete(@PathParam("id") UUID id) {
         accessControl.require(Screen.TRANSACTIONS, Action.DELETE);
         FinancialTransaction transaction = repository.findByUserAndId(currentUser.id(), id)
                 .orElseThrow(NotFoundException::new);
 
-        transaction.status = TransactionStatus.CANCELED;
+        repository.delete(transaction);
         return Response.noContent().build();
     }
 
@@ -147,21 +147,9 @@ public class TransactionResource {
         return category == null ? null : category.color;
     }
 
-    private static void validateStatus(TransactionRequest request, FinancialTransaction existing) {
+    private static void validateStatus(TransactionRequest request) {
         if (request.type() == TransactionType.EXPENSE && request.status() == null) {
             throw new WebApplicationException("O status é obrigatório.", Response.Status.BAD_REQUEST);
-        }
-
-        if (request.status() != TransactionStatus.CANCELED || request.type() == TransactionType.INCOME) {
-            return;
-        }
-
-        // CANCELED so via DELETE /transactions/{id}; em edicao, permitido apenas manter o cancelamento
-        boolean alreadyCanceled = existing != null && existing.status == TransactionStatus.CANCELED;
-        if (!alreadyCanceled) {
-            throw new WebApplicationException(
-                    "O status Cancelado só pode ser aplicado pelo cancelamento do lançamento.",
-                    Response.Status.BAD_REQUEST);
         }
     }
 

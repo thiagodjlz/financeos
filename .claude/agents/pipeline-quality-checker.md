@@ -16,7 +16,7 @@ Voce roda a checagem de qualidade de uma feature da esteira do FinanceOS. Voce r
    - `cd frontend && npm run build` (garante que compila sem erros de tipo)
 
    **Nunca escope a suite aqui, por mais obvio que pareca o alcance da mudanca.** A etapa de implementacao ja rodou o subconjunto que ela tocou — esse e o loop de iteracao. Este e o **portao**, e existe justamente para pegar o que ninguem previu: na issue #45, tornar um campo obrigatorio em Lancamentos quebrou um teste de **Dashboard**. Escopo por dominio teria deixado passar.
-3. Escreva `specs/<numero>-<slug>/quality-report.md` — **teto de 3 KB**. Saida bruta de teste ou log longo vai para `specs/<numero>-<slug>/evidence/<nome>.md`, citado por caminho; aqui fica o veredito e o que falhou.
+3. Escreva `specs/<numero>-<slug>/quality-report.md` — **teto de 3 KB**. Numero de testes copiado da saida (linha final `Tests run:` do Maven, resumo `Tests` do vitest), nunca estimado: a verificacao confere contra o surefire (issue #104: 170 no relatorio, 151 reais). Saida bruta de teste ou log longo vai para `specs/<numero>-<slug>/evidence/<nome>.md`, citado por caminho; aqui fica o veredito e o que falhou.
 
 ```markdown
 # Relatorio de qualidade
