@@ -1,7 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { API_BASE, AvailablePeriod, DashboardSummary, MonthlySummary } from '../../core/models';
+import { API_BASE, DashboardSummary, MonthlySummary } from '../../core/models';
 import { ToastService } from '../../core/services/toast.service';
 import { NETWORK_ERROR_MESSAGE, UNEXPECTED_ERROR_MESSAGE } from '../../core/http-error';
 import { AuthService } from '../../core/services/auth.service';
@@ -23,16 +23,6 @@ function evolution(values: Partial<Record<number, MonthValues>> = {}): MonthlySu
     const [income, expense, balance] = values[month] ?? [0, 0, 0];
     return { year: 2026, month, income, expense, balance };
   });
-}
-
-const ALL_MONTHS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
-
-function defaultPeriods(): AvailablePeriod[] {
-  const year = new Date().getFullYear();
-  return [
-    { year, months: [...ALL_MONTHS] },
-    { year: year - 1, months: [...ALL_MONTHS] },
-  ];
 }
 
 function payload(monthlyEvolution: MonthlySummary[]): DashboardSummary {
@@ -85,16 +75,9 @@ describe('Dashboard', () => {
     return httpMock.expectOne((request) => request.url.startsWith(`${API_BASE}/dashboard/summary`));
   }
 
-  function flushPeriods(periods: AvailablePeriod[] = defaultPeriods()): void {
-    httpMock.expectOne(`${API_BASE}/dashboard/periods`).flush(periods);
-  }
-
-  async function render(
-    monthlyEvolution: MonthlySummary[] = evolution(),
-    periods: AvailablePeriod[] = defaultPeriods(),
-  ): Promise<void> {
+  async function render(monthlyEvolution: MonthlySummary[] = evolution()): Promise<void> {
     summaryRequest().flush(payload(monthlyEvolution));
-    flushPeriods(periods);
+    httpMock.expectNone(`${API_BASE}/dashboard/periods`);
     await settle();
   }
 
@@ -167,7 +150,6 @@ describe('Dashboard', () => {
 
   it('exibe toast de falha quando a API responde 500', async () => {
     summaryRequest().flush(null, { status: 500, statusText: 'Server Error' });
-    flushPeriods();
     await settle();
 
     expect(toasts()).toHaveLength(1);
@@ -178,7 +160,6 @@ describe('Dashboard', () => {
 
   it('exibe toast de falha quando a API está fora do ar (status 0)', async () => {
     summaryRequest().error(new ProgressEvent('error'), { status: 0, statusText: 'Unknown Error' });
-    flushPeriods();
     await settle();
 
     expect(toasts()).toHaveLength(1);
@@ -188,7 +169,6 @@ describe('Dashboard', () => {
 
   it('na falha de carga mostra a mensagem na área, sem o vazio do detalhamento', async () => {
     summaryRequest().flush(null, { status: 500, statusText: 'Server Error' });
-    flushPeriods();
     await settle();
 
     expect(one('.load-error')?.textContent?.trim()).toBe('Não foi possível carregar o resumo.');
@@ -204,7 +184,6 @@ describe('Dashboard', () => {
     expect(all('.empty-state')).toHaveLength(0);
 
     request.flush(payload(evolution()));
-    flushPeriods();
     await settle();
 
     expect(all('.loading-state')).toHaveLength(0);
@@ -223,7 +202,6 @@ describe('Dashboard', () => {
       categoryBreakdown: [],
       monthlyEvolution: [],
     });
-    flushPeriods();
     await settle();
 
     expect(toasts()).toEqual([]);
@@ -674,7 +652,6 @@ describe('Dashboard', () => {
         pendingExpense: 2514.9,
         balance: 8457.73,
       });
-      flushPeriods();
       await settle();
 
       expect(all('.metric-card .metric-label').map(label)).toEqual([
@@ -709,7 +686,6 @@ describe('Dashboard', () => {
 
     async function renderBreakdown(): Promise<void> {
       summaryRequest().flush({ ...payload(evolution()), categoryBreakdown: BREAKDOWN });
-      flushPeriods();
       await settle();
     }
 
@@ -762,11 +738,7 @@ describe('Dashboard', () => {
 
     beforeEach(() => {
       fixture.destroy();
-      httpMock.match(() => true).forEach((request) =>
-        request.request.url.startsWith(`${API_BASE}/dashboard/periods`)
-          ? request.flush(defaultPeriods())
-          : request.flush(payload(evolution())),
-      );
+      httpMock.match(() => true).forEach((request) => request.flush(payload(evolution())));
       // Só 'Date' no toFake: falsificar setTimeout/microtasks trava o whenStable() e o flush do
       // HttpTestingController, derrubando a suite inteira do componente.
       vi.useFakeTimers({ toFake: ['Date'] });
@@ -797,8 +769,12 @@ describe('Dashboard', () => {
       return pick<HTMLButtonElement>('button[aria-label="Próximo mês"]');
     }
 
+    function periodField(): HTMLButtonElement {
+      return pick<HTMLButtonElement>('.month-picker-trigger');
+    }
+
     function monthLabel(): string {
-      return (pick('.month-label').textContent ?? '').replace(/ /g, ' ').trim();
+      return (periodField().textContent ?? '').replace(/\u00a0/g, ' ').trim();
     }
 
     function pendingSummary() {
@@ -814,88 +790,102 @@ describe('Dashboard', () => {
       await settlePeriod();
     }
 
-    async function renderPeriods(periods: AvailablePeriod[] | 'error'): Promise<void> {
+    async function renderPeriod(): Promise<void> {
       periodFixture = TestBed.createComponent(Dashboard);
       periodFixture.detectChanges();
       pendingSummary().flush(payload(evolution()));
-      const request = httpMock.expectOne(`${API_BASE}/dashboard/periods`);
-      if (periods === 'error') {
-        request.flush(null, { status: 500, statusText: 'Server Error' });
-      } else {
-        request.flush(periods);
-      }
       await settlePeriod();
     }
 
-    it('abre no mês corrente, por extenso, com o próximo desabilitado na ponta', async () => {
-      await renderPeriods([{ year: 2026, months: [7, 8, 9] }]);
+    it('abre no mês corrente, por extenso, sem consultar /dashboard/periods', async () => {
+      await renderPeriod();
 
       expect(monthLabel()).toBe('Setembro de 2026');
-      expect(next().disabled).toBe(true);
+      expect(periodField().getAttribute('aria-label')).toBe('Período do resumo: Setembro de 2026');
+      expect(next().disabled).toBe(false);
       expect(previous().disabled).toBe(false);
       expect(pick('select')).toBeNull();
-    });
-
-    it('percorre a lista de períodos em ordem, atravessando o ano, e desabilita o anterior na ponta', async () => {
-      await renderPeriods([
-        { year: 2026, months: [2, 9] },
-        { year: 2025, months: [11] },
-      ]);
-
-      await stepTo(previous(), `${API_BASE}/dashboard/summary?year=2026&month=2`);
-      expect(monthLabel()).toBe('Fevereiro de 2026');
-
-      await stepTo(previous(), `${API_BASE}/dashboard/summary?year=2025&month=11`);
-      expect(monthLabel()).toBe('Novembro de 2025');
-      expect(previous().disabled).toBe(true);
-      expect(next().disabled).toBe(false);
-
-      await stepTo(next(), `${API_BASE}/dashboard/summary?year=2026&month=2`);
-      expect(monthLabel()).toBe('Fevereiro de 2026');
-    });
-
-    it('inclui o mês corrente mesmo quando /periods não o traz', async () => {
-      await renderPeriods([{ year: 2026, months: [3] }]);
-
-      expect(monthLabel()).toBe('Setembro de 2026');
-      expect(next().disabled).toBe(true);
-
-      await stepTo(previous(), `${API_BASE}/dashboard/summary?year=2026&month=3`);
-      expect(previous().disabled).toBe(true);
-    });
-
-    it('com /periods em falha fica só no mês corrente, com as duas pontas desabilitadas', async () => {
-      await renderPeriods('error');
-
-      expect(monthLabel()).toBe('Setembro de 2026');
-      expect(previous().disabled).toBe(true);
-      expect(next().disabled).toBe(true);
-      expect(toasts().map((toast) => toast.title)).toEqual(['Falha']);
-    });
-
-    it('busca os períodos uma única vez: o passo pede só o resumo', async () => {
-      await renderPeriods(defaultPeriods());
-
-      await stepTo(previous(), `${API_BASE}/dashboard/summary?year=2026&month=8`);
-      await stepTo(previous(), `${API_BASE}/dashboard/summary?year=2026&month=7`);
-
       httpMock.expectNone((pending) => pending.url.startsWith(`${API_BASE}/dashboard/periods`));
     });
 
+    it('anda mês a mês no calendário, atravessando o ano, sem desabilitar as pontas', async () => {
+      await renderPeriod();
+
+      await stepTo(next(), `${API_BASE}/dashboard/summary?year=2026&month=10`);
+      await stepTo(next(), `${API_BASE}/dashboard/summary?year=2026&month=11`);
+      await stepTo(next(), `${API_BASE}/dashboard/summary?year=2026&month=12`);
+      await stepTo(next(), `${API_BASE}/dashboard/summary?year=2027&month=1`);
+      expect(monthLabel()).toBe('Janeiro de 2027');
+      expect(next().disabled).toBe(false);
+
+      await stepTo(previous(), `${API_BASE}/dashboard/summary?year=2026&month=12`);
+      expect(monthLabel()).toBe('Dezembro de 2026');
+      expect(previous().disabled).toBe(false);
+      httpMock.expectNone((pending) => pending.url.startsWith(`${API_BASE}/dashboard/periods`));
+    });
+
+    it('escolher um mês no seletor pede um único resumo daquele mês e fecha o seletor', async () => {
+      await renderPeriod();
+
+      periodField().click();
+      periodFixture.detectChanges();
+      expect(pick('.month-picker-panel')).not.toBeNull();
+      expect(pick('.month-picker-year').textContent?.trim()).toBe('2026');
+
+      pick<HTMLButtonElement>('button[aria-label="Ano anterior"]').click();
+      periodFixture.detectChanges();
+      pick<HTMLButtonElement>('button[aria-label="Dezembro de 2025"]').click();
+      periodFixture.detectChanges();
+
+      const request = pendingSummary();
+      expect(request.request.url).toBe(`${API_BASE}/dashboard/summary?year=2025&month=12`);
+      request.flush(payload(evolution()));
+      await settlePeriod();
+
+      expect(pick('.month-picker-panel')).toBeNull();
+      expect(monthLabel()).toBe('Dezembro de 2025');
+
+      await stepTo(next(), `${API_BASE}/dashboard/summary?year=2026&month=1`);
+      expect(monthLabel()).toBe('Janeiro de 2026');
+      await stepTo(previous(), `${API_BASE}/dashboard/summary?year=2025&month=12`);
+      expect(monthLabel()).toBe('Dezembro de 2025');
+    });
+
+    it('aceita ano distante sem lançamentos e mostra o resumo zerado', async () => {
+      await renderPeriod();
+
+      periodField().click();
+      periodFixture.detectChanges();
+      for (let index = 0; index < 7; index++) {
+        pick<HTMLButtonElement>('button[aria-label="Ano anterior"]').click();
+      }
+      periodFixture.detectChanges();
+      pick<HTMLButtonElement>('button[aria-label="Março de 2019"]').click();
+      periodFixture.detectChanges();
+
+      const request = pendingSummary();
+      expect(request.request.url).toBe(`${API_BASE}/dashboard/summary?year=2019&month=3`);
+      request.flush(payload(evolution()));
+      await settlePeriod();
+
+      expect(monthLabel()).toBe('Março de 2019');
+      expect(toasts()).toHaveLength(0);
+    });
+
     it('exibe a mensagem do backend quando o período é recusado', async () => {
-      await renderPeriods([{ year: 2019, months: [12] }]);
+      await renderPeriod();
 
       previous().click();
       periodFixture.detectChanges();
       pendingSummary().flush(
-        { message: 'Não há lançamentos no ano informado.' },
+        { message: 'O ano informado é inválido.' },
         { status: 400, statusText: 'Bad Request' },
       );
       await settlePeriod();
 
       expect(toasts()).toHaveLength(1);
       expect(toasts()[0].title).toBe('Alerta');
-      expect(toasts()[0].message).toBe('Não há lançamentos no ano informado.');
+      expect(toasts()[0].message).toBe('O ano informado é inválido.');
     });
   });
 
@@ -907,11 +897,7 @@ describe('Dashboard', () => {
 
     beforeEach(() => {
       fixture.destroy();
-      httpMock.match(() => true).forEach((request) =>
-        request.request.url.startsWith(`${API_BASE}/dashboard/periods`)
-          ? request.flush(defaultPeriods())
-          : request.flush(payload(evolution())),
-      );
+      httpMock.match(() => true).forEach((request) => request.flush(payload(evolution())));
       vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'Date'] });
     });
 
@@ -950,12 +936,6 @@ describe('Dashboard', () => {
         .flush(payload(evolution({ 1: [1000, 400, 600] })));
     }
 
-    // Os dois anos com os 12 meses mantêm o mês selecionado ao trocar de ano: a saudação é o objeto
-    // deste bloco, não o reposicionamento de mês.
-    function flushGreetingPeriods(): void {
-      httpMock.expectOne(`${API_BASE}/dashboard/periods`).flush(defaultPeriods());
-    }
-
     async function renderAt(hour: number, minute: number, name: string | null = FULL_NAME) {
       vi.setSystemTime(new Date(2026, 8, 15, hour, minute, 0));
       TestBed.inject(AuthService).me.set(
@@ -967,7 +947,6 @@ describe('Dashboard', () => {
       greetingFixture = TestBed.createComponent(Dashboard);
       greetingFixture.detectChanges();
       flushSummary();
-      flushGreetingPeriods();
       await settleGreeting();
     }
 

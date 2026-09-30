@@ -26,10 +26,11 @@ describe('PagedList', () => {
     responses = [];
   });
 
-  function create(): PagedList<Filters, string> {
+  function create(initial?: Partial<Filters>): PagedList<Filters, string> {
     return new PagedList<Filters, string>({
       key: 'teste',
       defaults: DEFAULTS,
+      initial,
       loadErrorMessage: 'Não foi possível carregar a lista.',
       state,
       toast,
@@ -133,6 +134,40 @@ describe('PagedList', () => {
     expect(second.applied()).toEqual({ name: 'mer', active: 'true' });
     expect(second.filters).toEqual({ name: 'mer', active: 'true' });
     expect(second.page()).toBe(2);
+  });
+
+  it('sem estado salvo abre com os filtros iniciais, mas limpar volta ao padrão', async () => {
+    const list = create({ name: 'inicial' });
+
+    await list.load();
+
+    expect(calls).toEqual([{ filters: { name: 'inicial', active: 'true' }, page: 1 }]);
+    expect(list.filters).toEqual({ name: 'inicial', active: 'true' });
+    expect(list.differsFromDefault()).toBe(true);
+
+    list.clear();
+    expect(calls.at(-1)?.filters).toEqual(DEFAULTS);
+    expect(list.differsFromDefault()).toBe(false);
+
+    list.filters = { name: 'inicial', active: 'true' };
+    list.apply();
+    list.remove('name');
+    expect(calls.at(-1)?.filters).toEqual({ name: '', active: 'true' });
+
+    list.beginDraft();
+    list.clearDraft();
+    expect(list.filters).toEqual(DEFAULTS);
+    list.discardDraft();
+  });
+
+  it('com estado salvo ignora os filtros iniciais, inclusive o filtro removido', () => {
+    const first = create({ name: 'inicial' });
+    first.remove('name');
+
+    const second = create({ name: 'inicial' });
+
+    expect(second.applied()).toEqual({ name: '', active: 'true' });
+    expect(second.filters).toEqual({ name: '', active: 'true' });
   });
 
   it('volta para a última página existente quando a atual esvaziou', async () => {

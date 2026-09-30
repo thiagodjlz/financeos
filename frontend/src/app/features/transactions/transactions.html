@@ -53,17 +53,12 @@
         <option value="">Todos</option>
         <option value="PENDING">Pendente</option>
         <option value="PAID">Pago</option>
-        <option value="CANCELED">Cancelado</option>
       </select>
     </label>
-    <label class="filter-field" [class.is-set]="list.applied().startDate">
-      <span>Data de</span>
-      <input type="date" name="filterStartDate" [(ngModel)]="list.filters.startDate" (change)="list.apply()" />
-    </label>
-    <label class="filter-field" [class.is-set]="list.applied().endDate">
-      <span>Data até</span>
-      <input type="date" name="filterEndDate" [(ngModel)]="list.filters.endDate" (change)="list.apply()" />
-    </label>
+    <div class="filter-field" role="group" aria-labelledby="filter-month-label" [class.is-set]="list.applied().month">
+      <span id="filter-month-label">Data</span>
+      <app-month-picker label="Data" [value]="draftMonth()" (valueChange)="onMonthChange($event)" />
+    </div>
   </app-filter-panel>
 
   <div class="table-wrap" [attr.aria-busy]="list.loading()">
@@ -91,7 +86,7 @@
           <tr class="day-row" *ngIf="row.heading">
             <th colspan="6" scope="rowgroup">{{ row.heading }}</th>
           </tr>
-          <tr class="transaction-row" [class.canceled]="row.transaction.status === 'CANCELED'">
+          <tr class="transaction-row">
             <td class="date-cell tabular" data-label="Data">{{ formatDate(row.transaction.transactionDate) }}</td>
             <td class="description-cell" data-label="Descrição">
               <span class="type-icon" [class.income]="row.transaction.type === 'INCOME'" aria-hidden="true">
@@ -147,14 +142,17 @@
                   *ngIf="authService.can('TRANSACTIONS', 'DELETE')"
                   type="button"
                   class="icon-button danger"
-                  aria-label="Cancelar lançamento"
-                  title="Cancelar lançamento"
+                  aria-label="Excluir lançamento"
+                  title="Excluir lançamento"
                   [disabled]="saving()"
-                  (click)="cancelTransaction(row.transaction)"
+                  (click)="requestDelete(row.transaction)"
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <circle cx="12" cy="12" r="8.5"></circle>
-                    <path d="M9.5 9.5l5 5M14.5 9.5l-5 5"></path>
+                    <path d="M4 7h16"></path>
+                    <path d="M9 7V4.5h6V7"></path>
+                    <path d="M6 7l1 12.5h10L18 7"></path>
+                    <path d="M10 11v5"></path>
+                    <path d="M14 11v5"></path>
                   </svg>
                 </button>
               </span>
@@ -186,3 +184,12 @@
     (pageChange)="list.goTo($event)"
   />
 </section>
+
+<app-confirm-dialog
+  *ngIf="deletingTransaction() as transaction"
+  [message]="deleteMessage(transaction)"
+  cancelLabel="Cancelar"
+  confirmLabel="Excluir lançamento"
+  (cancel)="cancelDelete()"
+  (confirm)="confirmDelete()"
+/>

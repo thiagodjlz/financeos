@@ -24,6 +24,9 @@ export interface FilterControls {
 export interface PagedListOptions<F extends ListFilters, T> {
   key: string;
   defaults: F;
+  // Filtros da primeira abertura, quando não há estado salvo (Lançamentos abre no mês atual). Os
+  // `defaults` continuam sendo o alvo de "Limpar filtros" e a referência de `differsFromDefault`.
+  initial?: Partial<F>;
   fetch: (filters: F, page: number) => Promise<Page<T>>;
   loadErrorMessage: string;
   state: ListStateService;
@@ -57,7 +60,7 @@ export class PagedList<F extends ListFilters, T> implements FilterControls {
 
   constructor(private readonly options: PagedListOptions<F, T>) {
     const saved = options.state.get<F>(options.key);
-    const initial = { ...options.defaults, ...(saved?.filters ?? {}) } as F;
+    const initial = { ...options.defaults, ...(saved ? saved.filters : (options.initial ?? {})) } as F;
 
     this.applied = signal<F>(initial);
     this.filters = { ...initial };

@@ -78,8 +78,8 @@ final class CategoriesAreaContent {
                         "Excluir uma categoria a remove definitivamente do sistema, esteja ela ativa ou inativa. "
                                 + "A exclusão não pode ser desfeita.",
                         "Uma categoria usada por algum lançamento não pode ser excluída, qualquer que seja a pessoa "
-                                + "dona do lançamento e mesmo que ele esteja cancelado. O sistema recusa com Não é "
-                                + "possível excluir a categoria e informa quantos lançamentos a usam.",
+                                + "dona do lançamento. O sistema recusa com Não é possível excluir a categoria e "
+                                + "informa quantos lançamentos a usam.",
                         "Para tirar uma categoria de uso sem excluí-la, o caminho é o campo Situação: Inativo "
                                 + "desativa e Ativo reativa."),
                 DocumentationBlock.highlight(

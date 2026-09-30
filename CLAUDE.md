@@ -4,7 +4,7 @@ Sistema financeiro pessoal: backend Java/Quarkus (`backend/`), frontend Angular 
 
 ## Antes de mexer no dominio
 
-Regras de negocio e modelo de dados nao ficam aqui — ficam em [knowledge/](knowledge/README.md), separado por dominio de negocio (auth/permissoes, usuarios, categorias, transacoes, dashboard, documentacao) e por area tecnica (`backend-patterns.md`, `frontend-ui.md`, `testing.md`, `deployment.md`, com `architecture.md` como nucleo). Leia o(s) arquivo(s) relevante(s) antes de implementar algo que toque essas areas; varias regras nao sao obvias so lendo o codigo (ex.: categorias sao hoje um catalogo global, o usuario `super_admin` e oculto e ignora perfis, transacoes nunca sao excluidas de verdade).
+Regras de negocio e modelo de dados nao ficam aqui — ficam em [knowledge/](knowledge/README.md), separado por dominio de negocio (auth/permissoes, usuarios, categorias, transacoes, dashboard, documentacao) e por area tecnica (`backend-patterns.md`, `frontend-ui.md`, `testing.md`, `deployment.md`, com `architecture.md` como nucleo). Leia o(s) arquivo(s) relevante(s) antes de implementar algo que toque essas areas; varias regras nao sao obvias so lendo o codigo (ex.: categorias sao hoje um catalogo global, o usuario `super_admin` e oculto e ignora perfis, o Resumo aceita qualquer mes e responde zerado quando nao ha lancamento).
 
 ## Convencoes
 
@@ -14,7 +14,7 @@ Regras de negocio e modelo de dados nao ficam aqui — ficam em [knowledge/](kno
 - **Toda regra de negocio e validacao e obrigatoriamente imposta no back-end** (Bean Validation no DTO ou checagem no `Resource`, com erro tratado em portugues). O front-end pode espelhar a regra como UX (`required`, `maxlength`, filtro de dropdown), mas nunca ser o unico lugar dela. Constraints do banco (not null, unique, check) sao so rede de seguranca — quem valida e responde e o back-end; as unicas regras que podem viver apenas no banco sao PKs e FKs.
 - Sem comentarios no codigo a menos que expliquem um "porque" nao-obvio.
 - Todo endpoint novo do backend comeca chamando `accessControl.require(Screen.X, Action.Y)` — ver [knowledge/auth-and-permissions.md](knowledge/auth-and-permissions.md).
-- Texto das telas Documentação e Novidades por versão (`documentation/content/`, `releasenotes/content/`) e escrito para o usuario final: invoque a skill `pipeline:revisar-textos` antes de grava-lo. O hook `pre-commit` recusa o commit sem `FINANCEOS_TEXTOS_REVISADOS=1` — ver [knowledge/documentation.md](knowledge/documentation.md).
+- Texto das telas Documentação e Novidades por versão (`documentation/content/`, `releasenotes/content/`) e escrito para o usuario final: aplique a revisao de `.claude/skills/pipeline/revisar-textos/SKILL.md` (lendo o arquivo — a skill nao e encontrada pelo nome nem por subagentes) antes de grava-lo. O hook `pre-commit` recusa o commit sem `FINANCEOS_TEXTOS_REVISADOS=1` — ver [knowledge/documentation.md](knowledge/documentation.md).
 - Detalhes de stack e comandos de build: [knowledge/architecture.md](knowledge/architecture.md); padroes de teste: [knowledge/testing.md](knowledge/testing.md).
 
 ## Versionamento e branches

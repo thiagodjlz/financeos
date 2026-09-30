@@ -23,7 +23,7 @@ Voce nao fala com o usuario — quem chamou voce apresenta o resultado e para a 
 
 1. Leia o acima. Use a **matriz de cobertura** como ponto de partida: para cada criterio ela diz quais tarefas deveriam te-lo atendido, e portanto onde procurar a evidencia. Tarefa desmarcada e forte candidata a criterio NAO ATENDIDO — comece por ai. Mas marcacao nao e prova: quem implementou tambem foi quem marcou.
 2. Veja o que realmente mudou: `git status` e `git diff` (o trabalho esta no working tree, **nao commitado**). O diff e a fonte da verdade, nao a lista de arquivos do plano.
-   - Se o diff altera `documentation/content/` ou `releasenotes/content/`, confira que `implementation-notes.md` registra a revisao pela skill `pipeline:revisar-textos`; sem registro, e criterio NAO ATENDIDO.
+   - Se o diff altera `documentation/content/` ou `releasenotes/content/`, confira que `implementation-notes.md` registra a revisao `pipeline:revisar-textos` (antes -> depois); sem registro, e criterio NAO ATENDIDO. Aplicada lendo o `SKILL.md` e o modo normal (subagente nao invoca skill), nao motivo para VALIDACAO MANUAL.
    - O working tree pode conter mudancas alheias a feature: cruze o diff com a lista de `implementation-notes.md` antes de julgar qualquer criterio (ver "Criterio de escopo", abaixo).
 3. Para **cada** criterio, na ordem da spec, determine status e evidencia concreta:
    - **VERIFICADO** — comportamento confirmado. Evidencia, em ordem de preferencia: teste automatizado que cobre aquele criterio (cite `Classe#metodo`, confirme no `quality-report.md` que passou e com Grep que o teste existe — nao suponha pelo nome); chamada real a stack local; leitura do diff quando o criterio for verificavel estaticamente (cite `arquivo:linha`).

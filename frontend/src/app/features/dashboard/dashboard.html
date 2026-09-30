@@ -10,26 +10,18 @@
       class="icon-button"
       aria-label="Mês anterior"
       title="Mês anterior"
-      [disabled]="!canStepBack()"
       (click)="step(-1)"
     >
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M15 6l-6 6 6 6"></path>
       </svg>
     </button>
-    <span class="month-label" aria-live="polite">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <rect x="3.5" y="5" width="17" height="15.5" rx="2.5"></rect>
-        <path d="M3.5 10h17M8 3v4M16 3v4"></path>
-      </svg>
-      {{ periodLabel() }}
-    </span>
+    <app-month-picker class="bare" label="Período do resumo" [value]="selected()" (valueChange)="choose($event)" />
     <button
       type="button"
       class="icon-button"
       aria-label="Próximo mês"
       title="Próximo mês"
-      [disabled]="!canStepForward()"
       (click)="step(1)"
     >
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">

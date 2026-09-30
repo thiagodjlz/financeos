@@ -34,8 +34,13 @@ public final class ReleaseNotesContent {
 
         addIfPresent(categories, Kind.IMPROVEMENT,
                 "Saudação no Resumo: o painel cumprimenta você pelo nome, conforme o horário do dia.",
-                "Período do Resumo: botões Mês anterior e Próximo mês percorrem só os meses com "
-                        + "lançamentos e o mês atual.",
+                "Período do Resumo: o mês fica num campo que abre um seletor de mês e ano, e os botões Mês "
+                        + "anterior e Próximo mês andam um mês por vez, em qualquer ano, mesmo nos meses sem "
+                        + "lançamentos.",
+                "Filtro Data em Lançamentos: a tela abre nos lançamentos do mês atual, e o campo Data escolhe "
+                        + "outro mês inteiro num seletor, sem digitar as datas de início e fim.",
+                "Excluir lançamento: o botão da linha pede confirmação e apaga o lançamento de vez, que sai da "
+                        + "lista e dos totais do Resumo.",
                 "Painel Por categoria: no Resumo, alterna entre Despesas e Receitas e mostra a cor de cada "
                         + "categoria.",
                 "Excluir categoria: a tela de Categorias ganhou o botão Excluir em cada linha. Ele remove de vez "
@@ -43,8 +48,8 @@ public final class ReleaseNotesContent {
                 "Cadastros e listas: em Lançamentos, Categorias, Usuários e Perfis, os botões Novo e Editar abrem "
                         + "o cadastro numa tela própria, e as listas mostram 10 registros por página, com Filtros "
                         + "sempre visíveis acima da tabela.",
-                "Tabela de Lançamentos: a data aparece em dia/mês/ano, cada categoria ganhou uma bolinha com a sua "
-                        + "cor e o lançamento cancelado mostra o valor riscado.",
+                "Tabela de Lançamentos: a data aparece em dia/mês/ano e cada categoria ganhou uma bolinha com a sua "
+                        + "cor.",
                 "Avisos de erro: quando uma tela não consegue carregar, o aviso aparece no lugar do conteúdo, em "
                         + "vez de uma lista vazia.",
                 "Busca nas listas: Lançamentos, Categorias, Usuários e Perfis ganharam busca por texto, que "
@@ -66,7 +71,9 @@ public final class ReleaseNotesContent {
                         + "o seu cadastro.",
                 "Entrada no sistema: quem não pode ver o Resumo passa a entrar direto na primeira tela que o seu "
                         + "perfil permite, em vez de ficar preso sem conseguir abrir nenhuma tela; sem nenhuma tela "
-                        + "permitida, aparece a tela Sem acesso.");
+                        + "permitida, aparece a tela Sem acesso.",
+                "Filtro de data no celular: no painel de filtros de Lançamentos, o campo de data não passa mais "
+                        + "da borda da tela e tem a mesma altura dos outros campos.");
 
         return new ReleaseNoteVersion("1.0.2", List.copyOf(categories));
     }

@@ -7,6 +7,9 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -71,7 +74,7 @@ class TransactionResourceTest {
     }
 
     @Test
-    void shouldCreateListUpdateAndCancelTransaction() {
+    void shouldCreateListUpdateAndDeleteTransaction() {
         Category category = createCategory(CategoryType.EXPENSE, true);
 
         String id = given()
@@ -139,8 +142,39 @@ class TransactionResourceTest {
         given()
                 .when().get("/transactions/{id}", id)
                 .then()
+                .statusCode(404);
+
+        given()
+                .queryParam("description", "Teste mercado semanal atualizado")
+                .when().get("/transactions")
+                .then()
                 .statusCode(200)
-                .body("status", equalTo("CANCELED"));
+                .body("items.id", not(hasItem(id)));
+
+        assertTrue(QuarkusTransaction.requiringNew()
+                .call(() -> repository.findByIdOptional(UUID.fromString(id)).isEmpty()));
+    }
+
+    @Test
+    void shouldNotDeleteTransactionOfOtherUserOrNonexistent() {
+        String description = "Teste mercado de outro usuario " + UUID.randomUUID();
+        UUID otherUserTransactionId = createTransaction(OTHER_USER_ID, description, LocalDate.of(2026, 2, 1),
+                TransactionType.EXPENSE, TransactionStatus.PENDING, null);
+
+        given()
+                .when().delete("/transactions/{id}", otherUserTransactionId)
+                .then()
+                .statusCode(404);
+
+        given()
+                .when().delete("/transactions/{id}", UUID.randomUUID())
+                .then()
+                .statusCode(404);
+
+        FinancialTransaction stored = QuarkusTransaction.requiringNew()
+                .call(() -> repository.findByIdOptional(otherUserTransactionId).orElseThrow());
+        assertEquals(description, stored.description);
+        assertEquals(TransactionStatus.PENDING, stored.status);
     }
 
     @Test
@@ -251,26 +285,63 @@ class TransactionResourceTest {
     }
 
     @Test
-    void shouldRejectCanceledStatusOnCreate() {
+    void shouldRejectCanceledStatusOnCreateAndUpdate() {
         Category category = createCategory(CategoryType.EXPENSE, true);
+        String description = "Teste mercado cancelado direto " + UUID.randomUUID();
+        String body = """
+                {
+                  "transactionDate": "2026-06-30",
+                  "description": "%s",
+                  "amount": 10.00,
+                  "type": "EXPENSE",
+                  "status": "CANCELED",
+                  "categoryId": "%s"
+                }
+                """;
 
         given()
                 .contentType(ContentType.JSON)
-                .body("""
-                        {
-                          "transactionDate": "2026-06-30",
-                          "description": "Teste mercado cancelado direto",
-                          "amount": 10.00,
-                          "type": "EXPENSE",
-                          "status": "CANCELED",
-                          "categoryId": "%s"
-                        }
-                        """.formatted(category.id))
+                .body(body.formatted(description, category.id))
                 .when().post("/transactions")
                 .then()
-                .statusCode(400)
-                .body("message",
-                        equalTo("O status Cancelado só pode ser aplicado pelo cancelamento do lançamento."));
+                .statusCode(400);
+
+        assertEquals(0L, QuarkusTransaction.requiringNew()
+                .call(() -> repository.count("description", description)));
+
+        UUID id = createTransaction(TEST_USER_ID, description, LocalDate.of(2026, 6, 30),
+                TransactionType.EXPENSE, TransactionStatus.PENDING, category.id);
+
+        given()
+                .contentType(ContentType.JSON)
+                .body(body.formatted(description, category.id))
+                .when().put("/transactions/{id}", id)
+                .then()
+                .statusCode(400);
+
+        FinancialTransaction stored = QuarkusTransaction.requiringNew()
+                .call(() -> repository.findByIdOptional(id).orElseThrow());
+        assertEquals(TransactionStatus.PENDING, stored.status);
+    }
+
+    @Test
+    void shouldKeepNoCanceledTransactionInDatabase() {
+        long canceled = QuarkusTransaction.requiringNew().call(() -> ((Number) repository.getEntityManager()
+                .createNativeQuery("select count(*) from transactions where status = 'CANCELED'")
+                .getSingleResult()).longValue());
+        assertEquals(0L, canceled);
+
+        UUID id = createTransaction(TEST_USER_ID, "Teste mercado check " + UUID.randomUUID(),
+                LocalDate.of(2026, 6, 30), TransactionType.EXPENSE, TransactionStatus.PENDING, null);
+
+        assertThrows(Exception.class, () -> QuarkusTransaction.requiringNew().run(() -> repository.getEntityManager()
+                .createNativeQuery("update transactions set status = 'CANCELED' where id = ?1")
+                .setParameter(1, id)
+                .executeUpdate()));
+
+        FinancialTransaction stored = QuarkusTransaction.requiringNew()
+                .call(() -> repository.findByIdOptional(id).orElseThrow());
+        assertEquals(TransactionStatus.PENDING, stored.status);
     }
 
     @Test
@@ -757,6 +828,7 @@ class TransactionResourceTest {
     @Test
     void shouldRejectMalformedFiltersInPortuguese() {
         assertBadListRequest("status", "XYZ", "O status informado é inválido.");
+        assertBadListRequest("status", "CANCELED", "O status informado é inválido.");
         assertBadListRequest("type", "OUTRO", "O tipo informado é inválido.");
         assertBadListRequest("startDate", "abc", "A data inicial informada é inválida.");
         assertBadListRequest("endDate", "2026-02-30", "A data final informada é inválida.");

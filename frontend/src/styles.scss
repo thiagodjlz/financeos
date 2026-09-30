@@ -34,7 +34,7 @@
  * avaliada dentro de media query: `@media (max-width: var(--bp-mobile))` compila e nunca casa.
  * Por isso as `@media` deste projeto escrevem o literal correspondente.
  *
- * Camadas (z-index): menu lateral 50, barra inferior e barra fixa de salvar 60,
+ * Camadas (z-index): seletor de mês 40, menu lateral 50, barra inferior e barra fixa de salvar 60,
  * scrim 70, painel inferior 80, modal 200/201, avisos 999.
  */
 
@@ -943,6 +943,12 @@ button:focus-visible {
   overflow: hidden;
 }
 
+// O recorte existe só pelos cantos arredondados da tabela; com o seletor de mês aberto numa lista
+// curta, ele cortaria o painel.
+.list-panel:has(.month-picker-panel) {
+  overflow: visible;
+}
+
 .table-panel {
   min-width: 0;
 }
@@ -1150,8 +1156,135 @@ td.row-actions {
   color: var(--accent-strong);
 
   select,
-  input {
+  input,
+  .month-picker-trigger {
     color: var(--accent-strong);
+  }
+}
+
+/* Seletor de mês (core/month-picker): gatilho com a medida dos campos, painel sobreposto */
+
+.month-picker {
+  position: relative;
+  display: inline-block;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.month-picker-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: var(--field-h);
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius-md);
+  padding: 0 12px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--fs-body);
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+
+  svg {
+    flex-shrink: 0;
+    color: var(--text-muted);
+  }
+
+  &:focus-visible {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: var(--ring-focus);
+  }
+}
+
+.month-picker-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.month-picker-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 40;
+  width: 288px;
+  max-width: calc(100vw - 16px);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-lg);
+  padding: 12px;
+  background: var(--surface);
+  box-shadow: var(--shadow-tooltip);
+  color: var(--text);
+  font-size: var(--fs-body);
+  font-weight: 400;
+  white-space: normal;
+}
+
+.month-picker-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.month-picker-year {
+  font-size: 15px;
+}
+
+.month-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.month-picker-month {
+  min-height: var(--control-h);
+  border: 0;
+  border-radius: var(--radius-sm);
+  padding: 0 4px;
+  background: transparent;
+  color: var(--text);
+  font-weight: 500;
+  cursor: pointer;
+
+  &[aria-pressed='true'] {
+    background: var(--accent);
+    color: var(--on-accent);
+    font-weight: 600;
+  }
+}
+
+@media (hover: hover) {
+  .month-picker-month:not([aria-pressed='true']):hover {
+    background: var(--neutral-soft);
+  }
+}
+
+// Sem moldura, quando o contêiner já desenha a borda (passo de mês do Resumo).
+.month-picker.bare .month-picker-trigger {
+  min-height: var(--action-size);
+  border-color: transparent;
+  background: transparent;
+}
+
+// Dentro da faixa de filtros o gatilho vira a pílula dos selects vizinhos.
+.filter-field .month-picker-trigger {
+  width: auto;
+  min-height: calc(var(--filter-h) - 2px);
+  border: 0;
+  border-radius: var(--radius-pill);
+  padding: 0 12px 0 2px;
+  background: transparent;
+  color: var(--text-label);
+  font-size: var(--fs-small);
+
+  &:focus-visible {
+    box-shadow: none;
   }
 }
 
@@ -1540,9 +1673,53 @@ td.row-actions {
     box-shadow: none;
 
     select,
-    input {
+    input,
+    .month-picker-trigger {
       color: var(--text);
     }
+  }
+
+  // Mesma medida do select do painel de filtros (issue #104): o `input type="date"` de antes
+  // passava da borda direita e ficava mais baixo que os selects no Safari do iPhone.
+  .filter-field .month-picker {
+    display: block;
+  }
+
+  .filter-field .month-picker-trigger {
+    display: flex;
+    width: 100%;
+    min-height: var(--field-h-mobile);
+    border: 1px solid var(--border-input);
+    border-radius: var(--radius-md);
+    padding: 0 12px;
+    background: var(--surface);
+    color: var(--text);
+    font-size: var(--fs-input-mobile);
+    font-weight: 400;
+
+    &:focus-visible {
+      border-color: var(--accent);
+      box-shadow: var(--ring-focus);
+    }
+  }
+
+  // No painel inferior (que rola) o seletor abre no fluxo, com a largura do campo.
+  .filter-sheet .month-picker-panel {
+    position: static;
+    width: auto;
+    max-width: none;
+    margin-top: 8px;
+    box-shadow: none;
+  }
+
+  .month-picker-month {
+    min-height: var(--touch-target);
+  }
+
+  .month-picker.bare .month-picker-trigger {
+    justify-content: center;
+    min-height: var(--touch-target);
+    font-size: 15px;
   }
 
   .filter-sheet > .filter-sheet-actions {

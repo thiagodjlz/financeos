@@ -121,7 +121,7 @@ final class OverviewContent {
                         "O resultado das ações aparece em avisos sobre a tela, cada um com um título que indica "
                                 + "o tipo:"),
                 DocumentationBlock.list(
-                        "Sucesso: a ação deu certo, como em Lançamento cancelado com sucesso. Fecha sozinho "
+                        "Sucesso: a ação deu certo, como em Lançamento excluído com sucesso. Fecha sozinho "
                                 + "depois de alguns segundos.",
                         "Alerta: algo que você pode resolver, como um dado recusado, uma ação que o seu perfil "
                                 + "não permite ou a sessão encerrada. Também fecha sozinho, mas fica mais tempo "
@@ -138,9 +138,9 @@ final class OverviewContent {
                                 + "tem permissão para acessar esta tela. e o sistema abre a primeira tela permitida.",
                         "Uma ação que o seu perfil não permite é recusada com o Alerta Você não tem permissão "
                                 + "para realizar esta ação.",
-                        "Cancelar lançamento, Desativar usuário e Excluir perfil agem na hora, sem confirmação, "
-                                + "e mostram o aviso de Sucesso. Entre os botões das linhas das listas, só Excluir "
-                                + "categoria pede confirmação antes de agir."));
+                        "Desativar usuário e Excluir perfil agem na hora, sem confirmação, e mostram o aviso de "
+                                + "Sucesso. Entre os botões das linhas das listas, Excluir lançamento e Excluir "
+                                + "categoria pedem confirmação antes de agir."));
     }
 
     private static DocumentationSection listas() {
