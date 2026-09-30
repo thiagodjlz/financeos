@@ -341,6 +341,7 @@ class DocumentationContentTest {
 
         List.of("Mostrar senha", "Ocultar senha", "Credenciais inválidas", "Sem acesso",
                 "Seu perfil não tem acesso a nenhuma tela", "Correções", "Nenhuma novidade publicada ainda",
+                "Ainda não há mudanças publicadas nesta versão",
                 "Buscar na documentação", "Nenhuma área corresponde à busca", "Nenhum registro encontrado",
                 "Limpar filtros", "Fechar aviso", "Sua sessão expirou", "Você não tem permissão para acessar esta tela",
                 "sem confirmação", "Lançamento excluído com sucesso", "Usuário desativado com sucesso",

@@ -13,12 +13,19 @@ public final class ReleaseNotesContent {
     private ReleaseNotesContent() {
     }
 
-    // So existe a v1.0.1 ja cortada e nenhuma build foi publicada depois dela: todo o historico
-    // desde entao cai no unico bloco 1.0.2 abaixo. Uma correcao publicada como build novo da mesma
-    // versao (X.Y.Z-NN -> X.Y.Z-NN+1) entra na categoria Correcoes deste mesmo bloco, sem criar um
-    // bloco novo — so cria bloco novo quando X.Y.Z muda.
+    // Um bloco por X.Y.Z, do mais recente para o mais antigo: o primeiro é sempre o da versão de
+    // VERSION (sem o sufixo), que o front marca como atual. Uma correção publicada como build novo da mesma
+    // versão (X.Y.Z-NN -> X.Y.Z-NN+1) entra na categoria Correções do bloco existente; bloco novo só
+    // quando X.Y.Z muda (scripts/new-version.ps1 lembra disso). Blocos de versões anteriores são
+    // histórico e não mudam; um bloco ainda sem itens sai sem categorias e a tela avisa isso.
     public static List<ReleaseNoteVersion> build() {
-        return List.of(versao_1_0_2());
+        return List.of(versao_1_0_3(), versao_1_0_2());
+    }
+
+    private static ReleaseNoteVersion versao_1_0_3() {
+        List<ReleaseNoteCategory> categories = new ArrayList<>();
+
+        return new ReleaseNoteVersion("1.0.3", List.copyOf(categories));
     }
 
     private static ReleaseNoteVersion versao_1_0_2() {

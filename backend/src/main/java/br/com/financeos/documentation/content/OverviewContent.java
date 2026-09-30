@@ -178,8 +178,10 @@ final class OverviewContent {
                                 + "um bloco com o título Versão e o número, do mais recente para o mais antigo, e o "
                                 + "bloco da versão em uso leva o rótulo atual. Em cada bloco, as mudanças vêm em até "
                                 + "três grupos: Novidades, para o que passou a existir; Melhorias, para o que ficou "
-                                + "melhor; e Correções, para o que foi consertado. Grupo sem mudança não aparece. "
-                                + "Enquanto nenhuma versão tiver novidades publicadas, a tela mostra Nenhuma "
-                                + "novidade publicada ainda."));
+                                + "melhor; e Correções, para o que foi consertado. Grupo sem mudança não aparece."),
+                DocumentationBlock.paragraph(
+                        "Uma versão que ainda não tem mudanças publicadas aparece com o título e, logo abaixo, a "
+                                + "mensagem Ainda não há mudanças publicadas nesta versão. Se nenhuma versão tiver "
+                                + "sido publicada, a tela mostra Nenhuma novidade publicada ainda."));
     }
 }

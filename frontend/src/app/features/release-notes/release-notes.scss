@@ -9,6 +9,13 @@
   overflow-wrap: anywhere;
 }
 
+.release-empty {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+}
+
 .release-category {
   margin-bottom: 20px;
 
