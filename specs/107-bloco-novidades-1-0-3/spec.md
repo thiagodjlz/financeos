@@ -4,7 +4,7 @@ url: https://github.com/thiagodjlz/financeos/issues/107
 title: "Novidades por versão sem o bloco 1.0.3 na main (teste de versão falhando)"
 domains: [documentation]
 target: main
-stage: validated
+stage: pr-open
 branch: feature/issue-107-bloco-novidades-1-0-3
 created: 2026-09-30
 ---
