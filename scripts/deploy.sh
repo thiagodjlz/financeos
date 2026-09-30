@@ -42,6 +42,24 @@ branch="$versao"
 
 falhar() { echo "ERRO: $1" >&2; exit 1; }
 
+# O Compose resolve a tag das imagens por APP_VERSION, lendo o .env. Exportar a
+# variavel so vale para esta execucao: se o .env continuar na versao anterior,
+# um "docker compose up" avulso neste diretorio sobe as imagens antigas e
+# reverte a publicacao em silencio.
+gravar_app_version() {
+    local versao="$1"
+    local temporario
+    temporario="$(mktemp)"
+    if grep -qE '^APP_VERSION=' .env; then
+        sed -E "s|^APP_VERSION=.*$|APP_VERSION=$versao|" .env > "$temporario"
+    else
+        { cat .env; printf 'APP_VERSION=%s
+' "$versao"; } > "$temporario"
+    fi
+    cat "$temporario" > .env
+    rm -f "$temporario"
+}
+
 echo "==> Conferindo pre-requisitos"
 [[ -f .env ]] || falhar ".env nao encontrado (copie de .env.prod.example e preencha)."
 [[ -f secrets/privateKey.pem && -f secrets/publicKey.pem ]] || falhar \
@@ -109,6 +127,7 @@ git pull --ff-only origin "$branch"
 
 APP_VERSION="$(cat VERSION)"
 export APP_VERSION
+gravar_app_version "$APP_VERSION"
 echo "==> Publicando FinanceOS $APP_VERSION em https://$FINANCEOS_DOMAIN"
 
 subir() {
@@ -148,5 +167,6 @@ echo "==> Rollback do codigo para $ref_anterior (o banco NAO volta)" >&2
 git checkout "$ref_anterior"
 APP_VERSION="$(cat VERSION)"
 export APP_VERSION
+gravar_app_version "$APP_VERSION"
 subir || true
 exit 1
