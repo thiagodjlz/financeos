@@ -1,4 +1,17 @@
-import { dayHeading, initials, longMonthName, shortDate, shortMoney } from './formatters';
+import {
+  currentMonth,
+  dayHeading,
+  initials,
+  longMonthName,
+  monthKey,
+  monthLabel,
+  monthRange,
+  parseMonthKey,
+  shiftMonth,
+  shortDate,
+  shortMoney,
+  transactionStatusLabel,
+} from './formatters';
 
 describe('shortMoney', () => {
   it('formata zero sem abreviação', () => {
@@ -84,5 +97,46 @@ describe('initials', () => {
     expect(initials('Ana')).toBe('A');
     expect(initials('  ')).toBe('');
     expect(initials(null)).toBe('');
+  });
+});
+
+describe('transactionStatusLabel', () => {
+  it('traduz só os status existentes', () => {
+    expect(transactionStatusLabel('PENDING')).toBe('Pendente');
+    expect(transactionStatusLabel('PAID')).toBe('Pago');
+    expect(transactionStatusLabel(null)).toBe('-');
+  });
+});
+
+describe('meses do filtro de período', () => {
+  it('monta o rótulo com o nome completo do mês', () => {
+    expect(monthLabel(2026, 3)).toBe('Março de 2026');
+    expect(monthLabel(2025, 12)).toBe('Dezembro de 2025');
+  });
+
+  it('usa o mês do relógio como mês atual', () => {
+    expect(currentMonth(new Date(2026, 8, 30))).toEqual({ year: 2026, month: 9 });
+  });
+
+  it('anda mês a mês no calendário, virando o ano nos dois sentidos', () => {
+    expect(shiftMonth({ year: 2025, month: 12 }, 1)).toEqual({ year: 2026, month: 1 });
+    expect(shiftMonth({ year: 2026, month: 1 }, -1)).toEqual({ year: 2025, month: 12 });
+    expect(shiftMonth({ year: 2026, month: 6 }, 1)).toEqual({ year: 2026, month: 7 });
+  });
+
+  it('converte o mês em chave YYYY-MM e de volta', () => {
+    expect(monthKey({ year: 2026, month: 2 })).toBe('2026-02');
+    expect(parseMonthKey('2026-02')).toEqual({ year: 2026, month: 2 });
+    expect(parseMonthKey('')).toBeNull();
+    expect(parseMonthKey('2026-13')).toBeNull();
+    expect(parseMonthKey('2026-2')).toBeNull();
+  });
+
+  it('gera do dia 1 ao último dia do mês, inclusive em ano bissexto', () => {
+    expect(monthRange('2026-02')).toEqual({ startDate: '2026-02-01', endDate: '2026-02-28' });
+    expect(monthRange('2028-02')).toEqual({ startDate: '2028-02-01', endDate: '2028-02-29' });
+    expect(monthRange('2026-12')).toEqual({ startDate: '2026-12-01', endDate: '2026-12-31' });
+    expect(monthRange('2026-04')).toEqual({ startDate: '2026-04-01', endDate: '2026-04-30' });
+    expect(monthRange('')).toBeNull();
   });
 });

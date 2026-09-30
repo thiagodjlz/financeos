@@ -15,7 +15,7 @@ final class TransactionsAreaContent {
         return new DocumentationArea(
                 "transactions",
                 "Lançamentos",
-                "Onde as receitas e as despesas são registradas, corrigidas e canceladas. É a origem de todos os "
+                "Onde as receitas e as despesas são registradas, corrigidas e excluídas. É a origem de todos os "
                         + "números do Resumo.",
                 List.of(descricao(), funcionalidades(), campos(), regras(), particularidades(), acoes()));
     }
@@ -25,9 +25,9 @@ final class TransactionsAreaContent {
                 "Descrição",
                 DocumentationBlock.paragraph(
                         "A tela de Lançamentos é onde você registra cada entrada e cada saída de dinheiro. Ela "
-                                + "abre na tabela de lançamentos, do mais recente para o mais antigo, com até 10 "
-                                + "registros por página; o rodapé mostra quais estão na tela, como Mostrando 1–10 "
-                                + "de 23."),
+                                + "abre na tabela com os lançamentos do mês atual, do mais recente para o mais "
+                                + "antigo, com até 10 registros por página; o rodapé mostra quais estão na tela, "
+                                + "como Mostrando 1–10 de 23."),
                 DocumentationBlock.paragraph(
                         "A inclusão e a correção acontecem numa tela própria de cadastro: o botão Novo "
                                 + "lançamento, no alto da tela, abre o cadastro em branco, e o botão Editar "
@@ -42,9 +42,10 @@ final class TransactionsAreaContent {
                         "Registrar uma receita ou uma despesa pelo botão Novo lançamento.",
                         "Corrigir um lançamento já registrado pelo botão Editar lançamento da linha, que abre o "
                                 + "cadastro numa tela própria.",
-                        "Cancelar um lançamento pelo botão Cancelar lançamento da linha.",
+                        "Excluir um lançamento pelo botão Excluir lançamento da linha, depois de confirmar.",
                         "Encontrar lançamentos pela busca por descrição e pelos Filtros que ficam acima da "
-                                + "tabela: Tipo, Categoria, Status e período de Data, combinados entre si.",
+                                + "tabela: Tipo, Categoria, Status e Data, que escolhe um mês, combinados entre "
+                                + "si.",
                         "Percorrer o histórico página a página, com os botões Anterior e Próxima."));
     }
 
@@ -81,14 +82,11 @@ final class TransactionsAreaContent {
                         "A categoria é obrigatória e precisa ser do mesmo tipo do lançamento: usar uma categoria "
                                 + "de receita em uma despesa é recusado com a mensagem A categoria deve ser do "
                                 + "mesmo tipo do lançamento.",
-                        "O campo Status existe apenas para despesa. Receita não tem situação: ela é simplesmente "
-                                + "registrada.",
-                        "Cancelado não é uma opção do campo Status: essa situação só aparece quando o lançamento "
-                                + "é cancelado."),
+                        "O campo Status existe apenas para despesa, com as situações Pendente e Pago. Receita não "
+                                + "tem situação: ela é simplesmente registrada."),
                 DocumentationBlock.highlight(
-                        "Cancelar um lançamento não o apaga. Ele passa à situação Cancelado, continua na tabela, "
-                                + "continua podendo ser consultado e sai dos totais do Resumo. Nenhum lançamento é "
-                                + "removido do sistema em momento algum."));
+                        "Excluir um lançamento o apaga de vez: ele sai da tabela e dos totais do Resumo e não pode "
+                                + "ser recuperado. Por isso o sistema pede confirmação antes de excluir."));
     }
 
     private static DocumentationSection particularidades() {
@@ -97,22 +95,26 @@ final class TransactionsAreaContent {
                 DocumentationBlock.list(
                         "Trocar o Tipo com uma categoria já escolhida limpa a seleção, porque a categoria deixa de "
                                 + "servir para o novo tipo.",
-                        "Editar um lançamento cancelado e salvar o reativa: ele volta à situação escolhida no "
-                                + "campo Status.",
                         "Sair do cadastro pelo botão Cancelar, ou pela seta de voltar do cabeçalho, com alguma "
                                 + "alteração ainda não salva abre a confirmação Deseja sair sem salvar? antes de "
                                 + "descartar.",
                         "Na tabela, a data aparece como dia/mês/ano, cada categoria tem uma bolinha na cor dela "
-                                + "(categorias sem cor ficam sem bolinha), a receita sem situação mostra um traço na "
-                                + "coluna Status e o lançamento cancelado aparece com o valor riscado.",
+                                + "(categorias sem cor ficam sem bolinha) e a receita sem situação mostra um traço "
+                                + "na coluna Status.",
+                        "A tela abre com os lançamentos do mês atual, que aparece no filtro Data. Tocar nesse "
+                                + "campo abre um seletor com o ano no alto, os botões Ano anterior e Próximo ano, "
+                                + "que trocam de ano sem limite, e os doze meses; escolher um mês mostra os "
+                                + "lançamentos do primeiro ao último dia dele.",
+                        "Para ver os lançamentos de todos os meses, remova o rótulo Data em Filtros ativos ou use "
+                                + "Limpar filtros: o campo Data fica vazio.",
                         "Em telas estreitas, como as de celular, a tabela vira uma lista de cartões agrupados "
                                 + "por dia, com os títulos Hoje, Ontem e a data dos demais dias. O botão + da "
                                 + "barra inferior também abre o cadastro Novo lançamento.",
                         "Em telas estreitas, como as de celular, os filtros ficam num painel aberto pelo botão "
                                 + "Filtros ao lado da busca: as escolhas só valem ao tocar em Aplicar, e fechar o "
                                 + "painel sem aplicar mantém os filtros anteriores.",
-                        "Ao voltar do cadastro, a tabela reabre com os mesmos filtros e na mesma página em que "
-                                + "você estava.",
+                        "Ao voltar do cadastro, a tabela reabre com os mesmos filtros, inclusive o mês do filtro "
+                                + "Data ou a falta dele, e na mesma página em que você estava.",
                         "A busca por Descrição encontra o texto em qualquer parte e não diferencia maiúsculas nem "
                                 + "acentos: acai encontra Açaí.",
                         "Uma categoria que foi desativada e já estava no lançamento continua disponível na edição, "
@@ -138,17 +140,20 @@ final class TransactionsAreaContent {
                                                 + "cadastro continua aberto com o campo destacado."),
                                 List.of("Cancelar ou voltar (cadastro)", "Volta à tabela sem gravar; se houver "
                                         + "alteração pendente, pede confirmação antes de descartá-la."),
-                                List.of("Cancelar lançamento (linha)",
-                                        "Passa o lançamento à situação Cancelado, sem apagá-lo. Age na hora, sem "
-                                                + "confirmação, e avisa Lançamento cancelado com sucesso."),
+                                List.of("Excluir lançamento (linha)",
+                                        "Pergunta Deseja excluir o lançamento, com a descrição dele. Confirmar em "
+                                                + "Excluir lançamento apaga o lançamento de vez e avisa "
+                                                + "Lançamento excluído com sucesso; Cancelar desiste sem "
+                                                + "apagar nada."),
                                 List.of("Filtros", "Ficam sempre visíveis acima da tabela e valem assim que são "
                                         + "escolhidos; cada filtro aplicado vira um rótulo em Filtros ativos, que "
                                         + "pode ser removido. No celular, abrem num painel com o botão Aplicar."),
-                                List.of("Limpar filtros", "Remove todos os filtros e volta à primeira página."),
+                                List.of("Limpar filtros", "Remove todos os filtros, inclusive o mês do filtro "
+                                        + "Data, e volta à primeira página."),
                                 List.of("Anterior / Próxima", "Troca de página mantendo os filtros."))),
                 DocumentationBlock.paragraph(
                         "Cada botão só aparece se o seu perfil tiver a permissão correspondente na tela de "
                                 + "Lançamentos: Incluir para Novo lançamento, Alterar para Editar lançamento e "
-                                + "Excluir para Cancelar lançamento."));
+                                + "Excluir para Excluir lançamento."));
     }
 }

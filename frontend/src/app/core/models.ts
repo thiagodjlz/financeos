@@ -14,7 +14,7 @@ export interface Page<T> {
 export type ListFilters = Record<string, string>;
 
 export type TransactionType = 'INCOME' | 'EXPENSE';
-export type TransactionStatus = 'PENDING' | 'PAID' | 'CANCELED';
+export type TransactionStatus = 'PENDING' | 'PAID';
 
 export interface Period {
   year: number;
@@ -33,11 +33,6 @@ export interface DashboardSummary {
   transactionCount: number;
   categoryBreakdown: CategoryBreakdown[];
   monthlyEvolution: MonthlySummary[];
-}
-
-export interface AvailablePeriod {
-  year: number;
-  months: number[];
 }
 
 export interface CategoryBreakdown {

@@ -90,7 +90,6 @@ class DashboardResourceTest {
         createTransaction("2026-06-05", "Teste dashboard salario", 5000, "INCOME", "PAID");
         createTransaction("2026-06-10", "Teste dashboard aluguel", 1200, "EXPENSE", "PAID");
         createTransaction("2026-06-15", "Teste dashboard mercado", 300, "EXPENSE", "PENDING");
-        cancelTransaction(createTransaction("2026-06-20", "Teste dashboard cancelado", 90, "EXPENSE", "PENDING"));
         createTransaction("2026-07-01", "Teste dashboard julho", 40, "EXPENSE", "PAID");
 
         given()
@@ -156,13 +155,6 @@ class DashboardResourceTest {
     }
 
     @Test
-    void shouldIncludeCanceledTransactionYear() {
-        cancelTransaction(createTransaction("2022-05-10", "Teste dashboard cancelado 2022", 70, "EXPENSE", "PENDING"));
-
-        assertEquals(List.of(5), monthsOf(availablePeriods(), 2022));
-    }
-
-    @Test
     void shouldNotListPeriodsOfAnotherUser() {
         createTransactionFor(OTHER_USER_ID, "2018-04-09", "Teste dashboard outro usuario", 120, "EXPENSE", "PAID");
 
@@ -220,18 +212,40 @@ class DashboardResourceTest {
     }
 
     @Test
-    void shouldRejectYearWithoutTransactions() {
+    void shouldReturnZeroedSummaryForYearWithoutTransactions() {
         createTransaction(LocalDate.of(Year.now().getValue(), 1, 15).toString(),
                 "Teste dashboard ano corrente", 100, "EXPENSE", "PAID");
 
+        JsonPath body = given()
+                .queryParam("year", 2019)
+                .queryParam("month", 3)
+                .when().get("/dashboard/summary")
+                .then()
+                .statusCode(200)
+                .body("period.year", equalTo(2019))
+                .body("period.month", equalTo(3))
+                .body("transactionCount", equalTo(0))
+                .body("categoryBreakdown", empty())
+                .body("monthlyEvolution.size()", equalTo(12))
+                .extract().jsonPath();
+
+        assertZeroedTotals(body);
+        for (int index = 0; index < 12; index++) {
+            assertEquals(2019, body.getInt("monthlyEvolution[%d].year".formatted(index)));
+            assertEquals(0.0d, body.getDouble("monthlyEvolution[%d].income".formatted(index)));
+            assertEquals(0.0d, body.getDouble("monthlyEvolution[%d].expense".formatted(index)));
+        }
+    }
+
+    @Test
+    void shouldCheckMonthBeforeYearWithoutTransactions() {
         given()
                 .queryParam("year", 2019)
-                .queryParam("month", 9)
+                .queryParam("month", 13)
                 .when().get("/dashboard/summary")
                 .then()
                 .statusCode(400)
-                .body("message", equalTo("Não há lançamentos no ano informado."))
-                .body("period", nullValue());
+                .body("message", equalTo("O mês deve estar entre 1 e 12."));
     }
 
     @Test
@@ -338,12 +352,5 @@ class DashboardResourceTest {
     private void setCategory(String transactionId, UUID categoryId) {
         QuarkusTransaction.requiringNew().run(() -> repository.findByIdOptional(UUID.fromString(transactionId))
                 .ifPresent(transaction -> transaction.categoryId = categoryId));
-    }
-
-    private static void cancelTransaction(String id) {
-        given()
-                .when().delete("/transactions/{id}", id)
-                .then()
-                .statusCode(204);
     }
 }

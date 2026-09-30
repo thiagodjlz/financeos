@@ -269,7 +269,7 @@ class CategoryResourceTest {
     void shouldCountTransactionsOfEveryUserAndStatus() {
         Category category = createCategory(true, null);
         createTransaction(TEST_USER_ID, category.id, TransactionStatus.PAID);
-        createTransaction(TEST_USER_ID, category.id, TransactionStatus.CANCELED);
+        createTransaction(TEST_USER_ID, category.id, TransactionStatus.PENDING);
         UUID otherUserTransactionId = createTransaction(OTHER_USER_ID, category.id, TransactionStatus.PENDING);
         String otherUserDescription = findTransactions(List.of(otherUserTransactionId)).get(0).description;
 

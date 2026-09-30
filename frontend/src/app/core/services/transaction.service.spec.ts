@@ -62,13 +62,13 @@ describe('TransactionService', () => {
     await expect(createPromise).resolves.toMatchObject({ id: '2' });
   });
 
-  it('cancels a transaction via DELETE /transactions/{id}', async () => {
-    const cancelPromise = service.cancel('1');
+  it('deletes a transaction via DELETE /transactions/{id}', async () => {
+    const deletePromise = service.delete('1');
 
     const req = httpMock.expectOne(`${API_BASE}/transactions/1`);
     expect(req.request.method).toBe('DELETE');
     req.flush(null);
 
-    await cancelPromise;
+    await deletePromise;
   });
 });

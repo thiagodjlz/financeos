@@ -1,0 +1,54 @@
+<button
+  type="button"
+  class="month-picker-trigger"
+  #trigger
+  aria-haspopup="dialog"
+  [attr.aria-expanded]="open()"
+  [attr.aria-controls]="panelId"
+  [attr.aria-label]="triggerLabel()"
+  (click)="toggle()"
+>
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <rect x="3.5" y="5" width="17" height="15.5" rx="2.5"></rect>
+    <path d="M3.5 10h17M8 3v4M16 3v4"></path>
+  </svg>
+  <span class="month-picker-text" aria-live="polite">{{ text() }}</span>
+</button>
+
+@if (open()) {
+  <div
+    class="month-picker-panel"
+    #panel
+    role="dialog"
+    [id]="panelId"
+    [attr.aria-label]="'Escolher mês: ' + label()"
+    [style.left.px]="offset() || null"
+  >
+    <div class="month-picker-head">
+      <button type="button" class="icon-button" aria-label="Ano anterior" title="Ano anterior" (click)="shiftYear(-1)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M15 6l-6 6 6 6"></path>
+        </svg>
+      </button>
+      <strong class="month-picker-year tabular" aria-live="polite">{{ viewYear() }}</strong>
+      <button type="button" class="icon-button" aria-label="Próximo ano" title="Próximo ano" (click)="shiftYear(1)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M9 6l6 6-6 6"></path>
+        </svg>
+      </button>
+    </div>
+    <div class="month-picker-grid">
+      @for (month of months; track month) {
+        <button
+          type="button"
+          class="month-picker-month"
+          [attr.aria-label]="fullName(month)"
+          [attr.aria-pressed]="isSelected(month)"
+          (click)="choose(month)"
+        >
+          {{ shortName(month) }}
+        </button>
+      }
+    </div>
+  </div>
+}
