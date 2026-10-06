@@ -21,6 +21,8 @@ export class ConfirmDialog implements AfterViewInit, OnDestroy {
   readonly message = input.required<string>();
   readonly confirmLabel = input('Sair sem salvar');
   readonly cancelLabel = input('Continuar editando');
+  // Confirmação de exclusão: o botão de confirmar sai no estilo de perigo.
+  readonly destructive = input(false);
 
   readonly confirm = output<void>();
   readonly cancel = output<void>();

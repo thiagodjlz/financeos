@@ -11,5 +11,11 @@ public record CategoryBreakdownResponse(
         String categoryColor,
         TransactionType type,
         BigDecimal totalAmount,
-        long transactionCount) {
+        long transactionCount,
+        BigDecimal sharePercent) {
+
+    public CategoryBreakdownResponse withSharePercent(BigDecimal value) {
+        return new CategoryBreakdownResponse(categoryId, categoryName, categoryColor, type, totalAmount,
+                transactionCount, value);
+    }
 }

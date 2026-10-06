@@ -15,33 +15,26 @@ import {
   monthLabel,
   monthRange,
   parseMonthKey,
+  shiftMonth,
   shortDate,
   transactionStatusLabel,
 } from '../../core/formatters';
 import { ListFeedback } from '../../core/list-feedback/list-feedback';
-import { Category, ListFilters, Transaction, TransactionStatus } from '../../core/models';
+import { Category, ListFilters, Transaction, TransactionStatus, TransactionType } from '../../core/models';
 import { MonthPicker } from '../../core/month-picker/month-picker';
 import { FilterChip, PagedList } from '../../core/paged-list';
 import { Pagination } from '../../core/pagination/pagination';
+import { RecordDetail } from '../../core/record-detail/record-detail';
 import { AuthService } from '../../core/services/auth.service';
 import { CategoryService } from '../../core/services/category.service';
 import { ListStateService } from '../../core/services/list-state.service';
 import { ToastService } from '../../core/services/toast.service';
 import { TransactionService } from '../../core/services/transaction.service';
+import { TRANSACTIONS_LIST_KEY, TRANSACTION_DEFAULT_FILTERS } from './transaction-filters';
 
 export const TRANSACTIONS_LOAD_FALLBACK = 'Não foi possível carregar os lançamentos.';
 
 const DELETE_FALLBACK = 'Não foi possível excluir o lançamento.';
-
-// O período é uma chave só (`month`, `YYYY-MM`): o rótulo "Data" some com um único `remove`, e a
-// API continua recebendo `startDate`/`endDate`.
-const DEFAULT_FILTERS = {
-  description: '',
-  categoryId: '',
-  type: '',
-  status: '',
-  month: '',
-};
 
 export function transactionQuery(filters: ListFilters): ListFilters {
   const { month, ...rest } = filters;
@@ -54,11 +47,27 @@ const TYPE_LABELS: Record<string, string> = { EXPENSE: 'Despesa', INCOME: 'Recei
 interface TransactionRow {
   transaction: Transaction;
   heading: string | null;
+  groupStart: boolean;
+  groupEnd: boolean;
+}
+
+interface MonthCache {
+  key: string;
+  value: YearMonth | null;
 }
 
 @Component({
   selector: 'app-transactions',
-  imports: [CommonModule, FormsModule, ConfirmDialog, FilterPanel, ListFeedback, MonthPicker, Pagination],
+  imports: [
+    CommonModule,
+    FormsModule,
+    ConfirmDialog,
+    FilterPanel,
+    ListFeedback,
+    MonthPicker,
+    Pagination,
+    RecordDetail,
+  ],
   templateUrl: './transactions.html',
   styleUrl: './transactions.scss',
 })
@@ -70,8 +79,8 @@ export class Transactions implements OnInit {
   protected readonly authService = inject(AuthService);
 
   protected readonly list = new PagedList({
-    key: 'transactions',
-    defaults: DEFAULT_FILTERS,
+    key: TRANSACTIONS_LIST_KEY,
+    defaults: TRANSACTION_DEFAULT_FILTERS,
     initial: { month: monthKey(currentMonth()) },
     fetch: (filters, page) => {
       this.loadCategories();
@@ -84,7 +93,9 @@ export class Transactions implements OnInit {
 
   protected readonly saving = signal(false);
   protected readonly deletingTransaction = signal<Transaction | null>(null);
-  private draftMonthCache: { key: string; value: YearMonth | null } = { key: '', value: null };
+  protected readonly detailTransaction = signal<Transaction | null>(null);
+  private draftMonthCache: MonthCache = { key: '', value: null };
+  private appliedMonthCache: MonthCache = { key: '', value: null };
   protected readonly categories = signal<Category[]>([]);
   private readonly categoriesState = signal<'idle' | 'loading' | 'loaded' | 'failed'>('idle');
   private readonly categoriesDenied = signal(false);
@@ -117,17 +128,35 @@ export class Transactions implements OnInit {
   });
 
   // Cabeçalho por dia só aparece no celular (o CSS esconde `tr.day-row` acima de 680px): a mesma
-  // tabela vira a lista em cartões agrupada por data, sem template por largura.
+  // tabela vira a lista em cartões agrupada por data, sem template por largura. `groupStart`/`groupEnd`
+  // arredondam o cartão de cada dia.
   protected readonly rows = computed<TransactionRow[]>(() => {
     const today = isoDate(new Date());
-    let previousDate: string | null = null;
+    const items = this.list.items();
 
-    return this.list.items().map((transaction) => {
-      const heading =
-        transaction.transactionDate !== previousDate ? dayHeading(transaction.transactionDate, today) : null;
-      previousDate = transaction.transactionDate;
-      return { transaction, heading };
+    return items.map((transaction, index) => {
+      const previous = items[index - 1]?.transactionDate;
+      const next = items[index + 1]?.transactionDate;
+      const groupStart = transaction.transactionDate !== previous;
+      return {
+        transaction,
+        heading: groupStart ? dayHeading(transaction.transactionDate, today) : null,
+        groupStart,
+        groupEnd: transaction.transactionDate !== next,
+      };
     });
+  });
+
+  protected readonly hasMonth = computed(() => !!parseMonthKey(this.list.applied().month));
+
+  // Total da consulta (todas as páginas), no cabeçalho do celular e na faixa de filtros do desktop.
+  protected readonly totalLabel = computed(() => {
+    if (this.list.loading() || this.list.loadError()) {
+      return '';
+    }
+
+    const total = this.list.totalItems();
+    return `${total.toLocaleString('pt-BR')} ${total === 1 ? 'lançamento' : 'lançamentos'}`;
   });
 
   ngOnInit(): void {
@@ -175,14 +204,17 @@ export class Transactions implements OnInit {
     return type ? this.categories().filter((category) => category.type === type) : this.categories();
   }
 
-  // O campo mostra o rascunho (`filters`), que no painel do celular muda antes do "Aplicar". A
-  // referência só muda com a chave, para o seletor não receber um objeto novo a cada verificação.
+  // O campo Período do painel mostra o rascunho (`filters`), que no celular muda antes do "Aplicar";
+  // o passo de mês, fora do painel, mostra o aplicado. A referência só muda com a chave, para o
+  // seletor não receber um objeto novo a cada verificação.
   protected draftMonth(): YearMonth | null {
-    const key = this.list.filters.month;
-    if (key !== this.draftMonthCache.key) {
-      this.draftMonthCache = { key, value: parseMonthKey(key) };
-    }
+    this.draftMonthCache = cachedMonth(this.draftMonthCache, this.list.filters.month);
     return this.draftMonthCache.value;
+  }
+
+  protected appliedMonth(): YearMonth | null {
+    this.appliedMonthCache = cachedMonth(this.appliedMonthCache, this.list.applied().month);
+    return this.appliedMonthCache.value;
   }
 
   protected onMonthChange(value: YearMonth): void {
@@ -190,13 +222,56 @@ export class Transactions implements OnInit {
     this.list.apply();
   }
 
-  protected onFilterTypeChange(): void {
+  // Setas do passo de mês: andam a partir do mês aplicado; em "Todo o período" ficam desabilitadas.
+  protected stepMonth(delta: number): void {
+    const current = parseMonthKey(this.list.applied().month);
+    if (!current) {
+      return;
+    }
+
+    this.list.filters.month = monthKey(shiftMonth(current, delta));
+    this.list.apply();
+  }
+
+  // "Todo o período" do painel do celular: só mexe no rascunho, vale no "Aplicar".
+  protected clearMonth(): void {
+    this.list.filters.month = '';
+  }
+
+  // Tipo fica fora do painel e aplica na hora; a categoria de outro tipo sai junto.
+  protected chooseType(type: TransactionType | ''): void {
+    this.list.filters.type = type;
     const category = this.categories().find((item) => item.id === this.list.filters.categoryId);
-    if (category && this.list.filters.type && category.type !== this.list.filters.type) {
+    if (category && type && category.type !== type) {
       this.list.filters.categoryId = '';
     }
 
     this.list.apply();
+  }
+
+  protected chooseDraftStatus(status: TransactionStatus | ''): void {
+    this.list.filters.status = status;
+    this.list.apply();
+  }
+
+  protected openDetail(transaction: Transaction): void {
+    this.detailTransaction.set(transaction);
+  }
+
+  protected closeDetail(): void {
+    this.detailTransaction.set(null);
+  }
+
+  protected editFromDetail(): void {
+    const transaction = this.detailTransaction();
+    if (transaction) {
+      this.edit(transaction);
+    }
+  }
+
+  // A confirmação abre por cima do Detalhe; recusar volta a ele, confirmar fecha os dois.
+  protected deleteFromDetail(): void {
+    this.deletingTransaction.set(this.detailTransaction());
   }
 
   protected create(): void {
@@ -218,6 +293,7 @@ export class Transactions implements OnInit {
   protected async confirmDelete(): Promise<void> {
     const transaction = this.deletingTransaction();
     this.deletingTransaction.set(null);
+    this.detailTransaction.set(null);
 
     if (!transaction) {
       return;
@@ -273,8 +349,16 @@ export class Transactions implements OnInit {
     }
   }
 
+  protected typeLabel(transaction: Transaction): string {
+    return TYPE_LABELS[transaction.type] ?? transaction.type;
+  }
+
   protected signedMoney(transaction: Transaction): string {
     const sign = transaction.type === 'EXPENSE' ? '− ' : '+ ';
     return `${sign}${money(transaction.amount)}`;
   }
+}
+
+function cachedMonth(cache: MonthCache, key: string): MonthCache {
+  return key === cache.key ? cache : { key, value: parseMonthKey(key) };
 }

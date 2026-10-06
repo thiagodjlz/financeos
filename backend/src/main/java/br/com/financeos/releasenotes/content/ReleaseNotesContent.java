@@ -25,6 +25,25 @@ public final class ReleaseNotesContent {
     private static ReleaseNoteVersion versao_1_0_3() {
         List<ReleaseNoteCategory> categories = new ArrayList<>();
 
+        addIfPresent(categories, Kind.IMPROVEMENT,
+                "Resumo redesenhado: o Saldo do mês mostra numa barra quanto das receitas já foi para despesas "
+                        + "pagas, junto com as Receitas e as Despesas, e o quadro Pendentes leva direto às "
+                        + "despesas a pagar do mês pelo atalho Ver pendentes.",
+                "Percentual por categoria: no painel Por categoria, cada categoria mostra a fatia dela no total "
+                        + "de despesas ou de receitas do mês, como 8,7%.",
+                "Mês em destaque no gráfico: o mês do período fica marcado na Evolução anual, e um quadro abaixo "
+                        + "do gráfico mostra os valores do mês tocado ou clicado.",
+                "Filtros de Lançamentos mais à mão: setas para passar de mês, botões Todos, Despesas e Receitas "
+                        + "que valem na hora e o total de lançamentos encontrados acima da lista.",
+                "Detalhe do registro: em Lançamentos, Categorias, Usuários e Perfis, tocar ou clicar num "
+                        + "registro mostra os dados dele, com os botões de editar e de excluir ou desativar.",
+                "Confirmação antes de desativar e excluir: Desativar usuário e Excluir perfil passam a "
+                        + "perguntar antes de agir, como já acontecia em Lançamentos e Categorias.",
+                "Cadastro de lançamento mais rápido: o Valor vem logo depois do Tipo e aceita vírgula nos "
+                        + "centavos, e os botões Hoje e Ontem preenchem a data com um toque.",
+                "Listas mais claras: enquanto carregam, mostram linhas de espera no lugar dos registros, e em "
+                        + "Lançamentos a falha de carga traz o botão Tentar novamente.");
+
         return new ReleaseNoteVersion("1.0.3", List.copyOf(categories));
     }
 

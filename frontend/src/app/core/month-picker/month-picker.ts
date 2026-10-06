@@ -28,6 +28,8 @@ let pickerSequence = 0;
 export class MonthPicker {
   readonly value = input<YearMonth | null>(null);
   readonly label = input.required<string>();
+  // Texto do campo sem mês escolhido (Lançamentos: "Todo o período").
+  readonly placeholder = input('');
 
   readonly valueChange = output<YearMonth>();
 
@@ -42,7 +44,9 @@ export class MonthPicker {
     return value ? monthLabel(value.year, value.month) : '';
   });
 
-  protected readonly triggerLabel = computed(() => `${this.label()}: ${this.text() || 'nenhum mês selecionado'}`);
+  protected readonly triggerLabel = computed(
+    () => `${this.label()}: ${this.text() || this.placeholder() || 'nenhum mês selecionado'}`,
+  );
 
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly injector = inject(Injector);

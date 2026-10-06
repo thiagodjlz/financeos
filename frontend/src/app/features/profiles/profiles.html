@@ -44,9 +44,11 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let profile of list.items()">
-          <td class="name-cell" data-label="Nome">{{ profile.name }}</td>
-          <td class="row-actions">
+        <tr *ngFor="let profile of list.items()" class="clickable-row" (click)="openDetail(profile)">
+          <td class="name-cell" data-label="Nome">
+            <button type="button" class="detail-trigger" aria-haspopup="dialog">{{ profile.name }}</button>
+          </td>
+          <td class="row-actions" (click)="$event.stopPropagation()">
             <span class="row-actions-inner">
               <button
                 *ngIf="authService.can('PROFILES', 'EDIT')"
@@ -68,7 +70,7 @@
                 aria-label="Excluir perfil"
                 title="Excluir perfil"
                 [disabled]="saving()"
-                (click)="remove(profile)"
+                (click)="requestDelete(profile)"
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <path d="M4 7h16"></path>
@@ -106,3 +108,41 @@
     (pageChange)="list.goTo($event)"
   />
 </section>
+
+@if (detailProfile(); as profile) {
+  <app-record-detail
+    [heading]="profile.name"
+    editLabel="Editar perfil"
+    removeLabel="Excluir perfil"
+    [canEdit]="authService.can('PROFILES', 'EDIT')"
+    [canRemove]="authService.can('PROFILES', 'DELETE')"
+    [busy]="saving()"
+    [suspended]="!!deletingProfile()"
+    (close)="closeDetail()"
+    (edit)="editFromDetail()"
+    (remove)="removeFromDetail()"
+  >
+    <span detailIcon class="detail-icon" aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 3.5l7 3v5c0 4.2-2.9 7.8-7 9-4.1-1.2-7-4.8-7-9v-5z"></path>
+        <path d="M9 12l2.2 2.2L15.5 10"></path>
+      </svg>
+    </span>
+    @for (row of permissions(profile); track row.screen) {
+      <div>
+        <dt>{{ row.screen }}</dt>
+        <dd>{{ row.actions }}</dd>
+      </div>
+    }
+  </app-record-detail>
+}
+
+<app-confirm-dialog
+  *ngIf="deletingProfile() as profile"
+  [message]="deleteMessage(profile)"
+  cancelLabel="Cancelar"
+  confirmLabel="Excluir perfil"
+  [destructive]="true"
+  (cancel)="cancelDelete()"
+  (confirm)="confirmDelete()"
+/>

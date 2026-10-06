@@ -23,8 +23,10 @@ function fakeList() {
 @Component({
   imports: [FilterPanel],
   template: `
-    <app-filter-panel [list]="fake.list" [chips]="chips()">
+    <app-filter-panel [list]="fake.list" [chips]="chips()" [summary]="summary()">
       <input filterSearch name="search" aria-label="Buscar por nome" />
+      <div filterLead class="lead">Passo</div>
+      <div filterInline class="inline">Tipo</div>
       <label class="filter-field"><span>Tipo</span><select name="type"></select></label>
     </app-filter-panel>
   `,
@@ -32,6 +34,7 @@ function fakeList() {
 class Host {
   readonly fake = fakeList();
   readonly chips = signal<FilterChip[]>([]);
+  readonly summary = signal('');
 }
 
 describe('FilterPanel', () => {
@@ -67,6 +70,29 @@ describe('FilterPanel', () => {
     expect(element().querySelector('.filter-fields select[name="type"]')).not.toBeNull();
     expect(sheet().classList.contains('open')).toBe(false);
     expect(sheet().getAttribute('role')).toBeNull();
+  });
+
+  it('projeta `[filterLead]` e `[filterInline]` na faixa, fora do painel do celular', () => {
+    expect(element().querySelector('.filter-row > .lead')).not.toBeNull();
+    expect(element().querySelector('.filter-row > .inline')).not.toBeNull();
+    expect(sheet().querySelector('.lead, .inline')).toBeNull();
+  });
+
+  it('mostra o resumo à direita da faixa de "Filtros ativos", sozinho quando não há filtro', () => {
+    const host = fixture.componentInstance;
+    host.summary.set('9 lançamentos');
+    fixture.detectChanges();
+
+    const strip = element().querySelector('.active-filters') as HTMLElement;
+    expect(strip.querySelector('.active-filters-summary')?.textContent?.trim()).toBe('9 lançamentos');
+    expect(strip.classList.contains('summary-only')).toBe(true);
+    expect(strip.querySelector('.active-filters-label')).toBeNull();
+
+    host.chips.set([{ key: 'type', label: 'Tipo: Despesa' }]);
+    fixture.detectChanges();
+
+    expect(strip.classList.contains('summary-only')).toBe(false);
+    expect(strip.querySelector('.active-filters-label')?.textContent?.trim()).toBe('Filtros ativos:');
   });
 
   it('mantém alça, título e ações do painel como filhos diretos dele, de que depende o CSS que os esconde no desktop', () => {

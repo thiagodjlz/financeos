@@ -138,8 +138,92 @@ describe('Categories', () => {
 
   async function confirmDeletion(): Promise<void> {
     await click(deleteButtons()[0]);
-    await click(query<HTMLButtonElement>('.modal-actions button.primary-button'));
+    await click(query<HTMLButtonElement>('.modal-actions button.danger-button'));
   }
+
+  function detail(): HTMLElement | null {
+    return query('.detail-panel');
+  }
+
+  function detailRows(): string[][] {
+    return queryAll('.detail-list > div').map((row) => [
+      (row.querySelector('dt')?.textContent ?? '').trim(),
+      (row.querySelector('dd')?.textContent ?? '').replace(/\s+/g, ' ').trim(),
+    ]);
+  }
+
+  it('tocar na linha abre o Detalhe com Tipo, Cor e Situação; X, scrim e Esc fecham sem requisição', async () => {
+    await render(true, [CATEGORY, OTHER_CATEGORY]);
+
+    await click(queryAll('tbody tr')[0]);
+    expect(detail()?.getAttribute('role')).toBe('dialog');
+    expect(detail()?.querySelector('h2')?.textContent?.trim()).toBe('Mercado');
+    expect(detailRows()).toEqual([
+      ['Tipo', 'Despesa'],
+      ['Cor', ''],
+      ['Situação', 'Ativo'],
+    ]);
+    const swatch = query<HTMLElement>('.detail-list .detail-color');
+    expect(swatch.getAttribute('aria-label')).toBe('Cor da categoria');
+    expect(swatch.getAttribute('role')).toBe('img');
+    expect(swatch.style.background).toBe('rgb(18, 52, 86)');
+
+    await click(buttonByText('Fechar', '.detail-panel') as HTMLButtonElement);
+    expect(detail()).toBeNull();
+
+    await click(queryAll<HTMLElement>('tbody .detail-trigger')[1]);
+    expect(detailRows()[1]).toEqual(['Cor', 'Sem cor']);
+    await click(query('.detail-scrim'));
+    expect(detail()).toBeNull();
+
+    await click(queryAll('tbody tr')[0]);
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    await settle();
+    expect(detail()).toBeNull();
+    httpMock.expectNone(() => true);
+  });
+
+  it('o Detalhe mostra "Editar categoria" só com EDIT e "Excluir categoria" só com DELETE', async () => {
+    await renderWithPermissions([categoriesPermission({ canEdit: true })]);
+
+    await click(queryAll('tbody tr')[0]);
+    expect(buttonByText('Excluir categoria', '.detail-panel')).toBeUndefined();
+    await click(buttonByText('Editar categoria', '.detail-panel') as HTMLButtonElement);
+    expect(router.navigate).toHaveBeenCalledWith(['/categories', 'cat-1', 'edit']);
+  });
+
+  it('excluir pelo Detalhe confirma em estilo de perigo, faz um único DELETE, fecha e recarrega', async () => {
+    await render();
+
+    await click(queryAll('tbody tr')[0]);
+    await click(buttonByText('Excluir categoria', '.detail-panel') as HTMLButtonElement);
+    await click(buttonByText('Cancelar', '.modal-card') as HTMLButtonElement);
+    httpMock.expectNone(`${API_BASE}/categories/cat-1`);
+    expect(detail()).not.toBeNull();
+
+    await click(buttonByText('Excluir categoria', '.detail-panel') as HTMLButtonElement);
+    await click(query<HTMLButtonElement>('.modal-actions button.danger-button'));
+    const request = httpMock.expectOne(`${API_BASE}/categories/cat-1`);
+    expect(request.request.method).toBe('DELETE');
+    request.flush(null);
+    await settle();
+    httpMock.expectOne(DEFAULT_URL).flush(page([]));
+    await settle();
+
+    expect(detail()).toBeNull();
+    expect(toasts().map((toast) => toast.message)).toEqual(['Categoria excluída com sucesso.']);
+  });
+
+  it('os botões da linha agem direto, sem abrir o Detalhe', async () => {
+    await render();
+
+    await click(buttonByText('Editar categoria', 'tbody') as HTMLButtonElement);
+    await click(deleteButtons()[0]);
+
+    expect(detail()).toBeNull();
+    expect(router.navigate).toHaveBeenCalledWith(['/categories', 'cat-1', 'edit']);
+    await click(buttonByText('Cancelar', '.modal-card') as HTMLButtonElement);
+  });
 
   it('abre com Situação = Ativos contando no botão Filtros e com o rótulo "Ativos"', async () => {
     await render();
@@ -314,7 +398,7 @@ describe('Categories', () => {
     await click(deleteButtons()[0]);
 
     expect(query('.modal-card p').textContent).toContain('"Mercado"');
-    expect(query('.modal-actions button.primary-button').textContent?.trim()).toBe('Excluir categoria');
+    expect(query('.modal-actions button.danger-button').textContent?.trim()).toBe('Excluir categoria');
 
     await click(query<HTMLButtonElement>('.modal-actions button.ghost-button'));
 

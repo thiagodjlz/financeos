@@ -75,8 +75,10 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let user of list.items()">
-          <td class="name-cell" data-label="Nome">{{ user.name }}</td>
+        <tr *ngFor="let user of list.items()" class="clickable-row" (click)="openDetail(user)">
+          <td class="name-cell" data-label="Nome">
+            <button type="button" class="detail-trigger" aria-haspopup="dialog">{{ user.name }}</button>
+          </td>
           <td data-label="E-mail">{{ user.email }}</td>
           <td data-label="Perfil">{{ profileName(user) }}</td>
           <td data-label="Status">
@@ -84,7 +86,7 @@
               {{ user.active ? 'Ativo' : 'Inativo' }}
             </span>
           </td>
-          <td class="row-actions">
+          <td class="row-actions" (click)="$event.stopPropagation()">
             <span class="row-actions-inner">
               <button
                 *ngIf="authService.can('USERS', 'EDIT')"
@@ -106,7 +108,7 @@
                 aria-label="Desativar usuário"
                 title="Desativar usuário"
                 [disabled]="saving()"
-                (click)="deactivate(user)"
+                (click)="requestDeactivate(user)"
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <circle cx="12" cy="12" r="8.5"></circle>
@@ -141,3 +143,47 @@
     (pageChange)="list.goTo($event)"
   />
 </section>
+
+@if (detailUser(); as user) {
+  <app-record-detail
+    [heading]="user.name"
+    editLabel="Editar usuário"
+    removeLabel="Desativar usuário"
+    removeIcon="block"
+    [canEdit]="authService.can('USERS', 'EDIT')"
+    [canRemove]="authService.can('USERS', 'DELETE') && user.active"
+    [busy]="saving()"
+    [suspended]="!!deactivatingUser()"
+    (close)="closeDetail()"
+    (edit)="editFromDetail()"
+    (remove)="deactivateFromDetail()"
+  >
+    <span detailIcon class="detail-icon detail-initials" aria-hidden="true">{{ initials(user) }}</span>
+    <div>
+      <dt>E-mail</dt>
+      <dd>{{ user.email }}</dd>
+    </div>
+    <div>
+      <dt>Perfil</dt>
+      <dd>{{ profileName(user) }}</dd>
+    </div>
+    <div>
+      <dt>Status</dt>
+      <dd>
+        <span class="status-pill" [class.pill-income]="user.active" [class.pill-neutral]="!user.active">
+          {{ user.active ? 'Ativo' : 'Inativo' }}
+        </span>
+      </dd>
+    </div>
+  </app-record-detail>
+}
+
+<app-confirm-dialog
+  *ngIf="deactivatingUser() as user"
+  [message]="deactivateMessage(user)"
+  cancelLabel="Cancelar"
+  confirmLabel="Desativar usuário"
+  [destructive]="true"
+  (cancel)="cancelDeactivate()"
+  (confirm)="confirmDeactivate()"
+/>

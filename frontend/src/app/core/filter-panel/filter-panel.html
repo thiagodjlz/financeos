@@ -1,6 +1,7 @@
 <div class="list-toolbar">
   <div class="filter-row">
     <ng-content select="[filterSearch]" />
+    <ng-content select="[filterLead]" />
 
     @if (hasFields()) {
       <button
@@ -17,6 +18,7 @@
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
           <path d="M4 6.5h16M7 12h10M10 17.5h4"></path>
         </svg>
+        <span aria-hidden="true">Filtros</span>
         @if (list().activeCount() > 0) {
           <span class="filter-count" aria-hidden="true">{{ list().activeCount() }}</span>
         }
@@ -53,10 +55,12 @@
         <button type="button" class="primary-button" (click)="applySheet()">Aplicar</button>
       </div>
     </div>
+
+    <ng-content select="[filterInline]" />
   </div>
 
-  @if (chips().length || list().differsFromDefault()) {
-    <div class="active-filters">
+  @if (chips().length || list().differsFromDefault() || summary()) {
+    <div class="active-filters" [class.summary-only]="!chips().length && !list().differsFromDefault()">
       @if (chips().length) {
         <span class="active-filters-label">Filtros ativos:</span>
       }
@@ -80,6 +84,9 @@
       </ul>
       @if (list().differsFromDefault()) {
         <button type="button" class="link-button" (click)="list().clear()">Limpar filtros</button>
+      }
+      @if (summary()) {
+        <span class="active-filters-summary">{{ summary() }}</span>
       }
     </div>
   }

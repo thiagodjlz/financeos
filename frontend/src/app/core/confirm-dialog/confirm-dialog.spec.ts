@@ -13,6 +13,7 @@ import { ConfirmDialog } from './confirm-dialog';
         message="Deseja sair sem salvar?"
         cancelLabel="Continuar editando"
         confirmLabel="Sair sem salvar"
+        [destructive]="destructive()"
         (cancel)="onCancel()"
         (confirm)="onConfirm()"
       />
@@ -21,6 +22,7 @@ import { ConfirmDialog } from './confirm-dialog';
 })
 class HostPage {
   readonly open = signal(false);
+  readonly destructive = signal(false);
   confirmed = 0;
   canceled = 0;
 
@@ -103,6 +105,14 @@ describe('ConfirmDialog', () => {
     ]);
     expect(buttons()[0].classList.contains('ghost-button')).toBe(true);
     expect(buttons()[1].classList.contains('primary-button')).toBe(true);
+  });
+
+  it('com `destructive`, o botão de confirmar sai no estilo de perigo', () => {
+    fixture.componentInstance.destructive.set(true);
+    openDialog();
+
+    expect(buttons()[1].classList.contains('danger-button')).toBe(true);
+    expect(buttons()[1].classList.contains('primary-button')).toBe(false);
   });
 
   it('move o foco para o primeiro botão ao abrir e devolve ao elemento que abriu ao fechar', () => {

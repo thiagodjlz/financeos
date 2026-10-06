@@ -10,6 +10,7 @@ public record DashboardSummaryResponse(
         BigDecimal balance,
         BigDecimal paidExpense,
         BigDecimal pendingExpense,
+        BigDecimal paidExpensePercent,
         long transactionCount,
         List<CategoryBreakdownResponse> categoryBreakdown,
         List<MonthlySummaryResponse> monthlyEvolution) {

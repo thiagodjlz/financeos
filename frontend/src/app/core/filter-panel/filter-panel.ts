@@ -20,6 +20,7 @@ let panelSequence = 0;
 
 // Acima de 680px os campos ficam sempre visíveis e aplicam no `change`; até 680px o botão
 // "Filtros" (só visível ali, pelo CSS) abre os mesmos campos num painel inferior com "Aplicar".
+// `[filterLead]` e `[filterInline]` ficam fora do painel nas duas faixas: valem na hora.
 @Component({
   selector: 'app-filter-panel',
   templateUrl: './filter-panel.html',
@@ -29,6 +30,8 @@ export class FilterPanel implements OnDestroy {
   readonly chips = input<FilterChip[]>([]);
   // Tela só com a busca (Perfis): no celular não há o que abrir no painel, então o botão some.
   readonly hasFields = input(true);
+  // Texto à direita da faixa de "Filtros ativos" no desktop (o total da listagem).
+  readonly summary = input('');
 
   protected readonly open = signal(false);
   protected readonly panelId = `filter-panel-${++panelSequence}`;

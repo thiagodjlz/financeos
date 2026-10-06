@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Filtros de lançamentos no celular</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}a:hover{color:inherit}
+button,select{font:inherit;color:inherit}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; box-sizing: border-box; overflow: hidden; background: #f6f5f2; color: #1b1a18; font-family: 'Inter', system-ui, sans-serif; font-size: 14px; line-height: 1.5; font-variant-numeric: tabular-nums">
+
+<div aria-hidden="true" style="padding: 20px 16px; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; align-items: baseline; justify-content: space-between">
+<span style="font-size: 22px; line-height: 1.25; font-weight: 700">Lançamentos</span>
+<span style="font-size: 13.5px; color: #6b6760">9 lançamentos</span>
+</div>
+<div style="height: 48px; background: #ffffff; border: 1px solid #e8e6e1; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 600">Outubro de 2026</div>
+<div style="height: 48px; background: #ffffff; border: 1px solid #d6d3cc; border-radius: 12px"></div>
+<div style="height: 160px; background: #ffffff; border: 1px solid #e8e6e1; border-radius: 16px"></div>
+</div>
+
+<div style="position: absolute; inset: 0; background: rgba(20,24,40,0.55)"></div>
+
+<section role="dialog" aria-modal="true" aria-labelledby="filtros-titulo" style="position: absolute; left: 0; right: 0; bottom: 0; background: #ffffff; border-radius: 20px 20px 0 0; box-shadow: 0 -12px 40px rgba(20,24,40,0.25); display: flex; flex-direction: column">
+<div style="padding: 10px 16px 0; display: flex; flex-direction: column; gap: 6px">
+<span style="align-self: center; width: 40px; height: 4px; border-radius: 999px; background: #d6d3cc"></span>
+<div style="display: flex; align-items: center; justify-content: space-between">
+<h2 id="filtros-titulo" style="margin: 0; font-size: 18px; font-weight: 700">Filtros</h2>
+<a href="Lancamentos-celular.dc.html" aria-label="Fechar filtros" style="width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #4a4741">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+</a>
+</div>
+</div>
+
+<div style="padding: 8px 16px 20px; display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span id="f-periodo" style="font-size: 13.5px; font-weight: 500; color: #4a4741">Período</span>
+<div role="group" aria-labelledby="f-periodo" style="display: flex; gap: 8px">
+<button type="button" style="flex-grow: 1; height: 48px; box-sizing: border-box; background: #ffffff; border: 1px solid #938f87; border-radius: 12px; padding: 0 12px; display: flex; align-items: center; gap: 8px; font-size: 16px">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b6760" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14" rx="2.5"></rect><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"></path></svg>
+Outubro de 2026
+</button>
+<button type="button" style="height: 48px; padding: 0 14px; border: 1px solid #d6d3cc; border-radius: 12px; background: #ffffff; font-size: 14px; font-weight: 600">Todo o período</button>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span id="f-status" style="font-size: 13.5px; font-weight: 500; color: #4a4741">Status</span>
+<div role="group" aria-labelledby="f-status" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; background: #efeeea; border-radius: 12px; padding: 4px">
+<button type="button" aria-pressed="false" style="height: 40px; border: 0; border-radius: 9px; font-size: 14px; font-weight: 600; background: transparent; color: #4a4741">Todos</button>
+<button type="button" aria-pressed="true" style="height: 40px; border: 0; border-radius: 9px; font-size: 14px; font-weight: 600; background: #ffffff; box-shadow: 0 1px 2px rgba(27,26,24,0.12)">Pendente</button>
+<button type="button" aria-pressed="false" style="height: 40px; border: 0; border-radius: 9px; font-size: 14px; font-weight: 600; background: transparent; color: #4a4741">Pago</button>
+</div>
+</div>
+
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13.5px; font-weight: 500; color: #4a4741">
+Categoria
+<select style="height: 48px; box-sizing: border-box; background: #ffffff; border: 1px solid #938f87; border-radius: 12px; padding: 0 12px; font-size: 16px; color: #1b1a18">
+<option>Todas</option>
+<option>Moradia</option>
+<option>Mercado</option>
+<option>Saúde</option>
+<option>Transporte</option>
+<option>Salário</option>
+</select>
+</label>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding: 12px 16px 28px; border-top: 1px solid #e8e6e1">
+<button type="button" style="height: 52px; border: 1px solid #d6d3cc; border-radius: 14px; background: #ffffff; font-size: 15px; font-weight: 600">Limpar filtros</button>
+<a href="Lancamentos-celular.dc.html" style="height: 52px; border-radius: 14px; background: #3b5bdb; color: #ffffff; font-size: 16px; font-weight: 600; display: flex; align-items: center; justify-content: center">Aplicar</a>
+</div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

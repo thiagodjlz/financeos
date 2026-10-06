@@ -4,276 +4,333 @@
     <p class="page-subtitle greeting-subline">{{ greeting().subline }}</p>
   </div>
 
-  <div class="month-stepper" role="group" aria-label="Período do resumo">
+  <div class="dashboard-actions">
+    <div class="month-stepper" role="group" aria-label="Período do resumo">
+      <button
+        type="button"
+        class="icon-button"
+        aria-label="Mês anterior"
+        title="Mês anterior"
+        (click)="step(-1)"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M15 6l-6 6 6 6"></path>
+        </svg>
+      </button>
+      <app-month-picker class="bare" label="Período do resumo" [value]="selected()" (valueChange)="choose($event)" />
+      <button
+        type="button"
+        class="icon-button"
+        aria-label="Próximo mês"
+        title="Próximo mês"
+        (click)="step(1)"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M9 6l6 6-6 6"></path>
+        </svg>
+      </button>
+    </div>
+
     <button
+      *ngIf="canCreateTransaction()"
       type="button"
-      class="icon-button"
-      aria-label="Mês anterior"
-      title="Mês anterior"
-      (click)="step(-1)"
+      class="primary-button new-transaction"
+      (click)="createTransaction()"
     >
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M15 6l-6 6 6 6"></path>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+        <path d="M12 5v14M5 12h14"></path>
       </svg>
-    </button>
-    <app-month-picker class="bare" label="Período do resumo" [value]="selected()" (valueChange)="choose($event)" />
-    <button
-      type="button"
-      class="icon-button"
-      aria-label="Próximo mês"
-      title="Próximo mês"
-      (click)="step(1)"
-    >
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M9 6l6 6-6 6"></path>
-      </svg>
+      <span>Novo lançamento</span>
     </button>
   </div>
 </header>
 
 <p class="load-error" role="alert" *ngIf="!loading() && loadError()">{{ loadError() }}</p>
 
-<section class="metric-grid">
-  <div class="metric-card balance-card">
-    <div class="metric-head">
-      <span class="metric-icon balance" aria-hidden="true">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M4 8a2.5 2.5 0 0 1 2.5-2.5H17V8"></path>
-          <rect x="4" y="8" width="16" height="11" rx="2.5"></rect>
-          <path d="M16 13.5h.01"></path>
+<div class="dashboard-grid">
+  <div class="dashboard-column dashboard-main">
+    <section class="balance-card" aria-label="Saldo do mês">
+      <div class="balance-main">
+        <div class="balance-head">
+          <span class="balance-label">Saldo do mês</span>
+          <strong class="balance-value">{{ formatMoney(summary()?.balance) }}</strong>
+          <span class="balance-hint">Receitas menos despesas pagas</span>
+        </div>
+        <div class="balance-ratio">
+          <div class="balance-track" aria-hidden="true">
+            <div class="balance-bar" [style.width.%]="balanceBarWidth()"></div>
+          </div>
+          <span class="balance-ratio-text">{{ balanceRatioText() }}</span>
+        </div>
+      </div>
+
+      <div class="balance-split">
+        <div class="balance-item">
+          <span class="balance-item-icon income" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 19V5M5.5 11.5L12 5l6.5 6.5"></path>
+            </svg>
+          </span>
+          <span class="balance-item-text">
+            <span class="balance-item-label">Receitas<span class="only-desktop"> · entradas no mês</span></span>
+            <strong class="balance-item-value">{{ formatMoney(summary()?.totalIncome) }}</strong>
+            <span class="balance-item-hint only-mobile">Entradas no mês</span>
+          </span>
+        </div>
+        <div class="balance-item">
+          <span class="balance-item-icon expense" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 5v14M5.5 12.5L12 19l6.5-6.5"></path>
+            </svg>
+          </span>
+          <span class="balance-item-text">
+            <span class="balance-item-label">Despesas<span class="only-desktop"> · já pagas no mês</span></span>
+            <strong class="balance-item-value">{{ formatMoney(summary()?.totalExpense) }}</strong>
+            <span class="balance-item-hint only-mobile">Já pagas no mês</span>
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel chart-panel">
+      <div class="panel-heading">
+        <h2>Evolução anual</h2>
+        <div class="chart-legend">
+          <span><i class="legend-marker income"></i>Receitas</span>
+          <span><i class="legend-marker expense"></i>Despesas</span>
+          <span><i class="legend-marker balance"></i>Saldo</span>
+        </div>
+      </div>
+
+      <div class="chart-viewport" #chartViewport>
+        <svg
+          class="evolution-chart"
+          #chartSvg
+          [attr.viewBox]="chart().viewBox"
+          preserveAspectRatio="none"
+          role="img"
+          tabindex="0"
+          [attr.aria-label]="chartAriaLabel()"
+          (keydown)="onChartKeydown($event)"
+          (blur)="onChartBlur()"
+        >
+          <g class="chart-axis">
+            <ng-container *ngFor="let tick of chart().ticks">
+              <line
+                class="chart-grid-line"
+                [attr.x1]="chart().plotLeft"
+                [attr.y1]="tick.y"
+                [attr.x2]="chart().plotRight"
+                [attr.y2]="tick.y"
+              ></line>
+              <text
+                class="chart-axis-label"
+                [attr.x]="chart().axisLabelX"
+                [attr.y]="tick.y + 4"
+                font-size="11"
+                text-anchor="end"
+              >{{ tick.label }}</text>
+            </ng-container>
+          </g>
+
+          <rect
+            class="month-band"
+            *ngFor="let month of chart().months"
+            [class.is-active]="activeMonth() === month.index"
+            [class.is-period]="periodMonthIndex() === month.index"
+            [attr.x]="month.left"
+            [attr.y]="chart().plotTop"
+            [attr.width]="month.width"
+            [attr.height]="chart().plotHeight"
+            rx="6"
+          ></rect>
+
+          <ng-container *ngFor="let month of chart().months">
+            <rect
+              class="bar-income"
+              [attr.x]="month.incomeX"
+              [attr.y]="month.incomeY"
+              [attr.width]="chart().barWidth"
+              [attr.height]="month.incomeH"
+              rx="2.5"
+            ></rect>
+            <rect
+              class="bar-expense"
+              [attr.x]="month.expenseX"
+              [attr.y]="month.expenseY"
+              [attr.width]="chart().barWidth"
+              [attr.height]="month.expenseH"
+              rx="2.5"
+            ></rect>
+            <text
+              class="chart-month"
+              [class.is-period]="periodMonthIndex() === month.index"
+              [attr.x]="month.center"
+              [attr.y]="chart().monthLabelY"
+              font-size="11"
+              text-anchor="middle"
+            >{{ month.label }}</text>
+          </ng-container>
+
+          <line
+            class="chart-zero-line"
+            [attr.x1]="chart().plotLeft"
+            [attr.y1]="chart().zeroY"
+            [attr.x2]="chart().plotRight"
+            [attr.y2]="chart().zeroY"
+          ></line>
+
+          <ng-container *ngIf="chart().balancePoints.length">
+            <polyline
+              class="balance-line"
+              [attr.points]="chart().linePoints"
+              fill="none"
+              stroke-width="2.5"
+              stroke-linejoin="round"
+              stroke-linecap="round"
+            ></polyline>
+            <circle
+              class="balance-point"
+              *ngFor="let point of chart().balancePoints"
+              [attr.cx]="point.cx"
+              [attr.cy]="point.cy"
+              r="3.5"
+              stroke-width="2"
+            ></circle>
+          </ng-container>
+
+          <rect
+            class="month-hit"
+            *ngFor="let month of chart().months"
+            [attr.x]="month.left"
+            [attr.y]="chart().plotTop"
+            [attr.width]="month.width"
+            [attr.height]="chart().plotHeight"
+            fill="transparent"
+            (mouseenter)="onMonthEnter(month.index)"
+            (mousemove)="onMonthEnter(month.index)"
+            (mouseleave)="onMonthLeave()"
+            (pointerdown)="onMonthPointerDown($event, month.index)"
+            (click)="pinMonth(month.index)"
+          ></rect>
         </svg>
-      </span>
-      <span class="metric-label">Saldo do mês</span>
-    </div>
-    <strong class="metric-value">{{ formatMoney(summary()?.balance) }}</strong>
-    <span class="metric-hint">Receitas menos despesas pagas</span>
+
+        <div class="chart-tooltip-layer" aria-live="polite">
+          <ng-container *ngIf="activeTooltip() as tooltip">
+            <div class="chart-tooltip" [style.left.px]="tooltipLeft()">
+              <strong>{{ tooltip.title }}</strong>
+              <span class="chart-tooltip-row">
+                <i class="legend-marker income"></i>Receita<b>{{ tooltip.income }}</b>
+              </span>
+              <span class="chart-tooltip-row">
+                <i class="legend-marker expense"></i>Despesa<b>{{ tooltip.expense }}</b>
+              </span>
+              <span class="chart-tooltip-row">
+                <i class="legend-marker balance"></i>Saldo<b>{{ tooltip.balance }}</b>
+              </span>
+            </div>
+            <span class="sr-only">{{ announcement() }}</span>
+          </ng-container>
+        </div>
+      </div>
+
+      <div class="month-block" *ngIf="monthBlock() as block" aria-hidden="true">
+        <strong class="month-block-title">{{ block.title }}</strong>
+        <div class="month-block-values">
+          <span><small>Receita</small>{{ block.income }}</span>
+          <span><small>Despesa</small>{{ block.expense }}</span>
+          <span><small>Saldo</small>{{ block.balance }}</span>
+        </div>
+        <span class="month-block-hint only-mobile">Toque em um mês do gráfico para ver os valores.</span>
+        <span class="month-block-hint only-desktop">Clique em um mês do gráfico para ver os valores.</span>
+      </div>
+    </section>
   </div>
-  <div class="metric-card">
-    <div class="metric-head">
-      <span class="metric-icon income" aria-hidden="true">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 19V5M5.5 11.5L12 5l6.5 6.5"></path>
-        </svg>
-      </span>
-      <span class="metric-label">Receitas</span>
-    </div>
-    <strong class="metric-value">{{ formatMoney(summary()?.totalIncome) }}</strong>
-    <span class="metric-hint">Entradas no mês</span>
-  </div>
-  <div class="metric-card">
-    <div class="metric-head">
-      <span class="metric-icon expense" aria-hidden="true">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 5v14M5.5 12.5L12 19l6.5-6.5"></path>
-        </svg>
-      </span>
-      <span class="metric-label">Despesas</span>
-    </div>
-    <strong class="metric-value">{{ formatMoney(summary()?.totalExpense) }}</strong>
-    <span class="metric-hint">Já pagas no mês</span>
-  </div>
-  <div class="metric-card">
-    <div class="metric-head">
-      <span class="metric-icon pending" aria-hidden="true">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+
+  <div class="dashboard-column dashboard-side">
+    <ng-template #pendingContent>
+      <span class="pending-icon" aria-hidden="true">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="8.5"></circle>
           <path d="M12 7.5V12l3 3"></path>
         </svg>
       </span>
-      <span class="metric-label">Pendentes</span>
-    </div>
-    <strong class="metric-value">{{ formatMoney(summary()?.pendingExpense) }}</strong>
-    <span class="metric-hint">Despesas a pagar</span>
-  </div>
-</section>
+      <span class="pending-text">
+        <span class="pending-label">Pendentes · despesas a pagar</span>
+        <strong class="pending-value">{{ formatMoney(summary()?.pendingExpense) }}</strong>
+      </span>
+    </ng-template>
 
-<section class="panels-grid">
-  <section class="panel chart-panel">
-    <div class="panel-heading">
-      <h2>Evolução anual</h2>
-      <div class="chart-legend">
-        <span><i class="legend-marker income"></i>Receitas</span>
-        <span><i class="legend-marker expense"></i>Despesas</span>
-        <span><i class="legend-marker balance"></i>Saldo</span>
+    <button
+      *ngIf="canViewTransactions(); else pendingStatic"
+      type="button"
+      class="pending-card"
+      (click)="openPending()"
+    >
+      <ng-container *ngTemplateOutlet="pendingContent"></ng-container>
+      <span class="pending-link">
+        Ver<span class="only-desktop"> pendentes</span>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M9 6l6 6-6 6"></path>
+        </svg>
+      </span>
+    </button>
+    <ng-template #pendingStatic>
+      <div class="pending-card">
+        <ng-container *ngTemplateOutlet="pendingContent"></ng-container>
       </div>
-    </div>
+    </ng-template>
 
-    <div class="chart-viewport" #chartViewport>
-      <svg
-        class="evolution-chart"
-        [attr.viewBox]="chart().viewBox"
-        preserveAspectRatio="none"
-        role="img"
-        tabindex="0"
-        [attr.aria-label]="chartAriaLabel()"
-        (keydown)="onChartKeydown($event)"
-        (blur)="onChartBlur()"
-      >
-        <g class="chart-axis">
-          <ng-container *ngFor="let tick of chart().ticks">
-            <line
-              class="chart-grid-line"
-              [attr.x1]="chart().plotLeft"
-              [attr.y1]="tick.y"
-              [attr.x2]="chart().plotRight"
-              [attr.y2]="tick.y"
-            ></line>
-            <text
-              class="chart-axis-label"
-              [attr.x]="chart().axisLabelX"
-              [attr.y]="tick.y + 4"
-              font-size="11"
-              text-anchor="end"
-            >{{ tick.label }}</text>
-          </ng-container>
-        </g>
-
-        <rect
-          class="month-band"
-          *ngFor="let month of chart().months"
-          [class.is-active]="activeMonth() === month.index"
-          [attr.x]="month.left"
-          [attr.y]="chart().plotTop"
-          [attr.width]="month.width"
-          [attr.height]="chart().plotHeight"
-        ></rect>
-
-        <ng-container *ngFor="let month of chart().months">
-          <rect
-            class="bar-income"
-            [attr.x]="month.incomeX"
-            [attr.y]="month.incomeY"
-            [attr.width]="chart().barWidth"
-            [attr.height]="month.incomeH"
-            rx="2.5"
-          ></rect>
-          <rect
-            class="bar-expense"
-            [attr.x]="month.expenseX"
-            [attr.y]="month.expenseY"
-            [attr.width]="chart().barWidth"
-            [attr.height]="month.expenseH"
-            rx="2.5"
-          ></rect>
-          <text
-            class="chart-month"
-            [attr.x]="month.center"
-            [attr.y]="chart().monthLabelY"
-            font-size="11"
-            text-anchor="middle"
-          >{{ month.label }}</text>
-        </ng-container>
-
-        <line
-          class="chart-zero-line"
-          [attr.x1]="chart().plotLeft"
-          [attr.y1]="chart().zeroY"
-          [attr.x2]="chart().plotRight"
-          [attr.y2]="chart().zeroY"
-        ></line>
-
-        <ng-container *ngIf="chart().balancePoints.length">
-          <polyline
-            class="balance-line"
-            [attr.points]="chart().linePoints"
-            fill="none"
-            stroke-width="2.5"
-            stroke-linejoin="round"
-            stroke-linecap="round"
-          ></polyline>
-          <circle
-            class="balance-point"
-            *ngFor="let point of chart().balancePoints"
-            [attr.cx]="point.cx"
-            [attr.cy]="point.cy"
-            r="3.5"
-            stroke-width="2"
-          ></circle>
-        </ng-container>
-
-        <rect
-          class="month-hit"
-          *ngFor="let month of chart().months"
-          [attr.x]="month.left"
-          [attr.y]="chart().plotTop"
-          [attr.width]="month.width"
-          [attr.height]="chart().plotHeight"
-          fill="transparent"
-          (mouseenter)="onMonthEnter(month.index)"
-          (mousemove)="onMonthEnter(month.index)"
-          (mouseleave)="onMonthLeave()"
-          (pointerdown)="onMonthPointerDown($event, month.index)"
-        ></rect>
-      </svg>
-
-      <div class="chart-tooltip-layer" aria-live="polite">
-        <ng-container *ngIf="activeTooltip() as tooltip">
-          <div class="chart-tooltip" [style.left.px]="tooltipLeft()">
-            <strong>{{ tooltip.title }}</strong>
-            <span class="chart-tooltip-row">
-              <i class="legend-marker income"></i>Receita<b>{{ tooltip.income }}</b>
-            </span>
-            <span class="chart-tooltip-row">
-              <i class="legend-marker expense"></i>Despesa<b>{{ tooltip.expense }}</b>
-            </span>
-            <span class="chart-tooltip-row">
-              <i class="legend-marker balance"></i>Saldo<b>{{ tooltip.balance }}</b>
-            </span>
-          </div>
-          <span class="sr-only">{{ announcement() }}</span>
-        </ng-container>
-      </div>
-    </div>
-  </section>
-
-  <section class="panel breakdown-panel">
-    <div class="panel-heading">
-      <h2>Por categoria</h2>
-    </div>
-    <div class="breakdown-toggle" role="group" aria-label="Tipo das categorias">
-      <button
-        type="button"
-        [attr.aria-pressed]="breakdownType() === 'EXPENSE'"
-        (click)="breakdownType.set('EXPENSE')"
-      >
-        Despesas
-      </button>
-      <button
-        type="button"
-        [attr.aria-pressed]="breakdownType() === 'INCOME'"
-        (click)="breakdownType.set('INCOME')"
-      >
-        Receitas
-      </button>
-    </div>
-    <div class="category-section" [attr.aria-busy]="loading()">
-      <div class="category-list">
-        <div class="category-row" *ngFor="let item of breakdownItems()">
-          <div class="category-row-head">
-            <span
-              class="category-dot"
-              *ngIf="item.categoryColor"
-              [style.background]="item.categoryColor"
-              aria-hidden="true"
-            ></span>
-            <span class="category-name">{{ item.categoryName }}</span>
-            <span class="category-amount">{{ formatMoney(item.totalAmount) }}</span>
-          </div>
-          <div class="category-track">
-            <div
-              class="category-bar"
-              [style.width.%]="(item.totalAmount / breakdownMax()) * 100"
-              [style.background]="item.categoryColor"
-            ></div>
-          </div>
+    <section class="panel breakdown-panel">
+      <div class="panel-heading">
+        <h2>Por categoria</h2>
+        <div class="toggle-group breakdown-toggle" role="group" aria-label="Tipo das categorias">
+          <button
+            type="button"
+            [attr.aria-pressed]="breakdownType() === 'EXPENSE'"
+            (click)="breakdownType.set('EXPENSE')"
+          >
+            Despesas
+          </button>
+          <button
+            type="button"
+            [attr.aria-pressed]="breakdownType() === 'INCOME'"
+            (click)="breakdownType.set('INCOME')"
+          >
+            Receitas
+          </button>
         </div>
-        <p class="loading-state" *ngIf="loading()"></p>
-        <p class="empty-state" *ngIf="!loading() && !loadError() && !breakdownItems().length">Sem dados no período</p>
       </div>
-    </div>
-    <div class="panel-footer">
-      <span>{{ breakdownCountLabel() }}</span>
-      <strong>{{ formatMoney(breakdownTotal()) }}</strong>
-    </div>
-  </section>
-</section>
+      <div class="category-section" [attr.aria-busy]="loading()">
+        <div class="category-list">
+          <div class="category-row" *ngFor="let item of breakdownItems()">
+            <div class="category-row-head">
+              <span
+                class="category-dot"
+                *ngIf="item.categoryColor"
+                [style.background]="item.categoryColor"
+                aria-hidden="true"
+              ></span>
+              <span class="category-name">{{ item.categoryName }}</span>
+              <span class="category-share">{{ shareLabel(item) }}</span>
+              <span class="category-amount">{{ formatMoney(item.totalAmount) }}</span>
+            </div>
+            <div class="category-track">
+              <div
+                class="category-bar"
+                [style.width.%]="(item.totalAmount / breakdownMax()) * 100"
+                [style.background]="item.categoryColor"
+              ></div>
+            </div>
+          </div>
+          <p class="loading-state" *ngIf="loading()"></p>
+          <p class="empty-state" *ngIf="!loading() && !loadError() && !breakdownItems().length">Sem dados no período</p>
+        </div>
+      </div>
+      <div class="panel-footer">
+        <span>{{ breakdownCountLabel() }}</span>
+        <strong>{{ formatMoney(breakdownTotal()) }}</strong>
+      </div>
+    </section>
+  </div>
+</div>

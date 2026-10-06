@@ -150,8 +150,29 @@ describe('Transactions', () => {
     return queryAll('.filter-chip span').map((chip) => chip.textContent?.trim() ?? '');
   }
 
+  // Campo Período do painel do celular (mostra o rascunho); o passo de mês mostra o aplicado.
   function monthField(): HTMLButtonElement {
     return query<HTMLButtonElement>('.filter-field .month-picker-trigger');
+  }
+
+  function stepper(): HTMLElement {
+    return query('.filter-lead.month-stepper');
+  }
+
+  function stepperText(): string {
+    return (stepper().querySelector('.month-picker-trigger')?.textContent ?? '').trim();
+  }
+
+  function typeButtons(): HTMLButtonElement[] {
+    return queryAll<HTMLButtonElement>('.type-toggle button');
+  }
+
+  async function chooseType(label: string): Promise<void> {
+    await click(typeButtons().find((button) => button.textContent?.trim() === label) as HTMLButtonElement);
+  }
+
+  function detail(): HTMLElement | null {
+    return query('.detail-panel');
   }
 
   function monthFieldText(): string {
@@ -190,6 +211,19 @@ describe('Transactions', () => {
     expect(summaryText()).toBe('Mostrando 1–1 de 1');
   });
 
+  it('mostra o total da consulta no singular e no plural, no cabeçalho e na faixa de filtros', async () => {
+    await render();
+
+    expect(query('.header-total').textContent?.trim()).toBe('1 lançamento');
+    expect(query('.active-filters-summary').textContent?.trim()).toBe('1 lançamento');
+    fixture.destroy();
+
+    await render(page([TRANSACTION], 23, 3));
+
+    expect(query('.header-total').textContent?.trim()).toBe('23 lançamentos');
+    expect(query('.active-filters-summary').textContent?.trim()).toBe('23 lançamentos');
+  });
+
   it('mostra "Novo lançamento" com CREATE e "Editar lançamento" com EDIT, navegando para o cadastro', async () => {
     await render();
 
@@ -205,6 +239,7 @@ describe('Transactions', () => {
     expect(edit.getAttribute('title')).toBe('Editar lançamento');
     await click(edit);
     expect(router.navigate).toHaveBeenCalledWith(['/transactions', 'transaction-1', 'edit']);
+    expect(detail()).toBeNull();
   });
 
   it('esconde "Novo lançamento", "Editar lançamento" e "Excluir lançamento" sem as permissões', async () => {
@@ -272,7 +307,8 @@ describe('Transactions', () => {
     await render();
 
     expect(monthFieldText()).toBe('Setembro de 2026');
-    expect(query('.filter-field[role="group"] > span').textContent?.trim()).toBe('Data');
+    expect(stepperText()).toBe('Setembro de 2026');
+    expect(query('.filter-field[role="group"] > span').textContent?.trim()).toBe('Período');
     expect(queryAll('input[type="date"]')).toHaveLength(0);
     expect(chipTexts()).toEqual(['Data: Setembro de 2026']);
     expect(query('.filter-toggle').getAttribute('aria-label')).toBe('Filtros, 1 ativo');
@@ -307,14 +343,14 @@ describe('Transactions', () => {
     httpMock.expectOne(`${LIST_URL}?page=1&size=10`).flush(page([TRANSACTION]));
     await settle();
 
-    expect(monthFieldText()).toBe('');
+    expect(monthFieldText()).toBe('Todo o período');
     expect(chipTexts()).toEqual([]);
     expect(query('.filter-toggle').getAttribute('aria-label')).toBe('Filtros');
     fixture.destroy();
 
     await render(page([TRANSACTION]), true, `${LIST_URL}?page=1&size=10`);
 
-    expect(monthFieldText()).toBe('');
+    expect(monthFieldText()).toBe('Todo o período');
     expect(chipTexts()).toEqual([]);
   });
 
@@ -340,7 +376,7 @@ describe('Transactions', () => {
 
     await click(query('.filter-toggle'));
     await click(buttonByText('Limpar filtros', '.filter-sheet') as HTMLButtonElement);
-    expect(monthFieldText()).toBe('');
+    expect(monthFieldText()).toBe('Todo o período');
 
     await click(buttonByText('Aplicar', '.filter-sheet') as HTMLButtonElement);
     httpMock.expectOne(`${LIST_URL}?page=1&size=10`).flush(page([TRANSACTION]));
@@ -351,7 +387,7 @@ describe('Transactions', () => {
 
   it('pagina mantendo os filtros e desabilita os botões nas pontas', async () => {
     await render(page([TRANSACTION], 11, 2));
-    await selectValue('select[name="filterType"]', 'EXPENSE');
+    await chooseType('Despesas');
     httpMock.expectOne(`${LIST_URL}?page=1&size=10&type=EXPENSE&${MONTH}`).flush(page([TRANSACTION], 11, 2));
     await settle();
 
@@ -406,13 +442,14 @@ describe('Transactions', () => {
     const options = queryAll<HTMLOptionElement>('select[name="filterStatus"] option').map((option) =>
       option.textContent?.trim(),
     );
-    expect(options).toEqual(['Todos', 'Pendente', 'Pago']);
+    expect(options).toEqual(['Status: todos', 'Pendente', 'Pago']);
+    expect(optionTexts('select[name="filterCategoryId"]')[0]).toBe('Categoria: todas');
     expect(query('select[name="filterStatus"]').textContent).not.toContain('Cancelado');
   });
 
   it('restaura filtros e página ao voltar do cadastro', async () => {
     await render(page([TRANSACTION], 11, 2));
-    await selectValue('select[name="filterType"]', 'EXPENSE');
+    await chooseType('Despesas');
     httpMock.expectOne(`${LIST_URL}?page=1&size=10&type=EXPENSE&${MONTH}`).flush(page([TRANSACTION], 11, 2));
     await settle();
     await click(buttonByText('Próxima') as HTMLButtonElement);
@@ -450,7 +487,7 @@ describe('Transactions', () => {
 
   it('com filtro sem resultado mostra "Nenhum registro encontrado." e "Limpar filtros" volta ao padrão', async () => {
     await render();
-    await selectValue('select[name="filterType"]', 'INCOME');
+    await chooseType('Receitas');
     httpMock.expectOne(`${LIST_URL}?page=1&size=10&type=INCOME&${MONTH}`).flush(page([]));
     await settle();
 
@@ -461,7 +498,7 @@ describe('Transactions', () => {
     await settle();
 
     expect(query('.filter-toggle').getAttribute('aria-label')).toBe('Filtros');
-    expect(monthFieldText()).toBe('');
+    expect(monthFieldText()).toBe('Todo o período');
     expect(chipTexts()).toEqual([]);
     expect(queryAll('tbody tr.transaction-row')).toHaveLength(1);
   });
@@ -475,19 +512,28 @@ describe('Transactions', () => {
     expect(query('.load-error').textContent?.trim()).toBe('Não foi possível carregar os lançamentos.');
     expect(query('.empty-state')).toBeNull();
     expect(query('.pagination')).toBeNull();
+    expect(query('.header-total')).toBeNull();
     expect(toastService.toasts()[0].title).toBe('Falha');
+
+    await click(buttonByText('Tentar novamente') as HTMLButtonElement);
+    httpMock.expectOne(`${LIST_URL}?page=1&size=10&${MONTH}`).flush(page([TRANSACTION]));
+    await settle();
+
+    expect(query('.load-error')).toBeNull();
+    expect(queryAll('tbody tr.transaction-row')).toHaveLength(1);
   });
 
   it('oferece no filtro todas as categorias do tipo, marcando as inativas', async () => {
     await render();
-    await selectValue('select[name="filterType"]', 'EXPENSE');
+    await chooseType('Despesas');
     httpMock.expectOne(`${LIST_URL}?page=1&size=10&type=EXPENSE&${MONTH}`).flush(page([TRANSACTION]));
     await settle();
 
     const options = queryAll<HTMLOptionElement>('select[name="filterCategoryId"] option').map((option) =>
       option.textContent?.trim(),
     );
-    expect(options).toEqual(['Todas', 'Mercado', 'Antiga (Inativo)']);
+    expect(options).toEqual(['Categoria: todas', 'Mercado', 'Antiga (Inativo)']);
+    expect(optionTexts('select[name="filterCategoryIdPanel"]')).toEqual(['Todas', 'Mercado', 'Antiga (Inativo)']);
   });
 
   it('sem permissão de ver Categorias lista as linhas e a paginação, sem erro de carga nem catálogo', async () => {
@@ -508,7 +554,7 @@ describe('Transactions', () => {
 
     expect(query('select[name="filterCategoryId"]')).toBeNull();
 
-    await selectValue('select[name="filterType"]', 'EXPENSE');
+    await chooseType('Despesas');
     httpMock.expectOne(`${LIST_URL}?page=1&size=10&type=EXPENSE&${MONTH}`).flush(page([TRANSACTION]));
     httpMock.expectNone(OPTIONS_URL);
     await settle();
@@ -580,14 +626,14 @@ describe('Transactions', () => {
     expect(categoryCells()).toEqual(['Mercado']);
     expect(toastService.toasts().map((toast) => toast.title)).toEqual(['Falha']);
 
-    expect(optionTexts('select[name="filterCategoryId"]')).toEqual(['Todas']);
+    expect(optionTexts('select[name="filterCategoryId"]')).toEqual(['Categoria: todas']);
 
-    await selectValue('select[name="filterType"]', 'EXPENSE');
+    await chooseType('Despesas');
     httpMock.expectOne(`${LIST_URL}?page=1&size=10&type=EXPENSE&${MONTH}`).flush(page([TRANSACTION]));
     httpMock.expectOne(OPTIONS_URL).flush(CATEGORIES);
     await settle();
 
-    expect(optionTexts('select[name="filterCategoryId"]')).toEqual(['Todas', 'Mercado', 'Antiga (Inativo)']);
+    expect(optionTexts('select[name="filterCategoryId"]')).toEqual(['Categoria: todas', 'Mercado', 'Antiga (Inativo)']);
     expect(toastService.toasts()).toHaveLength(1);
   });
 
@@ -614,7 +660,7 @@ describe('Transactions', () => {
 
     expect(query('select[name="filterCategoryId"]')).toBeNull();
 
-    await selectValue('select[name="filterType"]', 'EXPENSE');
+    await chooseType('Despesas');
     httpMock.expectOne(`${LIST_URL}?page=1&size=10&type=EXPENSE&${MONTH}`).flush(page([TRANSACTION]));
     httpMock.expectNone(OPTIONS_URL);
     await settle();
@@ -665,6 +711,200 @@ describe('Transactions', () => {
       (cell) => cell.querySelector<HTMLElement>('.category-dot')?.style.background ?? null,
     );
     expect(dots).toEqual(['rgb(224, 122, 63)', null, null]);
+  });
+
+  it('passo de mês: as setas trocam o filtro Data e ficam desabilitadas em "Todo o período"', async () => {
+    await render();
+
+    expect(stepper().getAttribute('aria-label')).toBe('Período');
+    await click(buttonByLabel('Próximo mês', '.filter-lead') as HTMLButtonElement);
+    httpMock
+      .expectOne(`${LIST_URL}?page=1&size=10&startDate=2026-10-01&endDate=2026-10-31`)
+      .flush(page([TRANSACTION]));
+    await settle();
+
+    expect(stepperText()).toBe('Outubro de 2026');
+    expect(chipTexts()).toEqual(['Data: Outubro de 2026']);
+
+    await click(buttonByLabel('Mês anterior', '.filter-lead') as HTMLButtonElement);
+    await click(buttonByLabel('Mês anterior', '.filter-lead') as HTMLButtonElement);
+    httpMock.expectOne(`${LIST_URL}?page=1&size=10&${MONTH}`).flush(page([TRANSACTION]));
+    httpMock
+      .expectOne(`${LIST_URL}?page=1&size=10&startDate=2026-08-01&endDate=2026-08-31`)
+      .flush(page([TRANSACTION]));
+    await settle();
+    expect(stepperText()).toBe('Agosto de 2026');
+
+    await click(chipByText('Data: Agosto de 2026'));
+    httpMock.expectOne(`${LIST_URL}?page=1&size=10`).flush(page([TRANSACTION]));
+    await settle();
+
+    expect(stepperText()).toBe('Todo o período');
+    const previous = buttonByLabel('Mês anterior', '.filter-lead') as HTMLButtonElement;
+    const next = buttonByLabel('Próximo mês', '.filter-lead') as HTMLButtonElement;
+    expect(previous.disabled).toBe(true);
+    expect(next.disabled).toBe(true);
+    await click(next);
+    httpMock.expectNone((request) => request.url === LIST_URL);
+  });
+
+  it('Tipo em botões aplica na hora, marca o escolhido e tira a categoria de outro tipo', async () => {
+    await render();
+
+    expect(typeButtons().map((button) => button.textContent?.trim())).toEqual(['Todos', 'Despesas', 'Receitas']);
+    expect(typeButtons().map((button) => button.getAttribute('aria-pressed'))).toEqual(['true', 'false', 'false']);
+
+    await selectValue('select[name="filterCategoryId"]', 'cat-expense');
+    httpMock.expectOne(`${LIST_URL}?page=1&size=10&categoryId=cat-expense&${MONTH}`).flush(page([TRANSACTION]));
+    await settle();
+
+    await chooseType('Receitas');
+    httpMock.expectOne(`${LIST_URL}?page=1&size=10&type=INCOME&${MONTH}`).flush(page([]));
+    await settle();
+
+    expect(typeButtons().map((button) => button.getAttribute('aria-pressed'))).toEqual(['false', 'false', 'true']);
+    expect(chipTexts()).toEqual(['Tipo: Receita', 'Data: Setembro de 2026']);
+
+    await chooseType('Todos');
+    httpMock.expectOne(`${LIST_URL}?page=1&size=10&${MONTH}`).flush(page([TRANSACTION]));
+    await settle();
+
+    expect(chipTexts()).toEqual(['Data: Setembro de 2026']);
+  });
+
+  it('no painel do celular, "Todo o período" e o Status em botões só valem em "Aplicar"', async () => {
+    await render();
+
+    await click(query('.filter-toggle'));
+    await click(buttonByText('Todo o período', '.filter-sheet') as HTMLButtonElement);
+    await click(buttonByText('Pendente', '.filter-sheet .status-toggle') as HTMLButtonElement);
+    httpMock.expectNone((request) => request.url === LIST_URL);
+
+    expect(monthFieldText()).toBe('Todo o período');
+    expect(stepperText()).toBe('Setembro de 2026');
+    expect(
+      queryAll<HTMLButtonElement>('.status-toggle button').map((button) => button.getAttribute('aria-pressed')),
+    ).toEqual(['false', 'true', 'false']);
+
+    await click(buttonByText('Aplicar', '.filter-sheet') as HTMLButtonElement);
+    httpMock.expectOne(`${LIST_URL}?page=1&size=10&status=PENDING`).flush(page([TRANSACTION]));
+    await settle();
+
+    expect(chipTexts()).toEqual(['Status: Pendente']);
+    expect(stepperText()).toBe('Todo o período');
+  });
+
+  it('tocar na linha abre o Detalhe; X, scrim e Esc fecham sem requisição', async () => {
+    await render();
+
+    await click(query('tbody tr.transaction-row'));
+
+    expect(detail()?.getAttribute('role')).toBe('dialog');
+    expect(detail()?.querySelector('h2')?.textContent?.trim()).toBe('Feira');
+    expect(
+      Array.from(detail()!.querySelectorAll('dt')).map((term) => term.textContent?.trim()),
+    ).toEqual(['Tipo', 'Categoria', 'Data', 'Status']);
+
+    await click(buttonByLabel('Fechar', '.detail-panel') as HTMLButtonElement);
+    expect(detail()).toBeNull();
+
+    await click(query('tbody .description-text'));
+    await click(query('.detail-scrim'));
+    expect(detail()).toBeNull();
+
+    await click(query('tbody tr.transaction-row'));
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    await settle();
+    expect(detail()).toBeNull();
+
+    httpMock.expectNone(() => true);
+    expect(toastService.toasts()).toHaveLength(0);
+  });
+
+  it('o Detalhe mostra "Editar lançamento" só com EDIT e "Excluir lançamento" só com DELETE', async () => {
+    TestBed.inject(AuthService).permissions.set([
+      { screen: 'TRANSACTIONS', canView: true, canCreate: false, canEdit: true, canDelete: false },
+    ]);
+    await render(page([TRANSACTION]), false);
+
+    await click(query('tbody tr.transaction-row'));
+
+    expect(buttonByText('Excluir lançamento', '.detail-panel')).toBeUndefined();
+    await click(buttonByText('Editar lançamento', '.detail-panel') as HTMLButtonElement);
+    expect(router.navigate).toHaveBeenCalledWith(['/transactions', 'transaction-1', 'edit']);
+  });
+
+  it('excluir pelo Detalhe confirma antes, faz um único DELETE, fecha e recarrega', async () => {
+    await render();
+
+    await click(query('tbody tr.transaction-row'));
+    await click(buttonByText('Excluir lançamento', '.detail-panel') as HTMLButtonElement);
+
+    expect(query('.modal-card p').textContent?.trim()).toBe(
+      'Deseja excluir o lançamento "Feira"? A exclusão não pode ser desfeita.',
+    );
+    await click(buttonByText('Cancelar', '.modal-card') as HTMLButtonElement);
+    httpMock.expectNone(`${LIST_URL}/transaction-1`);
+    expect(detail()).not.toBeNull();
+
+    await click(buttonByText('Excluir lançamento', '.detail-panel') as HTMLButtonElement);
+    await click(buttonByText('Excluir lançamento', '.modal-card') as HTMLButtonElement);
+
+    const request = httpMock.expectOne(`${LIST_URL}/transaction-1`);
+    expect(request.request.method).toBe('DELETE');
+    request.flush(null);
+    await settle();
+    httpMock.expectOne(`${LIST_URL}?page=1&size=10&${MONTH}`).flush(page([]));
+    await settle();
+
+    expect(detail()).toBeNull();
+    expect(query('.modal-card')).toBeNull();
+    expect(toastService.toasts().map((toast) => toast.message)).toEqual(['Lançamento excluído com sucesso.']);
+  });
+
+  it('os botões da linha não abrem o Detalhe', async () => {
+    await render();
+
+    await click(buttonByLabel('Excluir lançamento', 'tbody') as HTMLButtonElement);
+
+    expect(detail()).toBeNull();
+    expect(query('.modal-card')).not.toBeNull();
+    await click(buttonByText('Cancelar', '.modal-card') as HTMLButtonElement);
+  });
+
+  it('o vazio oferece "Novo lançamento" só com a permissão de incluir', async () => {
+    await render(page([]), true, `${LIST_URL}?page=1&size=10&${MONTH}`);
+    await click(chipByText('Data: Setembro de 2026'));
+    httpMock.expectOne(`${LIST_URL}?page=1&size=10`).flush(page([]));
+    await settle();
+
+    await click(buttonByText('Novo lançamento', '.list-state') as HTMLButtonElement);
+    expect(router.navigate).toHaveBeenCalledWith(['/transactions/new']);
+    fixture.destroy();
+
+    TestBed.inject(ListStateService).clear();
+    TestBed.inject(AuthService).permissions.set([
+      { screen: 'TRANSACTIONS', canView: true, canCreate: false, canEdit: false, canDelete: false },
+    ]);
+    await render(page([]), false);
+    await click(chipByText('Data: Setembro de 2026'));
+    httpMock.expectOne(`${LIST_URL}?page=1&size=10`).flush(page([]));
+    await settle();
+
+    expect(query('.list-state strong').textContent?.trim()).toBe('Sem lançamentos cadastrados');
+    expect(buttonByText('Novo lançamento')).toBeUndefined();
+  });
+
+  it('titula cada dia com o dia da semana, ou Hoje e Ontem', async () => {
+    const dates = ['2026-09-15', '2026-09-14', '2026-09-12', '2025-09-12'];
+    await render(page(dates.map((date, index) => ({ ...TRANSACTION, id: `t${index}`, transactionDate: date }))));
+
+    expect(queryAll('tbody tr.day-row th').map((cell) => cell.textContent?.trim())).toEqual([
+      'Hoje, 15 de setembro',
+      'Ontem, 14 de setembro',
+      'Sábado, 12 de setembro',
+      'Sexta, 12 de setembro de 2025',
+    ]);
   });
 
   it('agrupa as linhas por dia com um cabeçalho de data para os cartões do celular', async () => {

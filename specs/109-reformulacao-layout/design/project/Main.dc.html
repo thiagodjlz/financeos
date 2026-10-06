@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Resumo no celular</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}a:hover{color:inherit}
+button{font:inherit;color:inherit}
+</style>
+</helmet>
+<div style="width: 390px; height: 1480px; box-sizing: border-box; background: #f6f5f2; color: #1b1a18; font-family: 'Inter', system-ui, sans-serif; font-size: 14px; line-height: 1.5; font-variant-numeric: tabular-nums; display: flex; flex-direction: column">
+<div style="padding: 20px 16px 24px; display: flex; flex-direction: column; gap: 16px">
+
+<header style="display: flex; flex-direction: column; gap: 2px">
+<h1 style="margin: 0; font-size: 22px; line-height: 1.25; font-weight: 700">Boa tarde, Thiago</h1>
+<p style="margin: 0; font-size: 14px; color: #6b6760">Veja como está o seu mês até aqui.</p>
+</header>
+
+<div role="group" aria-label="Período do resumo" style="display: flex; align-items: center; justify-content: space-between; height: 48px; background: #ffffff; border: 1px solid #e8e6e1; border-radius: 14px; padding: 0 2px">
+<button type="button" aria-label="Mês anterior" style="width: 44px; height: 44px; border: 0; background: transparent; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #4a4741">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>
+</button>
+<button type="button" style="flex-grow: 1; height: 44px; border: 0; background: transparent; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 15px; font-weight: 600">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b6760" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14" rx="2.5"></rect><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"></path></svg>
+<span>Outubro de 2026</span>
+</button>
+<button type="button" aria-label="Próximo mês" style="width: 44px; height: 44px; border: 0; background: transparent; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #4a4741">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg>
+</button>
+</div>
+
+<section aria-label="Saldo do mês" style="background: #1d2440; color: #ffffff; border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 13px; font-weight: 500; color: #c3c9e2">Saldo do mês</span>
+<strong style="font-size: 34px; line-height: 1.2; font-weight: 700; letter-spacing: -0.02em">R$ 5.091,70</strong>
+<span style="font-size: 13px; color: #c3c9e2">Receitas menos despesas pagas</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<div style="height: 8px; border-radius: 999px; background: rgba(255,255,255,0.16); overflow: hidden">
+<div style="width: 29%; height: 100%; border-radius: 999px; background: #9fb0f7"></div>
+</div>
+<span style="font-size: 12.5px; color: #c3c9e2">Despesas pagas equivalem a 29% das receitas</span>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; border-top: 1px solid rgba(255,255,255,0.16); padding-top: 16px">
+<div style="display: flex; flex-direction: column; gap: 2px">
+<span style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #c3c9e2">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8fe0b5" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5.5 11.5L12 5l6.5 6.5"></path></svg>
+Receitas
+</span>
+<strong style="font-size: 17px; font-weight: 600">R$ 7.200,00</strong>
+<span style="font-size: 12px; color: #c3c9e2">Entradas no mês</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 2px">
+<span style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #c3c9e2">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f3b2a6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5.5 12.5L12 19l6.5-6.5"></path></svg>
+Despesas
+</span>
+<strong style="font-size: 17px; font-weight: 600">R$ 2.108,30</strong>
+<span style="font-size: 12px; color: #c3c9e2">Já pagas no mês</span>
+</div>
+</div>
+</section>
+
+<a href="Lancamentos-celular.dc.html" style="display: flex; align-items: center; gap: 12px; min-height: 72px; box-sizing: border-box; background: #fcf1de; border-radius: 16px; padding: 12px 14px; color: #1b1a18">
+<span style="width: 40px; height: 40px; border-radius: 12px; background: #ffffff; display: flex; align-items: center; justify-content: center; flex-shrink: 0">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8f5507" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3 3"></path></svg>
+</span>
+<span style="display: flex; flex-direction: column; flex-grow: 1; min-width: 0">
+<span style="font-size: 12.5px; font-weight: 500; color: #8f5507">Pendentes · despesas a pagar</span>
+<strong style="font-size: 17px; font-weight: 600">R$ 941,50</strong>
+</span>
+<span style="display: flex; align-items: center; gap: 2px; font-size: 13.5px; font-weight: 600; color: #8f5507">
+Ver
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg>
+</span>
+</a>
+
+<section style="background: #ffffff; border: 1px solid #e8e6e1; border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 14px">
+<h2 style="margin: 0; font-size: 16px; font-weight: 600">Por categoria</h2>
+<div role="group" aria-label="Tipo das categorias" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; background: #efeeea; border-radius: 12px; padding: 4px">
+<button type="button" aria-pressed="{{expPressed}}" onClick="{{pickExpense}}" style="height: 40px; border: 0; border-radius: 9px; font-size: 14px; font-weight: 600; background: {{expBg}}; color: {{expFg}}; box-shadow: {{expShadow}}">Despesas</button>
+<button type="button" aria-pressed="{{incPressed}}" onClick="{{pickIncome}}" style="height: 40px; border: 0; border-radius: 9px; font-size: 14px; font-weight: 600; background: {{incBg}}; color: {{incFg}}; box-shadow: {{incShadow}}">Receitas</button>
+</div>
+<div style="display: flex; flex-direction: column; gap: 14px">
+<sc-for list="{{cats}}" as="c" hint-placeholder-count="4">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; align-items: center; gap: 8px">
+<span style="width: 10px; height: 10px; border-radius: 999px; background: {{c.color}}; flex-shrink: 0"></span>
+<span style="font-size: 14px; font-weight: 500; flex-grow: 1; min-width: 0">{{c.name}}</span>
+<span style="font-size: 12.5px; color: #6b6760">{{c.share}}</span>
+<strong style="font-size: 14px; font-weight: 600; min-width: 92px; text-align: right">{{c.amount}}</strong>
+</div>
+<div style="height: 6px; border-radius: 999px; background: #efeeea; overflow: hidden">
+<div style="width: {{c.pct}}; height: 100%; border-radius: 999px; background: {{c.color}}"></div>
+</div>
+</div>
+</sc-for>
+</div>
+<div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e8e6e1; padding-top: 12px; font-size: 13.5px">
+<span style="color: #6b6760">{{catCount}}</span>
+<strong style="font-weight: 600">{{catTotal}}</strong>
+</div>
+</section>
+
+<section style="background: #ffffff; border: 1px solid #e8e6e1; border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; flex-direction: column; gap: 8px">
+<h2 style="margin: 0; font-size: 16px; font-weight: 600">Evolução anual</h2>
+<div style="display: flex; gap: 14px; font-size: 12.5px; color: #4a4741">
+<span style="display: flex; align-items: center; gap: 6px"><span style="width: 10px; height: 10px; border-radius: 3px; background: #35a56c"></span>Receitas</span>
+<span style="display: flex; align-items: center; gap: 6px"><span style="width: 10px; height: 10px; border-radius: 3px; background: #e07a68"></span>Despesas</span>
+<span style="display: flex; align-items: center; gap: 6px"><span style="width: 14px; height: 3px; border-radius: 3px; background: #3b5bdb"></span>Saldo</span>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<div style="position: relative; height: 140px; border-bottom: 1px solid #d6d3cc; background-image: linear-gradient(#e8e6e1, #e8e6e1), linear-gradient(#e8e6e1, #e8e6e1), linear-gradient(#e8e6e1, #e8e6e1); background-size: 100% 1px; background-repeat: no-repeat; background-position: 0 0, 0 35px, 0 70px">
+<div style="position: absolute; inset: 0; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr))">
+<sc-for list="{{months}}" as="m" hint-placeholder-count="12">
+<div style="position: relative; height: 140px; background: {{m.band}}; border-radius: 6px 6px 0 0">
+<div style="position: absolute; bottom: 0; left: 12%; width: 34%; height: {{m.incH}}; background: #35a56c; border-radius: 2.5px 2.5px 0 0"></div>
+<div style="position: absolute; bottom: 0; left: 54%; width: 34%; height: {{m.expH}}; background: #e07a68; border-radius: 2.5px 2.5px 0 0"></div>
+</div>
+</sc-for>
+</div>
+<svg viewBox="0 0 120 80" preserveAspectRatio="none" aria-hidden="true" style="position: absolute; inset: 0; width: 100%; height: 140px; overflow: visible"><polyline points="{{linePts}}" fill="none" stroke="#3b5bdb" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" style="vector-effect: non-scaling-stroke"></polyline></svg>
+</div>
+<div style="display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); font-size: 11px; color: #6b6760; text-align: center">
+<sc-for list="{{months}}" as="m" hint-placeholder-count="12">
+<span style="font-weight: {{m.weight}}; color: {{m.labelColor}}">{{m.letter}}</span>
+</sc-for>
+</div>
+</div>
+<div style="background: #faf9f7; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 8px">
+<strong style="font-size: 13.5px; font-weight: 600">Outubro</strong>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+<div style="display: flex; flex-direction: column"><span style="font-size: 12px; color: #6b6760">Receita</span><span style="font-size: 13.5px; font-weight: 600">R$ 7.200,00</span></div>
+<div style="display: flex; flex-direction: column"><span style="font-size: 12px; color: #6b6760">Despesa</span><span style="font-size: 13.5px; font-weight: 600">R$ 2.108,30</span></div>
+<div style="display: flex; flex-direction: column"><span style="font-size: 12px; color: #6b6760">Saldo</span><span style="font-size: 13.5px; font-weight: 600">R$ 5.091,70</span></div>
+</div>
+<span style="font-size: 12px; color: #6b6760">Toque em um mês do gráfico para ver os valores.</span>
+</div>
+</section>
+</div>
+
+<nav aria-label="Navegação principal" style="margin-top: auto; height: 76px; box-sizing: border-box; background: #ffffff; border-top: 1px solid #e8e6e1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: center; padding: 0 8px">
+<a href="Main.dc.html" aria-current="page" style="height: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: #2b44b0; font-size: 12px; font-weight: 700">
+<span style="width: 52px; height: 30px; border-radius: 999px; background: #edf1fd; display: flex; align-items: center; justify-content: center">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="7.5" height="7.5" rx="1.6"></rect><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.6"></rect><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.6"></rect><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.6"></rect></svg>
+</span>
+Resumo
+</a>
+<a href="Lancamentos-celular.dc.html" style="height: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: #4a4741; font-size: 12px; font-weight: 500">
+<span style="width: 52px; height: 30px; display: flex; align-items: center; justify-content: center">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h13M17 8l-3.2-3.2M17 8l-3.2 3.2"></path><path d="M20 16H7M7 16l3.2-3.2M7 16l3.2 3.2"></path></svg>
+</span>
+Lançamentos
+</a>
+<a href="Novo-lancamento-celular.dc.html" aria-label="Novo lançamento" style="height: 60px; display: flex; align-items: center; justify-content: center">
+<span style="width: 52px; height: 52px; border-radius: 999px; background: #3b5bdb; color: #ffffff; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 16px rgba(59,91,219,0.35)">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+</span>
+</a>
+<button type="button" style="height: 60px; border: 0; background: transparent; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: #4a4741; font-size: 12px; font-weight: 500">
+<span style="width: 52px; height: 30px; display: flex; align-items: center; justify-content: center">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"></circle><circle cx="12" cy="12" r="1.7"></circle><circle cx="19" cy="12" r="1.7"></circle></svg>
+</span>
+Mais
+</button>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1480}}'>
+class Component extends DCLogic {
+renderVals() {
+var H = 140, MAX = 8000;
+var raw = [['J',6800,5100],['F',6800,4700],['M',7000,5600],['A',7000,4900],['M',7000,5200],['J',7400,6100],['J',7200,4800],['A',7200,5300],['S',7200,5000],['O',7200,2108],['N',0,0],['D',0,0]];
+var pts = [];
+var months = raw.map(function (r, i) {
+var has = r[1] !== 0 || r[2] !== 0;
+if (has) pts.push(((i + 0.5) * 10) + ',' + (80 - (r[1] - r[2]) / 100).toFixed(1));
+var active = i === 9;
+return { letter: r[0], incH: Math.round(r[1] / MAX * H) + 'px', expH: Math.round(r[2] / MAX * H) + 'px', band: active ? '#efeeea' : 'transparent', weight: active ? 700 : 400, labelColor: active ? '#1b1a18' : '#6b6760' };
+});
+var income = (this.state && this.state.tipo) === 'INCOME';
+var cats = income
+? [{ name: 'Salário', color: '#35a56c', amount: 'R$ 7.200,00', pct: '100%', share: '100%' }]
+: [
+{ name: 'Moradia', color: '#5b6fd6', amount: 'R$ 1.800,00', pct: '100%', share: '85%' },
+{ name: 'Mercado', color: '#2f7d62', amount: 'R$ 184,90', pct: '10%', share: '9%' },
+{ name: 'Saúde', color: '#c2478a', amount: 'R$ 96,00', pct: '5%', share: '5%' },
+{ name: 'Transporte', color: '#d9951f', amount: 'R$ 27,40', pct: '2%', share: '1%' }
+];
+var on = { bg: '#ffffff', fg: '#1b1a18', sh: '0 1px 2px rgba(27,26,24,0.12)' };
+var off = { bg: 'transparent', fg: '#4a4741', sh: 'none' };
+var e = income ? off : on, n = income ? on : off;
+var self = this;
+return {
+months: months, linePts: pts.join(' '), cats: cats,
+catCount: income ? '1 categoria' : '4 categorias',
+catTotal: income ? 'R$ 7.200,00' : 'R$ 2.108,30',
+expPressed: income ? 'false' : 'true', incPressed: income ? 'true' : 'false',
+expBg: e.bg, expFg: e.fg, expShadow: e.sh, incBg: n.bg, incFg: n.fg, incShadow: n.sh,
+pickExpense: function () { self.setState({ tipo: 'EXPENSE' }); },
+pickIncome: function () { self.setState({ tipo: 'INCOME' }); }
+};
+}
+}
+</script>
+</body>
+</html>

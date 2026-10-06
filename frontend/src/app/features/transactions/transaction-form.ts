@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ConfirmDialog } from '../../core/confirm-dialog/confirm-dialog';
 import { FieldErrorState, focusFirstInvalidField } from '../../core/field-errors';
+import { formatAmountInput, isoDate, parseAmountInput } from '../../core/formatters';
 import { Category, Transaction, TransactionStatus, TransactionType } from '../../core/models';
 import { AuthService } from '../../core/services/auth.service';
 import { CategoryService } from '../../core/services/category.service';
@@ -17,11 +18,18 @@ const SAVE_FALLBACK = 'Não foi possível salvar o lançamento. Revise os campos
 
 const FIELDS = ['transactionDate', 'description', 'amount', 'type', 'status', 'categoryId'] as const;
 
+// Data local, e não `toISOString()`: à noite, no fuso do Brasil, o UTC já é o dia seguinte.
+function daysAgo(days: number): string {
+  const today = new Date();
+  return isoDate(new Date(today.getFullYear(), today.getMonth(), today.getDate() - days));
+}
+
+// O Valor é texto (vírgula decimal, issue #109): começa vazio na inclusão e vira número só no envio.
 function newTransactionForm() {
   return {
-    transactionDate: new Date().toISOString().slice(0, 10),
+    transactionDate: daysAgo(0),
     description: '',
-    amount: 0,
+    amount: '',
     type: 'EXPENSE' as TransactionType,
     status: 'PENDING' as TransactionStatus | null,
     categoryId: '',
@@ -32,7 +40,7 @@ function formFrom(transaction: Transaction) {
   return {
     transactionDate: transaction.transactionDate,
     description: transaction.description,
-    amount: transaction.amount,
+    amount: formatAmountInput(transaction.amount),
     type: transaction.type,
     status: transaction.status,
     categoryId: transaction.categoryId ?? '',
@@ -165,13 +173,23 @@ export class TransactionForm implements OnInit {
     }
   }
 
+  protected isDaysAgo(days: number): boolean {
+    return this.form.transactionDate === daysAgo(days);
+  }
+
+  protected chooseDaysAgo(days: number): void {
+    this.form.transactionDate = daysAgo(days);
+    this.fieldErrors.clear('transactionDate');
+  }
+
+  // Campo vazio vai como `null`: quem responde "O valor é obrigatório." é o back-end.
   protected async save(): Promise<void> {
     this.saving.set(true);
     this.fieldErrors.reset();
 
     const payload = {
       ...this.form,
-      amount: Number(this.form.amount),
+      amount: parseAmountInput(this.form.amount),
       status: this.form.type === 'INCOME' ? null : this.form.status,
       categoryId: this.form.categoryId ? this.form.categoryId : null,
     };

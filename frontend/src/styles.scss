@@ -99,6 +99,15 @@
   --balance-card: #1d2440;
   --balance-card-muted: #c3c9e2;
   --balance-card-icon: rgba(255, 255, 255, 0.12);
+  --balance-track: rgba(255, 255, 255, 0.16);
+  --balance-divider: var(--balance-track);
+  --balance-bar: #9fb0f7;
+  --balance-income-icon: #8fe0b5;
+  --balance-expense-icon: #f3b2a6;
+
+  --skeleton: var(--neutral-soft);
+  --button-busy-bg: var(--neutral-soft);
+  --button-busy-text: var(--text-disabled);
 
   --chart-income: #35a56c;
   --chart-expense: #e07a68;
@@ -117,8 +126,9 @@
   --handle: var(--border-control);
 
   --shadow-card: 0 1px 2px rgba(27, 26, 24, 0.04);
-  --shadow-toast: 0 12px 32px rgba(27, 26, 24, 0.12), 0 2px 6px rgba(27, 26, 24, 0.06);
-  --shadow-modal: 0 20px 50px rgba(20, 24, 40, 0.3);
+  --shadow-toast: 0 12px 32px rgba(27, 26, 24, 0.12);
+  --shadow-modal: 0 20px 50px rgba(20, 24, 40, 0.18);
+  --shadow-toggle: 0 1px 2px rgba(27, 26, 24, 0.12);
   --shadow-login: 0 20px 50px rgba(27, 26, 24, 0.08);
   --shadow-sheet: 0 -12px 40px rgba(20, 24, 40, 0.25);
   --shadow-segment: 0 1px 2px rgba(27, 26, 24, 0.12), 0 0 0 1px rgba(27, 26, 24, 0.04);
@@ -179,6 +189,42 @@
   --rail-width: 76px;
   --bottom-bar-h: 76px;
   --form-width: 960px;
+
+  --fs-balance: 40px;
+  --fs-balance-mobile: 34px;
+  --fs-card-value: 20px;
+  --fs-card-value-mobile: 17px;
+  --fs-sheet-title: 18px;
+  --fs-detail-amount: 28px;
+  --fs-amount-input: 34px;
+  --fs-day-heading: 13px;
+  --fs-share: 12.5px;
+
+  --radius-toggle: 8px;
+  --radius-toggle-track: 10px;
+  --radius-toggle-mobile: 9px;
+  --radius-toggle-track-mobile: 12px;
+  --radius-stepper-mobile: 14px;
+  --radius-sheet-button: 14px;
+
+  --toggle-h: 32px;
+  --toggle-h-mobile: 40px;
+  --stepper-h: 40px;
+  --stepper-h-mobile: 48px;
+  --stepper-button: 36px;
+  --stepper-button-accent: 34px;
+  --pending-card-h: 72px;
+  --card-icon: 40px;
+  --list-row-h-mobile: 68px;
+  --pill-h-mobile: 22px;
+  --sheet-button-h: 52px;
+  --detail-row-h: 48px;
+  --form-header-h-mobile: 56px;
+  --amount-field-h-mobile: 72px;
+  --category-amount-w: 96px;
+  --category-amount-w-mobile: 92px;
+  --chart-h: 260px;
+  --chart-h-mobile: 200px;
 }
 
 * {
@@ -631,6 +677,44 @@ button:focus-visible {
   }
 }
 
+/*
+ * Alternância de botões (`aria-pressed`): escolha que vale na hora, fora de formulário (Tipo da
+ * listagem, Por categoria, Status do painel de filtros). Campo de formulário continua em radio nativo.
+ */
+
+.toggle-group {
+  display: inline-flex;
+  gap: 3px;
+  min-width: 0;
+  border-radius: var(--radius-toggle-track);
+  padding: 3px;
+  background: var(--neutral-soft);
+
+  button {
+    min-height: var(--toggle-h);
+    border: 0;
+    border-radius: var(--radius-toggle);
+    padding: 0 12px;
+    background: transparent;
+    color: var(--text-label);
+    font-size: var(--fs-sm-btn);
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  button[aria-pressed='true'] {
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: var(--shadow-toggle);
+  }
+
+  button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+}
+
 /* Botões */
 
 .primary-button,
@@ -706,7 +790,9 @@ button:focus-visible {
 }
 
 .primary-button:disabled {
-  opacity: 0.85;
+  border-color: var(--button-busy-bg);
+  background: var(--button-busy-bg);
+  color: var(--button-busy-text);
   cursor: wait;
 }
 
@@ -908,6 +994,87 @@ button:focus-visible {
   color: var(--expense-on-soft);
   font-size: var(--fs-label);
   font-weight: 600;
+}
+
+@keyframes skeletonPulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+// Esqueleto das listas (core/list-feedback): mantém a classe `.loading-state`, sem o círculo girando.
+.loading-state.skeleton-list {
+  display: grid;
+  justify-content: stretch;
+  gap: 12px;
+  margin: 0;
+  padding: 16px 20px;
+
+  &::before {
+    content: none;
+  }
+}
+
+.skeleton-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  animation: skeletonPulse 1.4s ease-in-out infinite;
+}
+
+.skeleton-block,
+.skeleton-line {
+  display: block;
+  flex-shrink: 0;
+  background: var(--skeleton);
+}
+
+.skeleton-block {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+}
+
+.skeleton-line {
+  flex: 1 1 auto;
+  height: 12px;
+  border-radius: var(--radius-pill);
+
+  &.short {
+    flex: 0 0 72px;
+  }
+}
+
+.list-state.load-failed {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 16px 20px;
+  border-radius: var(--radius-mark);
+  padding: 12px 14px;
+  background: var(--expense-soft);
+  text-align: left;
+
+  .load-error {
+    flex: 1 1 200px;
+    color: var(--text);
+    font-size: var(--fs-label);
+    font-weight: 500;
+  }
+}
+
+.retry-button {
+  min-height: var(--action-size);
+  border: 1px solid var(--expense);
+  border-radius: var(--radius-icon);
+  padding: 0 12px;
+  background: var(--surface);
+  color: var(--expense-on-soft);
+  font-size: var(--fs-sm-btn);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
 }
 
 .sr-only {
@@ -1288,6 +1455,64 @@ td.row-actions {
   }
 }
 
+// Passo de mês (Resumo e Lançamentos): setas e o seletor de mês no meio, numa moldura só.
+.month-stepper {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  min-height: var(--stepper-h);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-mark);
+  padding: 0 2px;
+  background: var(--surface);
+
+  .icon-button {
+    width: var(--stepper-button);
+    height: var(--stepper-button);
+    border-radius: var(--radius-icon);
+    color: var(--text-label);
+  }
+
+  .month-picker {
+    flex: 1 1 auto;
+  }
+
+  .month-picker-trigger {
+    justify-content: center;
+    min-width: 168px;
+    min-height: var(--stepper-button);
+    border-color: transparent;
+    padding: 0 8px;
+    background: transparent;
+    font-size: var(--fs-body);
+
+    svg {
+      display: none;
+    }
+  }
+}
+
+.month-stepper.accent {
+  border-color: var(--accent-chip);
+  background: var(--accent-soft);
+
+  .icon-button,
+  .month-picker-trigger {
+    color: var(--accent-strong);
+  }
+
+  .icon-button {
+    width: var(--stepper-button-accent);
+    height: var(--stepper-button-accent);
+  }
+
+  .month-picker-trigger {
+    min-width: 148px;
+    min-height: var(--stepper-button-accent);
+  }
+}
+
 .active-filters {
   display: flex;
   flex-wrap: wrap;
@@ -1340,6 +1565,13 @@ td.row-actions {
   min-height: 30px;
   padding: 0 8px;
   font-size: var(--fs-small);
+}
+
+.active-filters-summary {
+  margin-left: auto;
+  color: var(--text-muted);
+  font-size: var(--fs-label);
+  white-space: nowrap;
 }
 
 /* Paginação */
@@ -1475,7 +1707,7 @@ td.row-actions {
 
   h2 {
     margin: 0;
-    font-size: 19px;
+    font-size: var(--fs-sheet-title);
     font-weight: 700;
   }
 
@@ -1504,14 +1736,15 @@ td.row-actions {
   gap: 8px;
   width: min(400px, calc(100vw - 32px));
   border-radius: var(--radius-xl);
-  padding: 24px;
+  padding: 20px;
   background: var(--surface);
   box-shadow: var(--shadow-modal);
 
   p {
     margin: 0;
-    font-size: 17px;
-    font-weight: 700;
+    font-size: 15px;
+    font-weight: 500;
+    text-wrap: pretty;
   }
 }
 
@@ -1519,7 +1752,200 @@ td.row-actions {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-  margin-top: 14px;
+  margin-top: 10px;
+}
+
+/*
+ * Detalhe de registro (core/record-detail, issue #109): janela centralizada acima de 680px e painel
+ * inferior até 680px. Camadas: scrim 70, painel 80; a confirmação abre por cima, no 200. Global porque
+ * as linhas da lista são projetadas pela tela.
+ */
+
+.detail-panel {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: min(440px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px);
+  max-height: calc(100dvh - 48px);
+  border-radius: var(--radius-sheet);
+  padding: 20px;
+  background: var(--surface);
+  box-shadow: var(--shadow-modal);
+  overflow-y: auto;
+  transform: translate(-50%, -50%);
+}
+
+.detail-handle {
+  display: none;
+}
+
+.detail-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.detail-icon {
+  display: grid;
+  place-items: center;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  flex-shrink: 0;
+  border-radius: var(--radius-lg);
+  background: var(--neutral-soft);
+  color: var(--neutral-on-soft);
+
+  &.income {
+    background: var(--income-soft);
+    color: var(--income-on-soft);
+  }
+}
+
+.detail-title {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  min-width: 0;
+
+  h2 {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+}
+
+.detail-amount {
+  font-size: var(--fs-detail-amount);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+
+  &.income {
+    color: var(--income-amount);
+  }
+}
+
+.detail-close {
+  width: var(--touch-target);
+  height: var(--touch-target);
+  border-radius: var(--radius-mark);
+  color: var(--text-label);
+}
+
+.detail-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-lg);
+
+  > div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: var(--detail-row-h);
+    padding: 0 14px;
+  }
+
+  > div + div {
+    border-top: 1px solid var(--border-card);
+  }
+
+  dt {
+    color: var(--text-muted);
+    font-size: var(--fs-label);
+  }
+
+  dd {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    margin: 0;
+    font-size: var(--fs-page-subtitle);
+    font-weight: 500;
+    text-align: right;
+  }
+
+  .category-dot {
+    width: 10px;
+    height: 10px;
+  }
+}
+
+.detail-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  .primary-button {
+    min-height: var(--sheet-button-h);
+    border-radius: var(--radius-sheet-button);
+    font-size: var(--fs-input-mobile);
+  }
+
+  .danger-button {
+    min-height: var(--control-h-touch);
+    border-radius: var(--radius-sheet-button);
+    font-size: 15px;
+  }
+}
+
+.detail-icon.detail-initials {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+// Linha de listagem que abre o Detalhe; o nome é um botão para o teclado chegar nele.
+.clickable-row {
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .clickable-row:hover td {
+    background: var(--surface-muted);
+  }
+}
+
+.detail-trigger {
+  min-width: 0;
+  max-width: 100%;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+@media (max-width: 680px) {
+  .detail-panel {
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: auto;
+    border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
+    padding: 10px 16px calc(28px + env(safe-area-inset-bottom));
+    box-shadow: var(--shadow-sheet);
+    transform: none;
+  }
+
+  .detail-handle {
+    display: flex;
+    padding-top: 0;
+  }
 }
 
 @media (max-width: 1080px) {
@@ -1576,17 +2002,93 @@ td.row-actions {
 
   .filter-toggle {
     position: relative;
-    display: inline-grid;
-    place-items: center;
-    width: var(--control-h-touch);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
     height: var(--control-h-touch);
     flex-shrink: 0;
     border: 1px solid var(--border-control);
-    border-radius: var(--radius-md);
-    padding: 0;
+    border-radius: var(--radius-mark);
+    padding: 0 14px;
     background: var(--surface);
     color: var(--text);
+    font-size: var(--fs-body);
+    font-weight: 600;
     cursor: pointer;
+  }
+
+  .filter-count {
+    position: static;
+    padding: 0 6px;
+    font-size: 12px;
+  }
+
+  .search-field {
+    border-radius: var(--radius-mark);
+  }
+
+  // Lançamentos põe o passo de mês acima da busca e o Tipo abaixo dela, ambos em largura total.
+  .filter-row:has(> .filter-lead, > .filter-inline) {
+    flex-wrap: wrap;
+    gap: 14px 8px;
+
+    .search-field {
+      flex-basis: 0;
+      min-width: 0;
+    }
+  }
+
+  .filter-row > .filter-lead {
+    flex: 1 0 100%;
+    order: -1;
+  }
+
+  .filter-row > .filter-inline {
+    flex: 1 0 100%;
+    order: 1;
+  }
+
+  .toggle-group {
+    display: grid;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+    gap: 4px;
+    border-radius: var(--radius-toggle-track-mobile);
+    padding: 4px;
+
+    button {
+      min-height: var(--toggle-h-mobile);
+      border-radius: var(--radius-toggle-mobile);
+      font-size: var(--fs-body);
+    }
+  }
+
+  .month-stepper,
+  .month-stepper.accent {
+    justify-content: space-between;
+    min-height: var(--stepper-h-mobile);
+    border-color: var(--border-card);
+    border-radius: var(--radius-stepper-mobile);
+    background: var(--surface);
+
+    .icon-button {
+      width: var(--touch-target);
+      height: var(--touch-target);
+      border-radius: var(--radius-mark);
+      color: var(--text-label);
+    }
+
+    .month-picker-trigger {
+      min-width: 0;
+      min-height: var(--touch-target);
+      color: var(--text);
+      font-size: 15px;
+      font-weight: 600;
+
+      svg {
+        display: block;
+      }
+    }
   }
 
   .filter-sheet {
@@ -1730,11 +2232,14 @@ td.row-actions {
 
     button {
       flex: 1 1 0;
+      min-height: var(--sheet-button-h);
+      border-radius: var(--radius-sheet-button);
+      font-size: 15px;
     }
   }
 
-  .active-filters-label,
-  .active-filters .link-button {
+  .active-filters.summary-only,
+  .active-filters-summary {
     display: none;
   }
 
@@ -1746,6 +2251,35 @@ td.row-actions {
   .pagination {
     border-top: 0;
     padding: 12px 0 0;
+  }
+
+  .pagination-summary {
+    display: none;
+  }
+
+  .pagination-controls {
+    flex: 1 1 auto;
+    justify-content: space-between;
+  }
+
+  .loading-state.skeleton-list {
+    border: 1px solid var(--border-card);
+    border-radius: var(--radius-xl);
+    padding: 14px;
+    background: var(--surface);
+  }
+
+  .list-state.load-failed {
+    margin: 0;
+  }
+
+  .modal-actions {
+    flex-direction: column-reverse;
+
+    button {
+      width: 100%;
+      min-height: var(--control-h-touch);
+    }
   }
 
   .table-wrap {
@@ -1982,5 +2516,25 @@ td.row-actions {
   .filter-sheet,
   .filter-sheet.open {
     transition: none;
+  }
+
+  .skeleton-row {
+    animation: none;
+  }
+}
+
+/*
+ * Parte que só existe numa faixa (ex.: Status em botões no painel do celular e em select no
+ * desktop). Quem decide é o CSS: o mesmo template serve as duas faixas.
+ */
+@media (max-width: 680px) {
+  .only-desktop {
+    display: none;
+  }
+}
+
+@media not all and (max-width: 680px) {
+  .only-mobile {
+    display: none;
   }
 }

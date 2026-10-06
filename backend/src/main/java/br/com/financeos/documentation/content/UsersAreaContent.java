@@ -112,7 +112,11 @@ final class UsersAreaContent {
                                 + "alteração ainda não salva abre a confirmação Deseja sair sem salvar? antes de "
                                 + "descartar. Deixar a senha em branco não conta como alteração.",
                         "Ao voltar do cadastro, a tabela reabre com os mesmos filtros e na mesma página.",
-                        "O botão Desativar usuário aparece somente nas linhas de quem está ativo.",
+                        "O botão Desativar usuário aparece somente para quem está ativo, na linha e no detalhe.",
+                        "Tocar ou clicar numa pessoa abre o detalhe dela, com o E-mail, o Perfil e o Status e os "
+                                + "botões Editar usuário e Desativar usuário. O detalhe fecha pelo X, tocando fora "
+                                + "dele ou com a tecla Esc, sem alterar nada. No celular, editar e desativar ficam "
+                                + "só no detalhe; no computador, os botões da linha continuam e agem direto.",
                         "Trocar o perfil de uma pessoa muda o que ela vê no menu assim que ela entrar novamente no "
                                 + "sistema.",
                         "O filtro de Perfil só aparece se o seu perfil puder ver a tela de Perfis. Sem essa "
@@ -128,16 +132,19 @@ final class UsersAreaContent {
                         List.of("Ação", "O que acontece"),
                         List.of(
                                 List.of("Novo usuário", "Abre o cadastro Novo usuário numa tela própria."),
-                                List.of("Editar usuário (linha)",
+                                List.of("Tocar ou clicar na pessoa", "Abre o detalhe do usuário, sem alterar nada."),
+                                List.of("Editar usuário (linha ou detalhe)",
                                         "Abre o cadastro Editar usuário, já preenchido, numa tela própria."),
                                 List.of("Salvar usuário (cadastro)",
                                         "Grava o cadastro e volta à tabela. Se algum campo for recusado, o "
                                                 + "cadastro continua aberto com o campo destacado."),
                                 List.of("Cancelar ou voltar (cadastro)", "Volta à tabela sem gravar; se houver "
                                         + "alteração pendente, pede confirmação antes de descartá-la."),
-                                List.of("Desativar usuário (linha)",
-                                        "Tira o acesso da pessoa, sem apagar o cadastro. Age na hora, sem "
-                                                + "confirmação, e avisa Usuário desativado com sucesso."),
+                                List.of("Desativar usuário (linha ou detalhe)",
+                                        "Pergunta Deseja desativar o usuário, com o nome da pessoa. Confirmar em "
+                                                + "Desativar usuário tira o acesso dela, sem apagar o cadastro, "
+                                                + "fecha o detalhe e avisa Usuário desativado com sucesso; Cancelar "
+                                                + "desiste sem alterar nada."),
                                 List.of("Filtros", "Ficam sempre visíveis acima da tabela; cada filtro aplicado "
                                         + "vira um rótulo em Filtros ativos, que pode ser removido."),
                                 List.of("Limpar filtros", "Volta aos filtros iniciais (só as pessoas ativas) e à "

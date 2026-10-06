@@ -106,6 +106,10 @@ final class CategoriesAreaContent {
                                 + "alteração ainda não salva abre a confirmação Deseja sair sem salvar? antes de "
                                 + "descartar.",
                         "Ao voltar do cadastro, a tabela reabre com os mesmos filtros e na mesma página.",
+                        "Tocar ou clicar numa categoria abre o detalhe dela, com o Tipo, a Cor e a Situação e os "
+                                + "botões Editar categoria e Excluir categoria. O detalhe fecha pelo X, tocando fora "
+                                + "dele ou com a tecla Esc, sem alterar nada. No celular, editar e excluir ficam só "
+                                + "no detalhe; no computador, os botões da linha continuam e agem direto.",
                         "Uma categoria inativa que já estava em um lançamento continua disponível na edição daquele "
                                 + "lançamento, marcada como Inativo, para que ele possa ser salvo sem troca de "
                                 + "categoria."));
@@ -118,14 +122,16 @@ final class CategoriesAreaContent {
                         List.of("Ação", "O que acontece"),
                         List.of(
                                 List.of("Nova categoria", "Abre o cadastro Nova categoria numa tela própria."),
-                                List.of("Editar categoria (linha)",
+                                List.of("Tocar ou clicar na categoria",
+                                        "Abre o detalhe da categoria, sem alterar nada."),
+                                List.of("Editar categoria (linha ou detalhe)",
                                         "Abre o cadastro Editar categoria, já preenchido, numa tela própria."),
                                 List.of("Salvar categoria (cadastro)",
                                         "Grava a categoria e volta à tabela. Se algum campo for recusado, o "
                                                 + "cadastro continua aberto com o campo destacado."),
                                 List.of("Cancelar ou voltar (cadastro)", "Volta à tabela sem gravar; se houver "
                                         + "alteração pendente, pede confirmação antes de descartá-la."),
-                                List.of("Excluir categoria (linha)", "Pede confirmação citando o nome da categoria. "
+                                List.of("Excluir categoria (linha ou detalhe)", "Pede confirmação citando o nome da categoria. "
                                         + "Confirmada, a categoria é excluída definitivamente e a lista é "
                                         + "recarregada; se ela estiver em uso, nada é excluído e o aviso mostra "
                                         + "quantos lançamentos a usam."),

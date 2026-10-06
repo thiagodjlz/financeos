@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Novo lançamento no celular</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}a:hover{color:inherit}
+button,select,input{font:inherit;color:inherit}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #ffffff; color: #1b1a18; font-family: 'Inter', system-ui, sans-serif; font-size: 14px; line-height: 1.5; font-variant-numeric: tabular-nums; display: flex; flex-direction: column">
+
+<header style="height: 56px; flex-shrink: 0; display: flex; align-items: center; gap: 4px; padding: 0 6px; border-bottom: 1px solid #e8e6e1">
+<a href="Lancamentos-celular.dc.html" aria-label="Voltar para Lançamentos" style="width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #4a4741">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"></path></svg>
+</a>
+<h1 style="margin: 0; font-size: 18px; font-weight: 700">Novo lançamento</h1>
+</header>
+
+<form style="flex-grow: 1; padding: 16px 16px 20px; display: flex; flex-direction: column; gap: 16px">
+<div role="group" aria-label="Tipo" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; background: #efeeea; border-radius: 14px; padding: 4px">
+<button type="button" aria-pressed="true" style="height: 44px; border: 0; border-radius: 11px; font-size: 15px; font-weight: 600; background: #ffffff; box-shadow: 0 1px 2px rgba(27,26,24,0.12); display: flex; align-items: center; justify-content: center; gap: 8px">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b93a2e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5.5 12.5L12 19l6.5-6.5"></path></svg>
+Despesa
+</button>
+<button type="button" aria-pressed="false" style="height: 44px; border: 0; border-radius: 11px; font-size: 15px; font-weight: 600; background: transparent; color: #4a4741; display: flex; align-items: center; justify-content: center; gap: 8px">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#177245" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5.5 11.5L12 5l6.5 6.5"></path></svg>
+Receita
+</button>
+</div>
+
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13.5px; font-weight: 500; color: #4a4741">
+Valor
+<span style="height: 72px; box-sizing: border-box; display: flex; align-items: center; gap: 10px; border: 2px solid #3b5bdb; box-shadow: 0 0 0 3px #b9c7f5; border-radius: 14px; padding: 0 16px">
+<span style="font-size: 20px; font-weight: 600; color: #6b6760; white-space: nowrap; flex-shrink: 0">R$</span>
+<input inputmode="decimal" placeholder="0,00" value="184,90" style="flex-grow: 1; min-width: 0; border: 0; outline: 0; background: transparent; font-size: 34px; font-weight: 700; letter-spacing: -0.02em; color: #1b1a18">
+</span>
+</label>
+
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13.5px; font-weight: 500; color: #4a4741">
+Descrição
+<input placeholder="Ex.: Compras do mês" value="Feira da semana" style="height: 48px; box-sizing: border-box; border: 1px solid #938f87; border-radius: 12px; padding: 0 12px; font-size: 16px; color: #1b1a18; background: #ffffff">
+<span style="align-self: flex-end; font-size: 12px; font-weight: 400; color: #6b6760">15/255</span>
+</label>
+
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13.5px; font-weight: 500; color: #4a4741">
+Categoria
+<span style="height: 48px; box-sizing: border-box; display: flex; align-items: center; gap: 10px; border: 1px solid #938f87; border-radius: 12px; padding: 0 12px; background: #ffffff">
+<span style="width: 10px; height: 10px; border-radius: 999px; background: #2f7d62; flex-shrink: 0"></span>
+<select style="flex-grow: 1; min-width: 0; height: 44px; border: 0; outline: 0; background: transparent; font-size: 16px; color: #1b1a18">
+<option>Mercado</option>
+<option>Moradia</option>
+<option>Saúde</option>
+<option>Transporte</option>
+</select>
+</span>
+</label>
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13.5px; font-weight: 500; color: #4a4741">
+Data
+<input type="date" value="2026-10-03" style="height: 48px; box-sizing: border-box; border: 1px solid #938f87; border-radius: 12px; padding: 0 12px; font-size: 16px; color: #1b1a18; background: #ffffff">
+</label>
+<div style="display: flex; gap: 8px">
+<button type="button" aria-pressed="true" style="height: 44px; padding: 0 16px; border: 1px solid #c9d4f7; border-radius: 999px; background: #edf1fd; color: #2b44b0; font-size: 14px; font-weight: 600">Hoje</button>
+<button type="button" aria-pressed="false" style="height: 44px; padding: 0 16px; border: 1px solid #d6d3cc; border-radius: 999px; background: #ffffff; font-size: 14px; font-weight: 600; color: #4a4741">Ontem</button>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span id="n-status" style="font-size: 13.5px; font-weight: 500; color: #4a4741">Status</span>
+<div role="group" aria-labelledby="n-status" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; background: #efeeea; border-radius: 12px; padding: 4px">
+<button type="button" aria-pressed="false" style="height: 44px; border: 0; border-radius: 9px; font-size: 14.5px; font-weight: 600; background: transparent; color: #4a4741">Pendente</button>
+<button type="button" aria-pressed="true" style="height: 44px; border: 0; border-radius: 9px; font-size: 14.5px; font-weight: 600; background: #ffffff; box-shadow: 0 1px 2px rgba(27,26,24,0.12)">Pago</button>
+</div>
+</div>
+</form>
+
+<div style="flex-shrink: 0; padding: 12px 16px 28px; border-top: 1px solid #e8e6e1; background: #ffffff">
+<button type="button" style="width: 100%; height: 52px; border: 0; border-radius: 14px; background: #3b5bdb; color: #ffffff; font-size: 16px; font-weight: 600">Salvar lançamento</button>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

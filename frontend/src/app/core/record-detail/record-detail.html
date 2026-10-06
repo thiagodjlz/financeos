@@ -1,0 +1,55 @@
+<div class="sheet-scrim detail-scrim" (click)="close.emit()"></div>
+
+<section class="detail-panel" #panel role="dialog" aria-modal="true" [attr.aria-labelledby]="titleId">
+  <div class="sheet-handle detail-handle"></div>
+
+  <div class="detail-head">
+    <ng-content select="[detailIcon]" />
+    <div class="detail-title">
+      <h2 [id]="titleId">{{ heading() }}</h2>
+      @if (amount()) {
+        <strong class="detail-amount" [class.income]="amountIncome()">{{ amount() }}</strong>
+      }
+    </div>
+    <button type="button" class="icon-button detail-close" aria-label="Fechar" title="Fechar" (click)="close.emit()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+        <path d="M6.5 6.5l11 11M17.5 6.5l-11 11"></path>
+      </svg>
+    </button>
+  </div>
+
+  <dl class="detail-list">
+    <ng-content />
+  </dl>
+
+  @if ((canEdit() && editLabel()) || (canRemove() && removeLabel())) {
+    <div class="detail-actions">
+      @if (canEdit() && editLabel()) {
+        <button type="button" class="primary-button" (click)="edit.emit()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"></path>
+            <path d="M13.5 6.5l4 4"></path>
+          </svg>
+          <span>{{ editLabel() }}</span>
+        </button>
+      }
+      @if (canRemove() && removeLabel()) {
+        <button type="button" class="danger-button" [disabled]="busy()" (click)="remove.emit()">
+          @if (removeIcon() === 'block') {
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="8.5"></circle>
+              <path d="M6 6l12 12"></path>
+            </svg>
+          } @else {
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M4 7h16"></path>
+              <path d="M9 7V4.5h6V7"></path>
+              <path d="M6 7l1 12.5h10L18 7"></path>
+            </svg>
+          }
+          <span>{{ removeLabel() }}</span>
+        </button>
+      }
+    </div>
+  }
+</section>

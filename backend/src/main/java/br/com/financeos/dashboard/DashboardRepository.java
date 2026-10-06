@@ -92,7 +92,8 @@ public class DashboardRepository {
                             resultSet.getString("category_color"),
                             TransactionType.valueOf(resultSet.getString("type")),
                             resultSet.getBigDecimal("total_amount"),
-                            resultSet.getLong("transaction_count")));
+                            resultSet.getLong("transaction_count"),
+                            null));
                 }
             }
         }

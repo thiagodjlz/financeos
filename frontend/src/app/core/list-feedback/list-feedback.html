@@ -1,14 +1,20 @@
 @if (loading()) {
-  <p class="loading-state"><span class="sr-only">Carregando...</span></p>
+  <div class="loading-state skeleton-list">
+    <span class="sr-only">Carregando...</span>
+    @for (row of skeletonRows; track row) {
+      <span class="skeleton-row" aria-hidden="true">
+        <span class="skeleton-block"></span>
+        <span class="skeleton-line"></span>
+        <span class="skeleton-line short"></span>
+      </span>
+    }
+  </div>
 } @else if (error()) {
-  <div class="list-state">
-    <span class="state-icon error" aria-hidden="true">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M7 18.5h10a4 4 0 0 0 .6-8 6 6 0 0 0-11.5 1.3A3.4 3.4 0 0 0 7 18.5z"></path>
-        <path d="M4 4l16 16"></path>
-      </svg>
-    </span>
+  <div class="list-state load-failed">
     <p class="load-error" role="alert">{{ error() }}</p>
+    @if (retryable()) {
+      <button type="button" class="retry-button" (click)="retry.emit()">Tentar novamente</button>
+    }
   </div>
 } @else if (empty()) {
   @if (filtered()) {

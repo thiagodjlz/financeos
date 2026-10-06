@@ -1,12 +1,15 @@
 import {
   currentMonth,
   dayHeading,
+  formatAmountInput,
   initials,
   longMonthName,
   monthKey,
   monthLabel,
   monthRange,
+  parseAmountInput,
   parseMonthKey,
+  percentLabel,
   shiftMonth,
   shortDate,
   shortMoney,
@@ -67,14 +70,16 @@ describe('shortDate', () => {
 });
 
 describe('dayHeading', () => {
-  it('usa Hoje e Ontem relativos ao dia informado', () => {
+  it('usa Hoje e Ontem relativos ao dia informado, no lugar do dia da semana', () => {
     expect(dayHeading('2026-09-24', '2026-09-24')).toBe('Hoje, 24 de setembro');
     expect(dayHeading('2026-09-23', '2026-09-24')).toBe('Ontem, 23 de setembro');
   });
 
-  it('usa só dia e mês nos demais dias do mesmo ano', () => {
-    expect(dayHeading('2026-09-22', '2026-09-24')).toBe('22 de setembro');
-    expect(dayHeading('2026-03-05', '2026-09-24')).toBe('5 de março');
+  it('abre os demais dias do mesmo ano com o dia da semana, sem "-feira"', () => {
+    expect(dayHeading('2026-10-10', '2026-10-03')).toBe('Sábado, 10 de outubro');
+    expect(dayHeading('2026-10-05', '2026-10-03')).toBe('Segunda, 5 de outubro');
+    expect(dayHeading('2026-10-01', '2026-10-03')).toBe('Quinta, 1 de outubro');
+    expect(dayHeading('2026-03-08', '2026-09-24')).toBe('Domingo, 8 de março');
   });
 
   it('reconhece Ontem na virada de mês e de ano', () => {
@@ -82,8 +87,54 @@ describe('dayHeading', () => {
     expect(dayHeading('2025-12-31', '2026-01-01')).toBe('Ontem, 31 de dezembro de 2025');
   });
 
-  it('acrescenta o ano quando é de outro ano', () => {
-    expect(dayHeading('2025-09-22', '2026-09-24')).toBe('22 de setembro de 2025');
+  it('acrescenta o ano só quando o dia é de outro ano', () => {
+    expect(dayHeading('2025-09-22', '2026-09-24')).toBe('Segunda, 22 de setembro de 2025');
+    expect(dayHeading('2027-01-02', '2026-09-24')).toBe('Sábado, 2 de janeiro de 2027');
+  });
+});
+
+describe('percentLabel', () => {
+  it('formata o percentual da API com uma casa e vírgula, sem arredondar de novo', () => {
+    expect(percentLabel(29.3)).toBe('29,3%');
+    expect(percentLabel(130)).toBe('130,0%');
+    expect(percentLabel(8.7)).toBe('8,7%');
+    expect(percentLabel(0)).toBe('0,0%');
+  });
+});
+
+describe('valor digitado no cadastro', () => {
+  it('lê vírgula decimal e ponto de milhar', () => {
+    expect(parseAmountInput('184,90')).toBe(184.9);
+    expect(parseAmountInput('1.234,56')).toBe(1234.56);
+    expect(parseAmountInput('1.234')).toBe(1234);
+    expect(parseAmountInput('120')).toBe(120);
+    expect(parseAmountInput('12.5')).toBe(12.5);
+    expect(parseAmountInput(' 120 ')).toBe(120);
+  });
+
+  it('mantém o sinal e o zero: quem recusa é o back-end', () => {
+    expect(parseAmountInput('-50,00')).toBe(-50);
+    expect(parseAmountInput('0,00')).toBe(0);
+  });
+
+  it('não limpa o texto que não é número: segue como foi digitado', () => {
+    expect(parseAmountInput('12abc')).toBe('12abc');
+    expect(parseAmountInput('R$ 10')).toBe('R$ 10');
+    expect(parseAmountInput('1,2,3')).toBe('1,2,3');
+    expect(parseAmountInput(',')).toBe(',');
+  });
+
+  it('devolve nulo para o campo vazio, para o back-end apontar o valor obrigatório', () => {
+    expect(parseAmountInput('')).toBeNull();
+    expect(parseAmountInput('   ')).toBeNull();
+    expect(parseAmountInput(null)).toBeNull();
+  });
+
+  it('mostra o valor gravado com duas casas e vírgula', () => {
+    expect(formatAmountInput(120)).toBe('120,00');
+    expect(formatAmountInput(184.9)).toBe('184,90');
+    expect(formatAmountInput(1234.5)).toBe('1.234,50');
+    expect(formatAmountInput(null)).toBe('');
   });
 });
 

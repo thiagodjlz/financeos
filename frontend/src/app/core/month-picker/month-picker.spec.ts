@@ -74,6 +74,23 @@ describe('MonthPicker', () => {
     expect(trigger().getAttribute('aria-label')).toBe('Data: nenhum mês selecionado');
   });
 
+  it('sem mês escolhido mostra o texto de `placeholder`, também no rótulo acessível', async () => {
+    @Component({
+      imports: [MonthPicker],
+      template: `<app-month-picker label="Período" placeholder="Todo o período" [value]="null" />`,
+    })
+    class PlaceholderHost {}
+
+    const placeholderFixture = TestBed.createComponent(PlaceholderHost);
+    placeholderFixture.detectChanges();
+    const placeholderTrigger = (placeholderFixture.nativeElement as HTMLElement).querySelector(
+      '.month-picker-trigger',
+    ) as HTMLButtonElement;
+
+    expect(placeholderTrigger.textContent!.trim()).toBe('Todo o período');
+    expect(placeholderTrigger.getAttribute('aria-label')).toBe('Período: Todo o período');
+  });
+
   it('abre com o ano no cabeçalho e os 12 meses, sem dias', () => {
     expect(panel()).toBeNull();
     expect(trigger().getAttribute('aria-expanded')).toBe('false');

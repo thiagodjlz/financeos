@@ -1,8 +1,11 @@
-<header class="page-header">
+<header class="page-header transactions-header">
   <div class="page-heading">
     <h1 class="page-title">Lançamentos</h1>
     <p class="page-subtitle">Acompanhe suas receitas e despesas</p>
   </div>
+  @if (totalLabel()) {
+    <span class="header-total only-mobile">{{ totalLabel() }}</span>
+  }
   <div class="page-actions" *ngIf="authService.can('TRANSACTIONS', 'CREATE')">
     <button type="button" class="primary-button" (click)="create()">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
@@ -14,7 +17,7 @@
 </header>
 
 <section class="panel list-panel">
-  <app-filter-panel [list]="list" [chips]="chips()">
+  <app-filter-panel [list]="list" [chips]="chips()" [summary]="totalLabel()">
     <label filterSearch class="input-affix search-field">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
         <circle cx="11" cy="11" r="6.5"></circle>
@@ -30,35 +33,116 @@
       />
     </label>
 
-    <label class="filter-field" [class.is-set]="list.applied().type">
-      <span>Tipo</span>
-      <select name="filterType" [(ngModel)]="list.filters.type" (change)="onFilterTypeChange()">
-        <option value="">Todos</option>
-        <option value="EXPENSE">Despesa</option>
-        <option value="INCOME">Receita</option>
-      </select>
-    </label>
-    <label class="filter-field" *ngIf="canViewCategories()" [class.is-set]="list.applied().categoryId">
+    <div filterLead class="filter-lead month-stepper accent" role="group" aria-label="Período">
+      <button
+        type="button"
+        class="icon-button"
+        aria-label="Mês anterior"
+        title="Mês anterior"
+        [disabled]="!hasMonth()"
+        (click)="stepMonth(-1)"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M15 6l-6 6 6 6"></path>
+        </svg>
+      </button>
+      <app-month-picker
+        class="bare step-month"
+        label="Período"
+        placeholder="Todo o período"
+        [value]="appliedMonth()"
+        (valueChange)="onMonthChange($event)"
+      />
+      <button
+        type="button"
+        class="icon-button"
+        aria-label="Próximo mês"
+        title="Próximo mês"
+        [disabled]="!hasMonth()"
+        (click)="stepMonth(1)"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M9 6l6 6-6 6"></path>
+        </svg>
+      </button>
+    </div>
+
+    <div filterInline class="filter-inline toggle-group type-toggle" role="group" aria-label="Tipo">
+      <button type="button" [attr.aria-pressed]="!list.applied().type" (click)="chooseType('')">Todos</button>
+      <button type="button" [attr.aria-pressed]="list.applied().type === 'EXPENSE'" (click)="chooseType('EXPENSE')">
+        Despesas
+      </button>
+      <button type="button" [attr.aria-pressed]="list.applied().type === 'INCOME'" (click)="chooseType('INCOME')">
+        Receitas
+      </button>
+    </div>
+
+    <div class="filter-field only-mobile" role="group" aria-labelledby="filter-period-label">
+      <span id="filter-period-label">Período</span>
+      <div class="period-field">
+        <app-month-picker
+          label="Período"
+          placeholder="Todo o período"
+          [value]="draftMonth()"
+          (valueChange)="onMonthChange($event)"
+        />
+        <button type="button" class="ghost-button" [disabled]="!list.filters.month" (click)="clearMonth()">
+          Todo o período
+        </button>
+      </div>
+    </div>
+    <div class="filter-field only-mobile" role="group" aria-labelledby="filter-status-label">
+      <span id="filter-status-label">Status</span>
+      <div class="toggle-group status-toggle">
+        <button type="button" [attr.aria-pressed]="!list.filters.status" (click)="chooseDraftStatus('')">Todos</button>
+        <button
+          type="button"
+          [attr.aria-pressed]="list.filters.status === 'PENDING'"
+          (click)="chooseDraftStatus('PENDING')"
+        >
+          Pendente
+        </button>
+        <button type="button" [attr.aria-pressed]="list.filters.status === 'PAID'" (click)="chooseDraftStatus('PAID')">
+          Pago
+        </button>
+      </div>
+    </div>
+    <label class="filter-field only-mobile" *ngIf="canViewCategories()">
       <span>Categoria</span>
-      <select name="filterCategoryId" [(ngModel)]="list.filters.categoryId" (change)="list.apply()">
+      <select name="filterCategoryIdPanel" [(ngModel)]="list.filters.categoryId" (change)="list.apply()">
         <option value="">Todas</option>
         <option *ngFor="let category of filterCategories()" [value]="category.id">
           {{ categoryOptionLabel(category) }}
         </option>
       </select>
     </label>
-    <label class="filter-field" [class.is-set]="list.applied().status">
-      <span>Status</span>
-      <select name="filterStatus" [(ngModel)]="list.filters.status" (change)="list.apply()">
-        <option value="">Todos</option>
-        <option value="PENDING">Pendente</option>
-        <option value="PAID">Pago</option>
-      </select>
-    </label>
-    <div class="filter-field" role="group" aria-labelledby="filter-month-label" [class.is-set]="list.applied().month">
-      <span id="filter-month-label">Data</span>
-      <app-month-picker label="Data" [value]="draftMonth()" (valueChange)="onMonthChange($event)" />
-    </div>
+
+    <select
+      *ngIf="canViewCategories()"
+      class="filter-select only-desktop"
+      name="filterCategoryId"
+      aria-label="Categoria"
+      [class.is-set]="list.applied().categoryId"
+      [(ngModel)]="list.filters.categoryId"
+      (change)="list.apply()"
+    >
+      <option value="">Categoria: todas</option>
+      <option *ngFor="let category of filterCategories()" [value]="category.id">
+        {{ categoryOptionLabel(category) }}
+      </option>
+    </select>
+    <select
+      class="filter-select only-desktop"
+      name="filterStatus"
+      aria-label="Status"
+      [class.is-set]="list.applied().status"
+      [(ngModel)]="list.filters.status"
+      (change)="list.apply()"
+    >
+      <option value="">Status: todos</option>
+      <option value="PENDING">Pendente</option>
+      <option value="PAID">Pago</option>
+    </select>
   </app-filter-panel>
 
   <div class="table-wrap" [attr.aria-busy]="list.loading()">
@@ -86,18 +170,27 @@
           <tr class="day-row" *ngIf="row.heading">
             <th colspan="6" scope="rowgroup">{{ row.heading }}</th>
           </tr>
-          <tr class="transaction-row">
+          <tr
+            class="transaction-row"
+            [class.group-start]="row.groupStart"
+            [class.group-end]="row.groupEnd"
+            (click)="openDetail(row.transaction)"
+          >
             <td class="date-cell tabular" data-label="Data">{{ formatDate(row.transaction.transactionDate) }}</td>
             <td class="description-cell" data-label="Descrição">
-              <span class="type-icon" [class.income]="row.transaction.type === 'INCOME'" aria-hidden="true">
-                <svg *ngIf="row.transaction.type === 'INCOME'" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M12 19V5M5.5 11.5L12 5l6.5 6.5"></path>
-                </svg>
-                <svg *ngIf="row.transaction.type === 'EXPENSE'" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M12 5v14M5.5 12.5L12 19l6.5-6.5"></path>
-                </svg>
+              <span class="description-inner">
+                <span class="type-icon" [class.income]="row.transaction.type === 'INCOME'" aria-hidden="true">
+                  <svg *ngIf="row.transaction.type === 'INCOME'" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 19V5M5.5 11.5L12 5l6.5 6.5"></path>
+                  </svg>
+                  <svg *ngIf="row.transaction.type === 'EXPENSE'" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 5v14M5.5 12.5L12 19l6.5-6.5"></path>
+                  </svg>
+                </span>
+                <button type="button" class="description-text" aria-haspopup="dialog">
+                  {{ row.transaction.description }}
+                </button>
               </span>
-              <span class="description-text">{{ row.transaction.description }}</span>
             </td>
             <td class="category-cell" data-label="Categoria">
               <span class="category-label">
@@ -123,7 +216,7 @@
             >
               {{ signedMoney(row.transaction) }}
             </td>
-            <td class="row-actions">
+            <td class="row-actions" (click)="$event.stopPropagation()">
               <span class="row-actions-inner">
                 <button
                   *ngIf="authService.can('TRANSACTIONS', 'EDIT')"
@@ -168,11 +261,21 @@
       [empty]="!list.items().length"
       [filtered]="list.activeCount() > 0"
       [canClear]="list.differsFromDefault()"
+      [retryable]="true"
       (clear)="list.clear()"
+      (retry)="list.load()"
     >
       <div class="list-state">
         <strong>Sem lançamentos cadastrados</strong>
         <p class="empty-state">Os lançamentos que você registrar aparecem aqui.</p>
+        <button
+          *ngIf="authService.can('TRANSACTIONS', 'CREATE')"
+          type="button"
+          class="primary-button empty-create"
+          (click)="create()"
+        >
+          Novo lançamento
+        </button>
       </div>
     </app-list-feedback>
   </div>
@@ -185,11 +288,67 @@
   />
 </section>
 
+@if (detailTransaction(); as transaction) {
+  <app-record-detail
+    [heading]="transaction.description"
+    [amount]="signedMoney(transaction)"
+    [amountIncome]="transaction.type === 'INCOME'"
+    editLabel="Editar lançamento"
+    removeLabel="Excluir lançamento"
+    [canEdit]="authService.can('TRANSACTIONS', 'EDIT')"
+    [canRemove]="authService.can('TRANSACTIONS', 'DELETE')"
+    [suspended]="!!deletingTransaction()"
+    (close)="closeDetail()"
+    (edit)="editFromDetail()"
+    (remove)="deleteFromDetail()"
+  >
+    <span detailIcon class="detail-icon" [class.income]="transaction.type === 'INCOME'" aria-hidden="true">
+      @if (transaction.type === 'INCOME') {
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 19V5M5.5 11.5L12 5l6.5 6.5"></path>
+        </svg>
+      } @else {
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 5v14M5.5 12.5L12 19l6.5-6.5"></path>
+        </svg>
+      }
+    </span>
+    <div>
+      <dt>Tipo</dt>
+      <dd>{{ typeLabel(transaction) }}</dd>
+    </div>
+    <div>
+      <dt>Categoria</dt>
+      <dd>
+        @if (transaction.categoryColor) {
+          <span class="category-dot" [style.background]="transaction.categoryColor" aria-hidden="true"></span>
+        }
+        {{ categoryName(transaction) }}
+      </dd>
+    </div>
+    <div>
+      <dt>Data</dt>
+      <dd class="tabular">{{ formatDate(transaction.transactionDate) }}</dd>
+    </div>
+    <div>
+      <dt>Status</dt>
+      <dd>
+        @if (transaction.status) {
+          <span [class]="statusPillClass(transaction.status)">{{ statusLabel(transaction.status) }}</span>
+        } @else {
+          <span class="no-status" aria-label="Sem status">—</span>
+        }
+      </dd>
+    </div>
+  </app-record-detail>
+}
+
 <app-confirm-dialog
   *ngIf="deletingTransaction() as transaction"
   [message]="deleteMessage(transaction)"
   cancelLabel="Cancelar"
   confirmLabel="Excluir lançamento"
+  [destructive]="true"
   (cancel)="cancelDelete()"
   (confirm)="confirmDelete()"
 />

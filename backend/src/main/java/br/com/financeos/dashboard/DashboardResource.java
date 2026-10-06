@@ -1,16 +1,21 @@
 package br.com.financeos.dashboard;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.Year;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import br.com.financeos.dashboard.DashboardRepository.DashboardTotals;
 import br.com.financeos.profiles.Screen;
 import br.com.financeos.shared.AccessControl;
 import br.com.financeos.shared.Action;
 import br.com.financeos.shared.CurrentUser;
+import br.com.financeos.transactions.TransactionType;
 import io.quarkus.security.Authenticated;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.GET;
@@ -27,6 +32,7 @@ public class DashboardResource {
 
     private static final int MIN_YEAR = 1000;
     private static final int MAX_YEAR = 9999;
+    private static final BigDecimal HUNDRED = BigDecimal.valueOf(100);
 
     private final DashboardRepository repository;
     private final CurrentUser currentUser;
@@ -58,8 +64,9 @@ public class DashboardResource {
                 totals.totalIncome().subtract(totals.paidExpense()),
                 totals.paidExpense(),
                 totals.pendingExpense(),
+                percent(totals.paidExpense(), totals.totalIncome()),
                 totals.transactionCount(),
-                repository.categoryBreakdown(currentUser.id(), startDate, endDate),
+                withSharePercent(repository.categoryBreakdown(currentUser.id(), startDate, endDate)),
                 repository.monthlyEvolution(currentUser.id(), period.getYear()));
     }
 
@@ -80,6 +87,25 @@ public class DashboardResource {
         }
 
         return List.copyOf(periods);
+    }
+
+    private static List<CategoryBreakdownResponse> withSharePercent(List<CategoryBreakdownResponse> items) {
+        Map<TransactionType, BigDecimal> totalsByType = items.stream()
+                .collect(Collectors.groupingBy(CategoryBreakdownResponse::type,
+                        Collectors.reducing(BigDecimal.ZERO, CategoryBreakdownResponse::totalAmount, BigDecimal::add)));
+
+        return items.stream()
+                .map(item -> item.withSharePercent(percent(item.totalAmount(), totalsByType.get(item.type()))))
+                .toList();
+    }
+
+    // Uma casa com HALF_UP: o front só formata, e 29,25% tem de aparecer como 29,3% (HALF_EVEN daria 29,2%).
+    private static BigDecimal percent(BigDecimal part, BigDecimal whole) {
+        if (whole == null || whole.signum() == 0) {
+            return null;
+        }
+
+        return part.multiply(HUNDRED).divide(whole, 1, RoundingMode.HALF_UP);
     }
 
     // A checagem do mês vem antes da do ano de propósito: ano fixo em teste/URL antiga com mês inválido

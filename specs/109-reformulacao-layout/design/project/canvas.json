@@ -1,0 +1,103 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "Componentes.dc.html": {
+      "h": 920,
+      "title": "Componentes e estados",
+      "w": 1280,
+      "x": 3040,
+      "y": 1900
+    },
+    "Detalhe-celular.dc.html": {
+      "h": 844,
+      "title": "Detalhe do lançamento · celular",
+      "w": 390,
+      "x": 940,
+      "y": 0
+    },
+    "Filtros-celular.dc.html": {
+      "h": 844,
+      "title": "Filtros · celular",
+      "w": 390,
+      "x": 1410,
+      "y": 0
+    },
+    "Lancamentos-celular.dc.html": {
+      "h": 1400,
+      "title": "Lançamentos · celular",
+      "w": 390,
+      "x": 470,
+      "y": 0
+    },
+    "Lancamentos-desktop.dc.html": {
+      "expand": "fill",
+      "h": 920,
+      "title": "Lançamentos · desktop",
+      "w": 1440,
+      "x": 1520,
+      "y": 1900
+    },
+    "Main.dc.html": {
+      "h": 1480,
+      "is_interactive": true,
+      "title": "Resumo · celular",
+      "w": 390,
+      "x": 0,
+      "y": 0
+    },
+    "Novo-lancamento-celular.dc.html": {
+      "h": 844,
+      "title": "Novo lançamento · celular",
+      "w": 390,
+      "x": 1880,
+      "y": 0
+    },
+    "Resumo-desktop.dc.html": {
+      "expand": "fill",
+      "h": 920,
+      "title": "Resumo · desktop",
+      "w": 1440,
+      "x": 0,
+      "y": 1900
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-10-03T15:00:00Z",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "view": "canvas"
+  },
+  "notes": {
+    "t-celular": {
+      "kind": "title1",
+      "maxW": 2270,
+      "text": "Celular · iPhone 12 (390 px)",
+      "w": 240,
+      "x": 0,
+      "y": -300
+    },
+    "t-desktop": {
+      "kind": "title1",
+      "maxW": 4320,
+      "text": "Desktop e padrões compartilhados",
+      "w": 240,
+      "x": 0,
+      "y": 1600
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "Lancamentos-celular.dc.html",
+    "Detalhe-celular.dc.html",
+    "Filtros-celular.dc.html",
+    "Novo-lancamento-celular.dc.html",
+    "Resumo-desktop.dc.html",
+    "Lancamentos-desktop.dc.html",
+    "Componentes.dc.html"
+  ],
+  "pages": [],
+  "title": "FinanceOS — Reformulação UI/UX"
+}

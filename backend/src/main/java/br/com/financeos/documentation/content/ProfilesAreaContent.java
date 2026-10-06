@@ -97,6 +97,11 @@ final class ProfilesAreaContent {
                                 + "único interruptor da matriz, abre a confirmação Deseja sair sem salvar? antes de "
                                 + "descartar. Sem alteração, o Cancelar volta direto à tabela.",
                         "Ao voltar do cadastro, a tabela reabre com o mesmo filtro e na mesma página.",
+                        "Tocar ou clicar num perfil abre o detalhe dele: cada tela do sistema com o que o perfil "
+                                + "libera nela, como Ver, Incluir, Alterar, Excluir, ou Sem acesso. O detalhe tem os "
+                                + "botões Editar perfil e Excluir perfil e fecha pelo X, tocando fora dele ou com a "
+                                + "tecla Esc. No celular, editar e excluir ficam só no detalhe; no computador, os "
+                                + "botões da linha continuam e agem direto.",
                         "A busca por Nome encontra o texto em qualquer parte e não diferencia maiúsculas nem "
                                 + "acentos.",
                         "Alterar um perfil muda o que as pessoas ligadas a ele enxergam, assim que elas "
@@ -112,16 +117,19 @@ final class ProfilesAreaContent {
                         List.of("Ação", "O que acontece"),
                         List.of(
                                 List.of("Novo perfil", "Abre o cadastro Novo perfil numa tela própria."),
-                                List.of("Editar perfil (linha)",
+                                List.of("Tocar ou clicar no perfil", "Abre o detalhe do perfil, sem alterar nada."),
+                                List.of("Editar perfil (linha ou detalhe)",
                                         "Abre o cadastro Editar perfil, já preenchido, numa tela própria."),
                                 List.of("Salvar perfil (cadastro)",
                                         "Grava o nome e a matriz inteira de permissões do perfil e volta à "
                                                 + "tabela."),
                                 List.of("Cancelar ou voltar (cadastro)", "Volta à tabela sem gravar; se houver "
                                         + "alteração pendente, pede confirmação antes de descartá-la."),
-                                List.of("Excluir perfil (linha)",
-                                        "Remove o perfil, desde que nenhum usuário o esteja usando. Age na hora, "
-                                                + "sem confirmação, e avisa Perfil excluído com sucesso."),
+                                List.of("Excluir perfil (linha ou detalhe)",
+                                        "Pergunta Deseja excluir o perfil, com o nome dele. Confirmar em Excluir "
+                                                + "perfil remove o perfil, desde que nenhum usuário o esteja "
+                                                + "usando, fecha o detalhe e avisa Perfil excluído com sucesso; "
+                                                + "Cancelar desiste sem apagar nada."),
                                 List.of("Busca por nome", "Fica sempre visível acima da tabela; aplicada, vira um "
                                         + "rótulo em Filtros ativos, que pode ser removido."),
                                 List.of("Anterior / Próxima", "Troca de página mantendo o filtro."))),
