@@ -69,6 +69,109 @@ describe('Profiles', () => {
     await settle();
   }
 
+  const READER: Profile = {
+    id: 'profile-2',
+    name: 'Leitura',
+    active: true,
+    permissions: [
+      { screen: 'DASHBOARD', canView: true, canCreate: false, canEdit: false, canDelete: false },
+      { screen: 'TRANSACTIONS', canView: true, canCreate: true, canEdit: true, canDelete: true },
+      { screen: 'DOCUMENTATION', canView: true, canCreate: false, canEdit: false, canDelete: false },
+    ],
+  };
+
+  function detail(): HTMLElement | null {
+    return query('.detail-panel');
+  }
+
+  function detailRows(): string[][] {
+    return queryAll('.detail-list > div').map((row) => [
+      (row.querySelector('dt')?.textContent ?? '').trim(),
+      (row.querySelector('dd')?.textContent ?? '').trim(),
+    ]);
+  }
+
+  it('tocar na linha abre o Detalhe com as permissões por tela; X, scrim e Esc fecham sem requisição', async () => {
+    await render(page([READER]));
+
+    await click(queryAll('tbody tr')[0]);
+    expect(detail()?.querySelector('h2')?.textContent?.trim()).toBe('Leitura');
+    expect(detailRows()).toEqual([
+      ['Resumo', 'Ver'],
+      ['Lançamentos', 'Ver, Incluir, Alterar, Excluir'],
+      ['Categorias', 'Sem acesso'],
+      ['Usuários', 'Sem acesso'],
+      ['Perfis', 'Sem acesso'],
+      ['Documentação', 'Ver'],
+      ['Novidades por versão', 'Sem acesso'],
+    ]);
+
+    await click(buttonByText('Fechar', '.detail-panel') as HTMLButtonElement);
+    expect(detail()).toBeNull();
+
+    await click(query('tbody .detail-trigger'));
+    await click(query('.detail-scrim'));
+    expect(detail()).toBeNull();
+
+    await click(queryAll('tbody tr')[0]);
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    await settle();
+    expect(detail()).toBeNull();
+    httpMock.expectNone(() => true);
+  });
+
+  it('"Excluir perfil" da linha pede confirmação; recusar não chama a API', async () => {
+    await render();
+
+    await click(buttonByText('Excluir perfil', 'tbody') as HTMLButtonElement);
+    expect(query('.modal-actions button.danger-button').textContent?.trim()).toBe('Excluir perfil');
+    await click(buttonByText('Cancelar', '.modal-card') as HTMLButtonElement);
+
+    httpMock.expectNone(`${API_BASE}/profiles/profile-1`);
+    expect(query('.modal-card')).toBeNull();
+    expect(toastService.toasts()).toHaveLength(0);
+  });
+
+  it('"Excluir perfil" do Detalhe confirma, faz um único DELETE, fecha e recarrega; sem permissão não aparece', async () => {
+    await render(page([READER]));
+
+    await click(queryAll('tbody tr')[0]);
+    await click(buttonByText('Excluir perfil', '.detail-panel') as HTMLButtonElement);
+
+    expect(query('.modal-card p').textContent?.trim()).toBe(
+      'Deseja excluir o perfil "Leitura"? A exclusão não pode ser desfeita.',
+    );
+    await click(buttonByText('Cancelar', '.modal-card') as HTMLButtonElement);
+    httpMock.expectNone(`${API_BASE}/profiles/profile-2`);
+    expect(detail()).not.toBeNull();
+
+    await click(buttonByText('Excluir perfil', '.detail-panel') as HTMLButtonElement);
+    await click(query<HTMLButtonElement>('.modal-actions button.danger-button'));
+
+    expect(detail()).toBeNull();
+    const request = httpMock.expectOne(`${API_BASE}/profiles/profile-2`);
+    expect(request.request.method).toBe('DELETE');
+    request.flush(null);
+    await settle();
+    httpMock.expectOne(DEFAULT_URL).flush(page([]));
+    await settle();
+    expect(toastService.toasts().map((toast) => toast.message)).toEqual(['Perfil excluído com sucesso.']);
+    fixture.destroy();
+
+    await render(page([READER]), false);
+    await click(queryAll('tbody tr')[0]);
+    expect(query('.detail-actions')).toBeNull();
+  });
+
+  it('os botões da linha não abrem o Detalhe', async () => {
+    await render(page([READER]));
+
+    await click(buttonByText('Editar perfil', 'tbody') as HTMLButtonElement);
+
+    expect(detail()).toBeNull();
+    expect(router.navigate).toHaveBeenCalledWith(['/profiles', 'profile-2', 'edit']);
+  });
+
   it('lista em table.fixed-layout com Nome e ações, sem formulário e sem filtro de Situação', async () => {
     await render();
 
@@ -126,6 +229,7 @@ describe('Profiles', () => {
     await render();
 
     await click(buttonByText('Excluir perfil', 'tbody') as HTMLButtonElement);
+    await click(query<HTMLButtonElement>('.modal-actions button.danger-button'));
     const request = httpMock.expectOne(`${API_BASE}/profiles/profile-1`);
     expect(request.request.method).toBe('DELETE');
     request.flush(null);
@@ -141,6 +245,7 @@ describe('Profiles', () => {
     await render();
 
     await click(buttonByText('Excluir perfil', 'tbody') as HTMLButtonElement);
+    await click(query<HTMLButtonElement>('.modal-actions button.danger-button'));
     httpMock
       .expectOne(`${API_BASE}/profiles/profile-1`)
       .flush({ message: 'Perfil em uso por usuários.' }, { status: 409, statusText: 'Conflict' });

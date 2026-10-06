@@ -106,7 +106,7 @@ export function isoDate(date: Date): string {
 }
 
 // Título do grupo de lançamentos por dia no celular. `today` chega em ISO local para o teste
-// fixar o "hoje" sem depender do relógio da máquina.
+// fixar o "hoje" sem depender do relógio da máquina. Hoje e Ontem tomam o lugar do dia da semana.
 export function dayHeading(value: string, today: string): string {
   const [year, month, day] = value.split('-').map(Number);
   if (!year || !month || !day) {
@@ -115,7 +115,8 @@ export function dayHeading(value: string, today: string): string {
 
   const [todayYear, todayMonth, todayDay] = today.split('-').map(Number);
   const yesterday = isoDate(new Date(todayYear, todayMonth - 1, todayDay - 1));
-  const monthLabel = new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(new Date(year, month - 1, 1));
+  const date = new Date(year, month - 1, day);
+  const monthLabel = new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(date);
   const label = `${day} de ${monthLabel}${year === todayYear ? '' : ` de ${year}`}`;
 
   if (value === today) {
@@ -126,7 +127,51 @@ export function dayHeading(value: string, today: string): string {
     return `Ontem, ${label}`;
   }
 
-  return label;
+  return `${weekdayName(date)}, ${label}`;
+}
+
+// "Segunda", e não "Segunda-feira": o título do dia segue curto, como no desenho da issue #109.
+function weekdayName(date: Date): string {
+  const label = new Intl.DateTimeFormat('pt-BR', { weekday: 'long' }).format(date).replace(/-feira$/, '');
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+// O percentual chega pronto da API, com uma casa (issue #109): aqui ele só ganha a vírgula.
+export function percentLabel(value: number): string {
+  return `${new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(value)}%`;
+}
+
+const DECIMAL_COMMA = /^-?\d+(,\d+)?$/;
+const THOUSANDS_DOT = /^-?\d{1,3}(\.\d{3})+(,\d+)?$/;
+const DECIMAL_DOT = /^-?\d+\.\d+$/;
+
+// Valor digitado no padrão brasileiro, sem corrigir o que foi digitado (issue #109, DEC-14): quem
+// recusa é o back-end. Vazio vira `null` ("O valor é obrigatório."); número, com sinal, vira número
+// ("-50,00" -> -50, recusado por ser menor que o mínimo); texto que não é número segue como texto
+// ("12abc"), e o back-end responde "O valor informado é inválido.".
+export function parseAmountInput(text: string | null | undefined): number | string | null {
+  const raw = (text ?? '').trim();
+  if (!raw) {
+    return null;
+  }
+
+  if (DECIMAL_COMMA.test(raw) || THOUSANDS_DOT.test(raw)) {
+    return Number(raw.replace(/\./g, '').replace(',', '.'));
+  }
+
+  if (DECIMAL_DOT.test(raw)) {
+    return Number(raw);
+  }
+
+  return raw;
+}
+
+export function formatAmountInput(value: number | null | undefined): string {
+  if (value === null || value === undefined) {
+    return '';
+  }
+
+  return new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
 }
 
 export function initials(name: string | null | undefined): string {

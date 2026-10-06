@@ -8,6 +8,7 @@ import { ListFeedback } from '../../core/list-feedback/list-feedback';
 import { Category } from '../../core/models';
 import { FilterChip, PagedList } from '../../core/paged-list';
 import { Pagination } from '../../core/pagination/pagination';
+import { RecordDetail } from '../../core/record-detail/record-detail';
 import { AuthService } from '../../core/services/auth.service';
 import { CategoryService } from '../../core/services/category.service';
 import { ListStateService } from '../../core/services/list-state.service';
@@ -24,7 +25,7 @@ const SITUATION_LABELS: Record<string, string> = { true: 'Ativos', false: 'Inati
 
 @Component({
   selector: 'app-categories',
-  imports: [CommonModule, FormsModule, ConfirmDialog, FilterPanel, ListFeedback, Pagination],
+  imports: [CommonModule, FormsModule, ConfirmDialog, FilterPanel, ListFeedback, Pagination, RecordDetail],
   templateUrl: './categories.html',
   styleUrl: './categories.scss',
 })
@@ -44,6 +45,7 @@ export class Categories implements OnInit {
   });
 
   protected readonly deletingCategory = signal<Category | null>(null);
+  protected readonly detailCategory = signal<Category | null>(null);
 
   protected readonly chips = computed<FilterChip[]>(() => {
     const applied = this.list.applied();
@@ -74,6 +76,30 @@ export class Categories implements OnInit {
     void this.router.navigate(['/categories', category.id, 'edit']);
   }
 
+  protected openDetail(category: Category): void {
+    this.detailCategory.set(category);
+  }
+
+  protected closeDetail(): void {
+    this.detailCategory.set(null);
+  }
+
+  protected editFromDetail(): void {
+    const category = this.detailCategory();
+    if (category) {
+      this.edit(category);
+    }
+  }
+
+  // A confirmação abre por cima do Detalhe; recusar volta a ele, confirmar fecha os dois.
+  protected deleteFromDetail(): void {
+    this.deletingCategory.set(this.detailCategory());
+  }
+
+  protected typeLabel(category: Category): string {
+    return TYPE_LABELS[category.type] ?? category.type;
+  }
+
   protected requestDelete(category: Category): void {
     this.deletingCategory.set(category);
   }
@@ -85,6 +111,7 @@ export class Categories implements OnInit {
   protected async confirmDelete(): Promise<void> {
     const category = this.deletingCategory();
     this.deletingCategory.set(null);
+    this.detailCategory.set(null);
 
     if (!category) {
       return;

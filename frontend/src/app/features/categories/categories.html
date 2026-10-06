@@ -65,11 +65,11 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let category of list.items()">
+        <tr *ngFor="let category of list.items()" class="clickable-row" (click)="openDetail(category)">
           <td data-label="Nome">
             <div class="category-name">
               <span class="category-dot" *ngIf="category.color" [style.background]="category.color"></span>
-              {{ category.name }}
+              <button type="button" class="detail-trigger" aria-haspopup="dialog">{{ category.name }}</button>
             </div>
           </td>
           <td data-label="Tipo">
@@ -88,7 +88,7 @@
               {{ category.active ? 'Ativo' : 'Inativo' }}
             </span>
           </td>
-          <td class="row-actions">
+          <td class="row-actions" (click)="$event.stopPropagation()">
             <span class="row-actions-inner">
               <button
                 *ngIf="authService.can('CATEGORIES', 'EDIT')"
@@ -148,11 +148,60 @@
   />
 </section>
 
+@if (detailCategory(); as category) {
+  <app-record-detail
+    [heading]="category.name"
+    editLabel="Editar categoria"
+    removeLabel="Excluir categoria"
+    [canEdit]="authService.can('CATEGORIES', 'EDIT')"
+    [canRemove]="authService.can('CATEGORIES', 'DELETE')"
+    [suspended]="!!deletingCategory()"
+    (close)="closeDetail()"
+    (edit)="editFromDetail()"
+    (remove)="deleteFromDetail()"
+  >
+    <span detailIcon class="detail-icon" [class.income]="category.type === 'INCOME'" aria-hidden="true">
+      @if (category.type === 'INCOME') {
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 19V5M5.5 11.5L12 5l6.5 6.5"></path>
+        </svg>
+      } @else {
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 5v14M5.5 12.5L12 19l6.5-6.5"></path>
+        </svg>
+      }
+    </span>
+    <div>
+      <dt>Tipo</dt>
+      <dd>{{ typeLabel(category) }}</dd>
+    </div>
+    <div>
+      <dt>Cor</dt>
+      <dd>
+        @if (category.color) {
+          <span class="category-dot detail-color" role="img" aria-label="Cor da categoria" [style.background]="category.color"></span>
+        } @else {
+          Sem cor
+        }
+      </dd>
+    </div>
+    <div>
+      <dt>Situação</dt>
+      <dd>
+        <span class="status-pill" [class.pill-income]="category.active" [class.pill-neutral]="!category.active">
+          {{ category.active ? 'Ativo' : 'Inativo' }}
+        </span>
+      </dd>
+    </div>
+  </app-record-detail>
+}
+
 <app-confirm-dialog
   *ngIf="deletingCategory() as category"
   [message]="deleteMessage(category)"
   cancelLabel="Cancelar"
   confirmLabel="Excluir categoria"
+  [destructive]="true"
   (cancel)="cancelDelete()"
   (confirm)="confirmDelete()"
 />

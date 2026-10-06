@@ -34,28 +34,86 @@
   }
 }
 
+.date-field {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.date-shortcuts {
+  display: flex;
+  gap: 8px;
+}
+
+.date-shortcut {
+  min-height: var(--action-size);
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-pill);
+  padding: 0 16px;
+  background: var(--surface);
+  color: var(--text-label);
+  font-size: var(--fs-body);
+  font-weight: 600;
+  cursor: pointer;
+
+  &[aria-pressed='true'] {
+    border-color: var(--accent-chip);
+    background: var(--accent-soft);
+    color: var(--accent-strong);
+  }
+}
+
 @media (max-width: 680px) {
+  .form-header {
+    min-height: var(--form-header-h-mobile);
+    margin-bottom: 4px;
+  }
+
+  .form-card-body {
+    gap: 16px;
+  }
+
+  .form-card-body :where(input:not([type='radio']), select) {
+    border-radius: var(--radius-mark);
+  }
+
+  .type-choice-options {
+    border-radius: var(--radius-lg);
+  }
+
+  .choice {
+    min-height: var(--touch-target);
+    border-radius: 11px;
+    font-size: 15px;
+  }
+
   .amount-field {
-    justify-content: center;
-    border: 0;
-    border-bottom: 2px solid var(--accent);
-    border-radius: 0;
-    background: transparent;
-    box-shadow: none;
+    min-height: var(--amount-field-h-mobile);
+    border-width: 2px;
+    border-radius: var(--radius-lg);
 
     .affix-text {
+      color: var(--text-muted);
       font-size: 20px;
+      font-weight: 600;
     }
 
     input {
-      flex: 0 1 180px;
-      font-size: 36px;
+      height: calc(var(--amount-field-h-mobile) - 4px);
+      font-size: var(--fs-amount-input);
       letter-spacing: -0.02em;
-      text-align: center;
     }
   }
 
   .amount-field:focus-within {
-    box-shadow: none;
+    border-color: var(--accent);
+  }
+
+  .date-shortcut {
+    min-height: var(--touch-target);
+  }
+
+  .segmented-track {
+    border-radius: var(--radius-mark);
   }
 }

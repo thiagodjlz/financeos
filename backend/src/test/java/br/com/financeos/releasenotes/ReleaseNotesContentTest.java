@@ -86,6 +86,19 @@ class ReleaseNotesContentTest {
     }
 
     @Test
+    void shouldAnnounceTheLayoutRedesignAsImprovementIn103() {
+        List<String> improvements = version("1.0.3").categories().stream()
+                .filter(category -> category.kind() == ReleaseNoteCategory.Kind.IMPROVEMENT)
+                .flatMap(category -> category.items().stream())
+                .toList();
+
+        List.of("Ver pendentes", "Por categoria", "Evolução anual", "Todos, Despesas e Receitas",
+                "Detalhe do registro", "Hoje e Ontem", "Tentar novamente", "Desativar usuário e Excluir perfil")
+                .forEach(expected -> assertTrue(improvements.stream().anyMatch(item -> item.contains(expected)),
+                        "1.0.3 sem a melhoria " + expected));
+    }
+
+    @Test
     void shouldPublishTheThreeCategoriesInThe102Block() {
         ReleaseNoteVersion v102 = version("1.0.2");
 

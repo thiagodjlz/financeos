@@ -30,6 +30,8 @@ export interface DashboardSummary {
   balance: number;
   paidExpense: number;
   pendingExpense: number;
+  // Despesas pagas sobre as receitas, com uma casa; nulo sem receita no mês.
+  paidExpensePercent: number | null;
   transactionCount: number;
   categoryBreakdown: CategoryBreakdown[];
   monthlyEvolution: MonthlySummary[];
@@ -42,6 +44,8 @@ export interface CategoryBreakdown {
   type: TransactionType;
   totalAmount: number;
   transactionCount: number;
+  // Fatia da categoria no total do mesmo tipo, com uma casa; nulo com total zero.
+  sharePercent: number | null;
 }
 
 export interface MonthlySummary {

@@ -138,17 +138,23 @@ final class OverviewContent {
                                 + "tem permissão para acessar esta tela. e o sistema abre a primeira tela permitida.",
                         "Uma ação que o seu perfil não permite é recusada com o Alerta Você não tem permissão "
                                 + "para realizar esta ação.",
-                        "Desativar usuário e Excluir perfil agem na hora, sem confirmação, e mostram o aviso de "
-                                + "Sucesso. Entre os botões das linhas das listas, Excluir lançamento e Excluir "
-                                + "categoria pedem confirmação antes de agir."));
+                        "Excluir lançamento, Excluir categoria, Desativar usuário e Excluir perfil, na linha ou no "
+                                + "detalhe do registro, pedem confirmação antes de agir e, confirmados, mostram o "
+                                + "aviso de Sucesso. Cancelar desiste sem alterar nada; no celular, os botões da "
+                                + "confirmação ficam um embaixo do outro."));
     }
 
     private static DocumentationSection listas() {
         return DocumentationSection.of(
                 "Listas sem resultado ou com falha",
                 DocumentationBlock.list(
+                        "Enquanto uma lista carrega, linhas cinzas ocupam o lugar dos registros.",
+                        "Em Lançamentos, Categorias, Usuários e Perfis, tocar ou clicar num registro abre o detalhe "
+                                + "dele, num painel na parte de baixo da tela no celular e numa janela no meio da "
+                                + "tela no computador.",
                         "Se uma lista não consegue carregar, a mensagem do problema aparece no lugar dela, em vez "
-                                + "de uma lista vazia.",
+                                + "de uma lista vazia. Em Lançamentos, a mensagem vem com o botão Tentar novamente, "
+                                + "que carrega a lista de novo.",
                         "Quando a busca ou os filtros não encontram nenhum registro, a lista mostra Nenhum "
                                 + "registro encontrado. Se algum filtro estiver diferente do inicial, aparece junto "
                                 + "o botão Limpar filtros, que volta aos filtros iniciais."));

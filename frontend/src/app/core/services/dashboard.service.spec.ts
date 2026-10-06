@@ -1,7 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { API_BASE } from '../models';
+import { API_BASE, DashboardSummary } from '../models';
 import { DashboardService } from './dashboard.service';
 
 describe('DashboardService', () => {
@@ -23,19 +23,22 @@ describe('DashboardService', () => {
 
     const req = httpMock.expectOne(`${API_BASE}/dashboard/summary?year=2026&month=6`);
     expect(req.request.method).toBe('GET');
-    req.flush({
+    const body: DashboardSummary = {
       period: { year: 2026, month: 6, startDate: '2026-06-01', endDate: '2026-06-30' },
       totalIncome: 100,
       totalExpense: 40,
       balance: 60,
       paidExpense: 40,
       pendingExpense: 0,
+      paidExpensePercent: 40,
       transactionCount: 2,
       categoryBreakdown: [],
       monthlyEvolution: [],
-    });
+    };
+    req.flush(body);
 
     await refreshPromise;
     expect(service.summary()?.totalIncome).toBe(100);
+    expect(service.summary()?.paidExpensePercent).toBe(40);
   });
 });

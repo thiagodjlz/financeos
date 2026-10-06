@@ -344,7 +344,7 @@ class DocumentationContentTest {
                 "Ainda não há mudanças publicadas nesta versão",
                 "Buscar na documentação", "Nenhuma área corresponde à busca", "Nenhum registro encontrado",
                 "Limpar filtros", "Fechar aviso", "Sua sessão expirou", "Você não tem permissão para acessar esta tela",
-                "sem confirmação", "Lançamento excluído com sucesso", "Usuário desativado com sucesso",
+                "pedem confirmação", "Lançamento excluído com sucesso", "Usuário desativado com sucesso",
                 "Perfil excluído com sucesso")
                 .forEach(expected -> assertTrue(published.contains(expected), "Central sem mencionar " + expected));
 
@@ -364,6 +364,43 @@ class DocumentationContentTest {
                 .forEach(expected -> assertTrue(summary.contains(expected), "Resumo sem mencionar " + expected));
         List.of("desabilitado", "cancelad", "períodos em que você tem lançamentos")
                 .forEach(removed -> assertFalse(summary.contains(removed), "Resumo ainda menciona " + removed));
+    }
+
+    @Test
+    void shouldDescribeTheNewLayoutOfSummaryAndTransactions() {
+        String summary = areaText(CONTENT.areas().stream()
+                .filter(area -> "Resumo".equals(area.title()))
+                .findFirst()
+                .orElseThrow());
+        String transactions = areaText(CONTENT.areas().stream()
+                .filter(area -> "Lançamentos".equals(area.title()))
+                .findFirst()
+                .orElseThrow());
+        String published = String.join("\n", displayedTexts());
+
+        List.of("Ver pendentes", "Despesas pagas equivalem a", "Sem receitas no mês", "Novo lançamento",
+                "Toque em um mês do gráfico para ver os valores.")
+                .forEach(expected -> assertTrue(summary.contains(expected), "Resumo sem mencionar " + expected));
+        List.of("Todo o período", "Mês anterior", "Próximo mês", "Todos, Despesas e Receitas", "detalhe",
+                "Hoje e Ontem", "Sábado, 10 de outubro", "O valor é obrigatório.", "Salvando…",
+                "Tentar novamente")
+                .forEach(expected -> assertTrue(transactions.contains(expected),
+                        "Lançamentos sem mencionar " + expected));
+        assertTrue(published.contains("linhas cinzas"), "Central sem mencionar a lista carregando");
+        assertTrue(summary.contains("Clique em um mês do gráfico para ver os valores."),
+                "Resumo sem a dica do computador");
+        List.of("Categorias", "Usuários", "Perfis").forEach(title -> {
+            String text = areaText(CONTENT.areas().stream()
+                    .filter(area -> title.equals(area.title()))
+                    .findFirst()
+                    .orElseThrow());
+            assertTrue(text.contains("abre o detalhe"), title + " sem descrever o detalhe");
+            assertTrue(text.contains("tecla Esc"), title + " sem dizer como fechar o detalhe");
+        });
+        assertFalse(published.contains("sem confirmação"), "Central ainda diz que algo age sem confirmação");
+        assertTrue(published.contains("Deseja desativar o usuário"), "Usuários sem a confirmação de desativar");
+        assertTrue(published.contains("Deseja excluir o perfil"), "Perfis sem a confirmação de excluir");
+        assertFalse(published.contains("Quatro indicadores"), "Central ainda descreve os quatro indicadores");
     }
 
     @Test

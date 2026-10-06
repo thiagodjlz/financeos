@@ -12,7 +12,7 @@
     <rect x="3.5" y="5" width="17" height="15.5" rx="2.5"></rect>
     <path d="M3.5 10h17M8 3v4M16 3v4"></path>
   </svg>
-  <span class="month-picker-text" aria-live="polite">{{ text() }}</span>
+  <span class="month-picker-text" aria-live="polite">{{ text() || placeholder() }}</span>
 </button>
 
 @if (open()) {

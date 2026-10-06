@@ -10,7 +10,14 @@
     <p [id]="messageId">{{ message() }}</p>
     <div class="modal-actions">
       <button type="button" class="ghost-button" (click)="onCancel()">{{ cancelLabel() }}</button>
-      <button type="button" class="primary-button" (click)="onConfirm()">{{ confirmLabel() }}</button>
+      <button
+        type="button"
+        [class.primary-button]="!destructive()"
+        [class.danger-button]="destructive()"
+        (click)="onConfirm()"
+      >
+        {{ confirmLabel() }}
+      </button>
     </div>
   </div>
 </div>

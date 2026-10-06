@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 import br.com.financeos.categories.Category;
@@ -496,6 +497,84 @@ class TransactionResourceTest {
                 .body("violations.find { it.field.endsWith('.amount') }.message",
                         equalTo("O valor é obrigatório."))
                 .body("message", equalTo("Informe os campos obrigatórios: Descrição, Valor, Categoria."));
+    }
+
+    @Test
+    void shouldRequireAmountWhenFormSendsItEmpty() {
+        Category category = createCategory(CategoryType.EXPENSE, true);
+
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "transactionDate": "2026-06-30",
+                          "description": "Teste mercado valor vazio",
+                          "amount": null,
+                          "type": "EXPENSE",
+                          "status": "PENDING",
+                          "categoryId": "%s"
+                        }
+                        """.formatted(category.id))
+                .when().post("/transactions")
+                .then()
+                .statusCode(400)
+                .body("violations.find { it.field.endsWith('.amount') }.message",
+                        equalTo("O valor é obrigatório."))
+                .body("message", equalTo("Informe os campos obrigatórios: Valor."));
+    }
+
+    @Test
+    void shouldRejectNegativeAmountAsTyped() {
+        Category category = createCategory(CategoryType.EXPENSE, true);
+
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "transactionDate": "2026-06-30",
+                          "description": "Teste mercado valor negativo",
+                          "amount": -50.00,
+                          "type": "EXPENSE",
+                          "status": "PENDING",
+                          "categoryId": "%s"
+                        }
+                        """.formatted(category.id))
+                .when().post("/transactions")
+                .then()
+                .statusCode(400)
+                .body("violations.find { it.field.endsWith('amount') }.message",
+                        equalTo("O valor deve ser maior que zero."))
+                .body("message", equalTo("O valor deve ser maior que zero."));
+    }
+
+    // O cadastro manda o texto digitado quando ele não é número (issue #109, DEC-14): quem recusa é o back-end.
+    @Test
+    void shouldRejectNonNumericAmountInPortuguese() {
+        Category category = createCategory(CategoryType.EXPENSE, true);
+
+        for (String amount : List.of("12abc", "1,2,3", "-")) {
+            given()
+                    .contentType(ContentType.JSON)
+                    .body("""
+                            {
+                              "transactionDate": "2026-06-30",
+                              "description": "Teste mercado valor texto",
+                              "amount": "%s",
+                              "type": "EXPENSE",
+                              "status": "PENDING",
+                              "categoryId": "%s"
+                            }
+                            """.formatted(amount, category.id))
+                    .when().post("/transactions")
+                    .then()
+                    .statusCode(400)
+                    .body("violations[0].field", equalTo("amount"))
+                    .body("violations[0].message", equalTo("O valor informado é inválido."))
+                    .body("message", equalTo("O valor informado é inválido."));
+        }
+
+        assertEquals(0L, QuarkusTransaction.requiringNew()
+                .call(() -> repository.count("description", "Teste mercado valor texto")));
     }
 
     @Test

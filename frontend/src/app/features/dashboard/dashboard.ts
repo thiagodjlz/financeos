@@ -11,12 +11,25 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { YearMonth, currentMonth, longMonthName, money, monthName, shiftMonth, shortMoney } from '../../core/formatters';
+import { Router } from '@angular/router';
+import {
+  YearMonth,
+  currentMonth,
+  longMonthName,
+  money,
+  monthKey,
+  monthName,
+  percentLabel,
+  shiftMonth,
+  shortMoney,
+} from '../../core/formatters';
 import { CategoryBreakdown, MonthlySummary, TransactionType } from '../../core/models';
 import { MonthPicker } from '../../core/month-picker/month-picker';
 import { AuthService } from '../../core/services/auth.service';
 import { DashboardService } from '../../core/services/dashboard.service';
+import { ListStateService } from '../../core/services/list-state.service';
 import { ToastService } from '../../core/services/toast.service';
+import { TRANSACTIONS_LIST_KEY, TRANSACTION_DEFAULT_FILTERS } from '../transactions/transaction-filters';
 import {
   DayPeriod,
   GREETING_TICK_MS,
@@ -26,10 +39,13 @@ import {
 } from './greeting';
 
 const MONTHS_IN_YEAR = 12;
+// A altura vem do CSS (menor no celular) e é medida; 240 é a referência de quando não há medida.
 const CHART_HEIGHT = 240;
+const MIN_CHART_HEIGHT = 160;
 const PLOT_TOP = 16;
-const PLOT_BOTTOM = 196;
-const MONTH_LABEL_Y = 214;
+const PLOT_BOTTOM_GAP = 44;
+const MONTH_LABEL_GAP = 26;
+const MAX_BAR_PERCENT = 100;
 const AXIS_WIDTH = 64;
 const NARROW_AXIS_WIDTH = 44;
 const NARROW_CHART_WIDTH = 520;
@@ -118,8 +134,11 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
   private readonly dashboardService = inject(DashboardService);
   private readonly toast = inject(ToastService);
   private readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
+  private readonly listState = inject(ListStateService);
 
   @ViewChild('chartViewport') private chartViewport?: ElementRef<HTMLElement>;
+  @ViewChild('chartSvg') private chartSvg?: ElementRef<SVGSVGElement>;
 
   private resizeObserver?: ResizeObserver;
   private greetingTimer?: ReturnType<typeof setInterval>;
@@ -139,13 +158,39 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
   protected readonly loadError = signal<string | null>(null);
   protected readonly summary = this.dashboardService.summary;
   protected readonly chartWidth = signal(DEFAULT_CHART_WIDTH);
+  protected readonly chartHeight = signal(CHART_HEIGHT);
   protected readonly activeMonth = signal<number | null>(null);
 
   private readonly activeSource = signal<ActiveSource>(null);
+  // Mês escolhido para o bloco abaixo do gráfico (clique, toque ou teclado); o ponteiro passando por
+  // cima só move o informativo flutuante. Volta ao mês do período a cada carga.
+  private readonly pinnedMonth = signal<number | null>(null);
 
   protected readonly selected = signal<YearMonth>(currentMonth());
 
   protected readonly breakdownType = signal<TransactionType>('EXPENSE');
+
+  protected readonly canViewTransactions = computed(() => this.auth.can('TRANSACTIONS', 'VIEW'));
+  protected readonly canCreateTransaction = computed(() => this.auth.can('TRANSACTIONS', 'CREATE'));
+
+  // O percentual vem pronto da API (issue #109): nulo sem receita, real acima de 100%. A barra
+  // para no limite; o texto mostra o valor real.
+  private readonly paidExpensePercent = computed(() => this.summary()?.paidExpensePercent ?? null);
+
+  protected readonly balanceBarWidth = computed(() => {
+    const percent = this.paidExpensePercent();
+    return percent === null ? 0 : Math.min(MAX_BAR_PERCENT, Math.max(0, percent));
+  });
+
+  protected readonly balanceRatioText = computed(() => {
+    const percent = this.paidExpensePercent();
+    return percent === null
+      ? 'Sem receitas no mês'
+      : `Despesas pagas equivalem a ${percentLabel(percent)} das receitas`;
+  });
+
+  // Mês do período no gráfico: destacado sempre e mostrado no bloco do celular até o toque.
+  protected readonly periodMonthIndex = computed(() => (this.summary()?.period.month ?? this.selected().month) - 1);
 
   protected readonly breakdownItems = computed<CategoryBreakdown[]>(
     () => this.summary()?.categoryBreakdown.filter((item) => item.type === this.breakdownType()) ?? [],
@@ -184,6 +229,8 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
 
   protected readonly chart = computed<ChartModel>(() => {
     const width = this.chartWidth();
+    const height = this.chartHeight();
+    const plotBottom = height - PLOT_BOTTOM_GAP;
     const axisWidth = width < NARROW_CHART_WIDTH ? NARROW_AXIS_WIDTH : AXIS_WIDTH;
     const plotLeft = axisWidth;
     const plotRight = Math.max(plotLeft + MONTHS_IN_YEAR, width - PLOT_RIGHT_PAD);
@@ -199,7 +246,7 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
     const axis = buildAxis(rawMin, rawMax === 0 && rawMin === 0 ? EMPTY_DOMAIN_MAX : rawMax);
     const span = axis.domainMax - axis.domainMin || 1;
     const scaleY = (value: number) =>
-      PLOT_BOTTOM - ((value - axis.domainMin) / span) * (PLOT_BOTTOM - PLOT_TOP);
+      plotBottom - ((value - axis.domainMin) / span) * (plotBottom - PLOT_TOP);
     const zeroY = scaleY(0);
 
     const months: ChartMonth[] = series.map((item, index) => {
@@ -237,14 +284,14 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
 
     return {
       width,
-      height: CHART_HEIGHT,
-      viewBox: `0 0 ${width} ${CHART_HEIGHT}`,
+      height,
+      viewBox: `0 0 ${width} ${height}`,
       plotTop: PLOT_TOP,
-      plotBottom: PLOT_BOTTOM,
-      plotHeight: PLOT_BOTTOM - PLOT_TOP,
+      plotBottom,
+      plotHeight: plotBottom - PLOT_TOP,
       plotLeft,
       plotRight,
-      monthLabelY: MONTH_LABEL_Y,
+      monthLabelY: height - MONTH_LABEL_GAP,
       axisLabelX: axisWidth - AXIS_LABEL_GAP,
       barWidth,
       zeroY,
@@ -257,22 +304,13 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
 
   protected readonly activeTooltip = computed<MonthTooltip | null>(() => {
     const index = this.activeMonth();
-    if (index === null) {
-      return null;
-    }
-
-    const month = this.chart().months[index];
-    if (!month) {
-      return null;
-    }
-
-    return {
-      title: longMonthName(month.month),
-      income: money(month.income),
-      expense: money(month.expense),
-      balance: money(month.balance),
-    };
+    return index === null ? null : this.monthTooltip(index);
   });
+
+  // Bloco fixo abaixo do gráfico, nas duas faixas (DEC-13): o mês escolhido ou, sem escolha, o do período.
+  protected readonly monthBlock = computed<MonthTooltip | null>(() =>
+    this.monthTooltip(this.pinnedMonth() ?? this.periodMonthIndex()),
+  );
 
   protected readonly announcement = computed(() => {
     const tooltip = this.activeTooltip();
@@ -311,13 +349,13 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    this.chartWidth.set(measureWidth(host));
+    this.measureChart(host);
 
     if (typeof ResizeObserver === 'undefined') {
       return;
     }
 
-    this.resizeObserver = new ResizeObserver(() => this.chartWidth.set(measureWidth(host)));
+    this.resizeObserver = new ResizeObserver(() => this.measureChart(host));
     this.resizeObserver.observe(host);
   }
 
@@ -330,6 +368,7 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
     this.loading.set(true);
     this.loadError.set(null);
     this.closeTooltip();
+    this.pinnedMonth.set(null);
 
     try {
       const { year, month } = this.selected();
@@ -421,6 +460,30 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
     return money(value);
   }
 
+  protected shareLabel(item: CategoryBreakdown): string {
+    return item.sharePercent === null || item.sharePercent === undefined ? '' : percentLabel(item.sharePercent);
+  }
+
+  // "Ver pendentes" (DEC-1): Lançamentos abre no mês do Resumo, com Status Pendente e Tipo Despesa.
+  // Sobrescreve o estado salvo da listagem de propósito: é um atalho para essa visão.
+  protected openPending(): void {
+    const { year, month } = this.summary()?.period ?? this.selected();
+    this.listState.set(TRANSACTIONS_LIST_KEY, {
+      filters: {
+        ...TRANSACTION_DEFAULT_FILTERS,
+        month: monthKey({ year, month }),
+        status: 'PENDING',
+        type: 'EXPENSE',
+      },
+      page: 1,
+    });
+    void this.router.navigate(['/transactions']);
+  }
+
+  protected createTransaction(): void {
+    void this.router.navigate(['/transactions/new']);
+  }
+
   // Mês a mês no calendário, sem ponta: mês sem lançamentos mostra o resumo zerado.
   protected step(delta: number): void {
     this.selected.set(shiftMonth(this.selected(), delta));
@@ -443,14 +506,40 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
     this.greetingSeed.set(Math.random());
   }
 
+  protected pinMonth(index: number): void {
+    this.pinnedMonth.set(index);
+  }
+
   private openTooltip(index: number, source: Exclude<ActiveSource, null>): void {
     this.activeMonth.set(index);
     this.activeSource.set(source);
+    if (source !== 'mouse') {
+      this.pinnedMonth.set(index);
+    }
   }
 
   private closeTooltip(): void {
     this.activeMonth.set(null);
     this.activeSource.set(null);
+  }
+
+  private monthTooltip(index: number): MonthTooltip | null {
+    const month = this.chart().months[index];
+    if (!month) {
+      return null;
+    }
+
+    return {
+      title: longMonthName(month.month),
+      income: money(month.income),
+      expense: money(month.expense),
+      balance: money(month.balance),
+    };
+  }
+
+  private measureChart(host: HTMLElement): void {
+    this.chartWidth.set(measureWidth(host));
+    this.chartHeight.set(measureHeight(this.chartSvg?.nativeElement));
   }
 
 }
@@ -464,6 +553,12 @@ export function monthAxisLabel(month: number, groupWidth: number): string {
 
 function measureWidth(host: HTMLElement): number {
   return Math.max(MIN_CHART_WIDTH, Math.round(host.clientWidth || DEFAULT_CHART_WIDTH));
+}
+
+// jsdom mede 0: sem medida fica a altura de referência, e as posições dos testes não mudam.
+function measureHeight(svg: SVGSVGElement | undefined): number {
+  const height = Math.round(svg?.getBoundingClientRect().height ?? 0);
+  return height ? Math.max(MIN_CHART_HEIGHT, height) : CHART_HEIGHT;
 }
 
 function clamp(value: number, min: number, max: number): number {

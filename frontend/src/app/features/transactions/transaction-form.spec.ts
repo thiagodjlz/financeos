@@ -2,6 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
+import { isoDate } from '../../core/formatters';
 import { API_BASE, Category, Transaction } from '../../core/models';
 import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
@@ -30,7 +31,9 @@ const TRANSACTION: Transaction = {
 const NO_PERMISSION_NOTICE =
   'Seu perfil não tem permissão para ver Categorias, por isso não é possível escolher a categoria.';
 
-const TODAY = new Date().toISOString().slice(0, 10);
+// Dia local, como o cadastro: `toISOString()` daria o dia seguinte à noite no fuso do Brasil.
+const TODAY = isoDate(new Date());
+const YESTERDAY = isoDate(new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate() - 1));
 
 describe('TransactionForm', () => {
   let fixture: ComponentFixture<TransactionForm>;
@@ -144,7 +147,7 @@ describe('TransactionForm', () => {
     expect(query('.page-title').textContent?.trim()).toBe('Novo lançamento');
     expect(value('input[name="transactionDate"]')).toBe(TODAY);
     expect(value('input[name="description"]')).toBe('');
-    expect(value('input[name="amount"]')).toBe('0');
+    expect(value('input[name="amount"]')).toBe('');
     expect(checked('type')).toBe('EXPENSE');
     expect(checked('status')).toBe('PENDING');
     expect(value('select[name="categoryId"]')).toBe('');
@@ -308,7 +311,7 @@ describe('TransactionForm', () => {
 
     expect(query('.page-title').textContent?.trim()).toBe('Editar lançamento');
     expect(value('input[name="description"]')).toBe('Feira');
-    expect(value('input[name="amount"]')).toBe('120');
+    expect(value('input[name="amount"]')).toBe('120,00');
     expect(value('select[name="categoryId"]')).toBe('cat-expense');
 
     await fillText('input[name="description"]', 'Feira grande');
@@ -501,6 +504,142 @@ describe('TransactionForm', () => {
     });
     request.flush(TRANSACTION);
     await settle();
+  });
+
+  it('segue a ordem Tipo, Valor, Descrição, Categoria, Data e Status num só formulário', async () => {
+    await renderNew();
+
+    const names = queryAll('form [name]').map((control) => control.getAttribute('name'));
+    expect(names.filter((name, index) => names.indexOf(name) === index)).toEqual([
+      'type',
+      'amount',
+      'description',
+      'categoryId',
+      'transactionDate',
+      'status',
+    ]);
+  });
+
+  it('o Valor é texto com vírgula decimal: "184,90" sai como 184.9', async () => {
+    await renderNew();
+
+    const amount = query<HTMLInputElement>('input[name="amount"]');
+    expect(amount.type).toBe('text');
+    expect(amount.getAttribute('inputmode')).toBe('decimal');
+    expect(amount.getAttribute('placeholder')).toBe('0,00');
+
+    await fillText('input[name="description"]', 'Feira da semana');
+    await fillText('input[name="amount"]', '184,90');
+    await selectValue('select[name="categoryId"]', 'cat-expense');
+    await click(button('Salvar lançamento'));
+
+    const request = httpMock.expectOne(`${API_BASE}/transactions`);
+    expect(request.request.body.amount).toBe(184.9);
+    request.flush(TRANSACTION);
+    await settle();
+  });
+
+  it('com o Valor vazio envia nulo e mostra na legenda o "O valor é obrigatório." do back-end', async () => {
+    await renderNew();
+    await fillText('input[name="description"]', 'Feira');
+    await selectValue('select[name="categoryId"]', 'cat-expense');
+
+    await click(button('Salvar lançamento'));
+
+    const request = httpMock.expectOne(`${API_BASE}/transactions`);
+    expect(request.request.body.amount).toBeNull();
+    request.flush(
+      {
+        violations: [{ field: 'create.request.amount', message: 'O valor é obrigatório.' }],
+        message: 'Informe os campos obrigatórios: Valor.',
+      },
+      { status: 400, statusText: 'Bad Request' },
+    );
+    await settle();
+
+    expect(query('input[name="amount"]').classList.contains('invalid')).toBe(true);
+    expect(queryAll('.field-error').map((error) => error.textContent?.trim())).toEqual(['O valor é obrigatório.']);
+    expect((document.activeElement as HTMLElement).getAttribute('name')).toBe('amount');
+    expect(router.navigate).not.toHaveBeenCalled();
+  });
+
+  it('não corrige o Valor digitado: negativo vai com sinal e texto vai como texto, e a recusa do back-end aparece na legenda', async () => {
+    await renderNew();
+    await fillText('input[name="description"]', 'Feira');
+    await selectValue('select[name="categoryId"]', 'cat-expense');
+
+    await fillText('input[name="amount"]', '-50,00');
+    await click(button('Salvar lançamento'));
+    let request = httpMock.expectOne(`${API_BASE}/transactions`);
+    expect(request.request.body.amount).toBe(-50);
+    request.flush(
+      {
+        violations: [{ field: 'create.request.amount', message: 'O valor deve ser maior que zero.' }],
+        message: 'O valor deve ser maior que zero.',
+      },
+      { status: 400, statusText: 'Bad Request' },
+    );
+    await settle();
+    expect(queryAll('.field-error').map((error) => error.textContent?.trim())).toEqual([
+      'O valor deve ser maior que zero.',
+    ]);
+    expect(value('input[name="amount"]')).toBe('-50,00');
+
+    await fillText('input[name="amount"]', '12abc');
+    await click(button('Salvar lançamento'));
+    request = httpMock.expectOne(`${API_BASE}/transactions`);
+    expect(request.request.body.amount).toBe('12abc');
+    request.flush(
+      {
+        violations: [{ field: 'amount', message: 'O valor informado é inválido.' }],
+        message: 'O valor informado é inválido.',
+      },
+      { status: 400, statusText: 'Bad Request' },
+    );
+    await settle();
+
+    expect(query('input[name="amount"]').classList.contains('invalid')).toBe(true);
+    expect(queryAll('.field-error').map((error) => error.textContent?.trim())).toEqual([
+      'O valor informado é inválido.',
+    ]);
+    expect(value('input[name="amount"]')).toBe('12abc');
+    expect(router.navigate).not.toHaveBeenCalled();
+  });
+
+  it('"Hoje" e "Ontem" preenchem a Data e marcam o atalho escolhido', async () => {
+    await renderNew();
+
+    const today = button('Hoje');
+    const yesterday = button('Ontem');
+    expect(today.getAttribute('aria-pressed')).toBe('true');
+    expect(yesterday.getAttribute('aria-pressed')).toBe('false');
+
+    await click(yesterday);
+    expect(value('input[name="transactionDate"]')).toBe(YESTERDAY);
+    expect(yesterday.getAttribute('aria-pressed')).toBe('true');
+    expect(today.getAttribute('aria-pressed')).toBe('false');
+
+    await click(today);
+    expect(value('input[name="transactionDate"]')).toBe(TODAY);
+    httpMock.expectNone(() => true);
+  });
+
+  it('mostra "Salvando…" com o botão desabilitado durante o envio', async () => {
+    await renderNew();
+    await fillText('input[name="description"]', 'Feira');
+    await fillText('input[name="amount"]', '120');
+    await selectValue('select[name="categoryId"]', 'cat-expense');
+
+    await click(button('Salvar lançamento'));
+
+    const submit = query<HTMLButtonElement>('button[type="submit"]');
+    expect(submit.textContent?.trim()).toBe('Salvando…');
+    expect(submit.disabled).toBe(true);
+
+    httpMock.expectOne(`${API_BASE}/transactions`).flush(TRANSACTION);
+    await settle();
+
+    expect(submit.textContent?.trim()).toBe('Salvar lançamento');
   });
 
   it('mostra o Valor com "R$" e o contador N/255 da descrição', async () => {

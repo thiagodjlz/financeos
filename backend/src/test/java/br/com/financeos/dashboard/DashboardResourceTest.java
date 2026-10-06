@@ -116,6 +116,73 @@ class DashboardResourceTest {
     }
 
     @Test
+    void shouldRoundPaidExpensePercentHalfUp() {
+        createTransaction("2016-03-05", "Teste dashboard percentual receita", 4000, "INCOME", "PAID");
+        createTransaction("2016-03-10", "Teste dashboard percentual paga", 1170, "EXPENSE", "PAID");
+        createTransaction("2016-03-15", "Teste dashboard percentual pendente", 300, "EXPENSE", "PENDING");
+
+        given()
+                .queryParam("year", 2016)
+                .queryParam("month", 3)
+                .when().get("/dashboard/summary")
+                .then()
+                .statusCode(200)
+                .body("paidExpense", equalTo(1170.00F))
+                .body("paidExpensePercent", equalTo(29.3F));
+    }
+
+    @Test
+    void shouldReturnRealPaidExpensePercentAboveHundred() {
+        createTransaction("2016-04-05", "Teste dashboard acima receita", 1000, "INCOME", "PAID");
+        createTransaction("2016-04-10", "Teste dashboard acima paga", 1300, "EXPENSE", "PAID");
+
+        given()
+                .queryParam("year", 2016)
+                .queryParam("month", 4)
+                .when().get("/dashboard/summary")
+                .then()
+                .statusCode(200)
+                .body("paidExpensePercent", equalTo(130.0F));
+    }
+
+    @Test
+    void shouldReturnNullPaidExpensePercentWithoutIncome() {
+        createTransaction("2016-05-10", "Teste dashboard sem receita", 250, "EXPENSE", "PAID");
+
+        given()
+                .queryParam("year", 2016)
+                .queryParam("month", 5)
+                .when().get("/dashboard/summary")
+                .then()
+                .statusCode(200)
+                .body("paidExpense", equalTo(250.00F))
+                .body("paidExpensePercent", nullValue());
+    }
+
+    @Test
+    void shouldReturnCategorySharePercentOfItsType() {
+        UUID first = createCategory(CategoryType.EXPENSE, null);
+        UUID second = createCategory(CategoryType.EXPENSE, null);
+        setCategory(createTransaction("2016-06-05", "Teste dashboard fatia menor", 117, "EXPENSE", "PAID"), first);
+        setCategory(createTransaction("2016-06-06", "Teste dashboard fatia maior", 283, "EXPENSE", "PAID"), second);
+        setCategory(createTransaction("2016-06-07", "Teste dashboard fatia pendente", 600, "EXPENSE", "PENDING"),
+                first);
+        createTransaction("2016-06-08", "Teste dashboard fatia receita", 900, "INCOME", "PAID");
+
+        given()
+                .queryParam("year", 2016)
+                .queryParam("month", 6)
+                .when().get("/dashboard/summary")
+                .then()
+                .statusCode(200)
+                .body("categoryBreakdown.find { it.categoryId == '%s' }.sharePercent".formatted(first),
+                        equalTo(29.3F))
+                .body("categoryBreakdown.find { it.categoryId == '%s' }.sharePercent".formatted(second),
+                        equalTo(70.8F))
+                .body("categoryBreakdown.find { it.type == 'INCOME' }.sharePercent", equalTo(100.0F));
+    }
+
+    @Test
     void shouldRejectIncompletePeriod() {
         given()
                 .queryParam("year", 2026)
@@ -282,6 +349,7 @@ class DashboardResourceTest {
                 .then()
                 .statusCode(200)
                 .body("monthlyEvolution.size()", equalTo(12))
+                .body("paidExpensePercent", nullValue())
                 .extract().jsonPath();
 
         assertZeroedTotals(body);

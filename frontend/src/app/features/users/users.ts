@@ -3,11 +3,14 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { ConfirmDialog } from '../../core/confirm-dialog/confirm-dialog';
 import { FilterPanel } from '../../core/filter-panel/filter-panel';
+import { initials } from '../../core/formatters';
 import { ListFeedback } from '../../core/list-feedback/list-feedback';
 import { AppUserSummary, Profile } from '../../core/models';
 import { FilterChip, PagedList } from '../../core/paged-list';
 import { Pagination } from '../../core/pagination/pagination';
+import { RecordDetail } from '../../core/record-detail/record-detail';
 import { AuthService } from '../../core/services/auth.service';
 import { ListStateService } from '../../core/services/list-state.service';
 import { ProfileService } from '../../core/services/profile.service';
@@ -23,7 +26,7 @@ const SITUATION_LABELS: Record<string, string> = { true: 'Ativos', false: 'Inati
 
 @Component({
   selector: 'app-users',
-  imports: [CommonModule, FormsModule, FilterPanel, ListFeedback, Pagination],
+  imports: [CommonModule, FormsModule, ConfirmDialog, FilterPanel, ListFeedback, Pagination, RecordDetail],
   templateUrl: './users.html',
   styleUrl: './users.scss',
 })
@@ -47,6 +50,8 @@ export class Users implements OnInit {
   });
 
   protected readonly saving = signal(false);
+  protected readonly detailUser = signal<AppUserSummary | null>(null);
+  protected readonly deactivatingUser = signal<AppUserSummary | null>(null);
   protected readonly profiles = signal<Profile[]>([]);
   private readonly profilesState = signal<'idle' | 'loading' | 'loaded' | 'failed'>('idle');
   private readonly profilesDenied = signal(false);
@@ -120,6 +125,52 @@ export class Users implements OnInit {
 
   protected edit(user: AppUserSummary): void {
     void this.router.navigate(['/users', user.id, 'edit']);
+  }
+
+  protected openDetail(user: AppUserSummary): void {
+    this.detailUser.set(user);
+  }
+
+  protected closeDetail(): void {
+    this.detailUser.set(null);
+  }
+
+  protected editFromDetail(): void {
+    const user = this.detailUser();
+    if (user) {
+      this.edit(user);
+    }
+  }
+
+  // DEC-15: desativar pede confirmação, na linha e no Detalhe. A confirmação abre por cima do
+  // Detalhe; recusar volta a ele, confirmar fecha os dois e faz um único DELETE.
+  protected requestDeactivate(user: AppUserSummary): void {
+    this.deactivatingUser.set(user);
+  }
+
+  protected deactivateFromDetail(): void {
+    this.deactivatingUser.set(this.detailUser());
+  }
+
+  protected cancelDeactivate(): void {
+    this.deactivatingUser.set(null);
+  }
+
+  protected confirmDeactivate(): void {
+    const user = this.deactivatingUser();
+    this.deactivatingUser.set(null);
+    this.detailUser.set(null);
+    if (user) {
+      void this.deactivate(user);
+    }
+  }
+
+  protected deactivateMessage(user: AppUserSummary): string {
+    return `Deseja desativar o usuário "${user.name}"? Ele deixa de entrar no sistema, mas o cadastro é mantido.`;
+  }
+
+  protected initials(user: AppUserSummary): string {
+    return initials(user.name);
   }
 
   protected async deactivate(user: AppUserSummary): Promise<void> {

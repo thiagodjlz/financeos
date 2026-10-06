@@ -124,6 +124,109 @@ describe('Users', () => {
     await settle();
   }
 
+  function detail(): HTMLElement | null {
+    return query('.detail-panel');
+  }
+
+  function detailRows(): string[][] {
+    return queryAll('.detail-list > div').map((row) => [
+      (row.querySelector('dt')?.textContent ?? '').trim(),
+      (row.querySelector('dd')?.textContent ?? '').replace(/\s+/g, ' ').trim(),
+    ]);
+  }
+
+  it('tocar na linha abre o Detalhe com E-mail, Perfil e Status; X, scrim e Esc fecham sem requisição', async () => {
+    await render(page([USER, WITHOUT_PROFILE]));
+
+    await click(queryAll('tbody tr')[0]);
+    expect(detail()?.querySelector('h2')?.textContent?.trim()).toBe('Ana');
+    expect(detail()?.querySelector('.detail-initials')?.textContent?.trim()).toBe('A');
+    expect(detailRows()).toEqual([
+      ['E-mail', 'ana@financeos.local'],
+      ['Perfil', 'Administrador'],
+      ['Status', 'Ativo'],
+    ]);
+
+    await click(buttonByText('Fechar', '.detail-panel') as HTMLButtonElement);
+    expect(detail()).toBeNull();
+
+    await click(queryAll<HTMLElement>('tbody .detail-trigger')[1]);
+    expect(detailRows()[1]).toEqual(['Perfil', '-']);
+    await click(query('.detail-scrim'));
+    expect(detail()).toBeNull();
+
+    await click(queryAll('tbody tr')[0]);
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    await settle();
+    expect(detail()).toBeNull();
+    httpMock.expectNone(() => true);
+  });
+
+  it('"Desativar usuário" da linha pede confirmação; recusar não chama a API', async () => {
+    await render();
+
+    await click(buttonByText('Desativar usuário', 'tbody') as HTMLButtonElement);
+    expect(query('.modal-actions button.danger-button').textContent?.trim()).toBe('Desativar usuário');
+    await click(buttonByText('Cancelar', '.modal-card') as HTMLButtonElement);
+
+    httpMock.expectNone(`${API_BASE}/users/u1`);
+    expect(query('.modal-card')).toBeNull();
+    expect(toastService.toasts()).toHaveLength(0);
+  });
+
+  it('"Desativar usuário" do Detalhe só aparece com DELETE e usuário ativo, confirma, faz um único DELETE, fecha e recarrega', async () => {
+    await render(page([USER, { ...USER, id: 'u2', name: 'Bia', active: false }]));
+
+    await click(queryAll('tbody tr')[1]);
+    expect(buttonByText('Desativar usuário', '.detail-panel')).toBeUndefined();
+    expect(buttonByText('Editar usuário', '.detail-panel')).toBeDefined();
+    await click(buttonByText('Fechar', '.detail-panel') as HTMLButtonElement);
+
+    await click(queryAll('tbody tr')[0]);
+    await click(buttonByText('Desativar usuário', '.detail-panel') as HTMLButtonElement);
+
+    expect(query('.modal-card p').textContent?.trim()).toBe(
+      'Deseja desativar o usuário "Ana"? Ele deixa de entrar no sistema, mas o cadastro é mantido.',
+    );
+    await click(buttonByText('Cancelar', '.modal-card') as HTMLButtonElement);
+    httpMock.expectNone(`${API_BASE}/users/u1`);
+    expect(detail()).not.toBeNull();
+
+    await click(buttonByText('Desativar usuário', '.detail-panel') as HTMLButtonElement);
+    await click(query<HTMLButtonElement>('.modal-actions button.danger-button'));
+
+    expect(detail()).toBeNull();
+    const request = httpMock.expectOne(`${API_BASE}/users/u1`);
+    expect(request.request.method).toBe('DELETE');
+    request.flush(null);
+    await settle();
+    httpMock.expectOne(DEFAULT_URL).flush(page([]));
+    await settle();
+
+    expect(toastService.toasts().map((toast) => toast.message)).toEqual(['Usuário desativado com sucesso.']);
+  });
+
+  it('o Detalhe esconde Editar e Desativar sem as permissões, e os botões da linha não o abrem', async () => {
+    TestBed.inject(AuthService).permissions.set([
+      { screen: 'USERS', canView: true, canCreate: false, canEdit: false, canDelete: false },
+    ]);
+    await render(page([USER]), false);
+
+    await click(queryAll('tbody tr')[0]);
+    expect(query('.detail-actions')).toBeNull();
+    await click(buttonByText('Fechar', '.detail-panel') as HTMLButtonElement);
+    fixture.destroy();
+
+    TestBed.inject(AuthService).permissions.set([
+      { screen: 'USERS', canView: true, canCreate: false, canEdit: true, canDelete: true },
+    ]);
+    await render(page([USER]), false);
+    await click(buttonByText('Editar usuário', 'tbody') as HTMLButtonElement);
+
+    expect(detail()).toBeNull();
+    expect(router.navigate).toHaveBeenCalledWith(['/users', 'u1', 'edit']);
+  });
+
   it('lista sem formulário nem campo na linha, com Situação = Ativos por padrão', async () => {
     await render();
 
@@ -168,6 +271,7 @@ describe('Users', () => {
     await render();
 
     await click(buttonByText('Desativar usuário', 'tbody') as HTMLButtonElement);
+    await click(query<HTMLButtonElement>('.modal-actions button.danger-button'));
     const request = httpMock.expectOne(`${API_BASE}/users/u1`);
     expect(request.request.method).toBe('DELETE');
     request.flush(null);
@@ -184,6 +288,7 @@ describe('Users', () => {
     await render();
 
     await click(buttonByText('Desativar usuário', 'tbody') as HTMLButtonElement);
+    await click(query<HTMLButtonElement>('.modal-actions button.danger-button'));
     httpMock
       .expectOne(`${API_BASE}/users/u1`)
       .flush({ message: 'Você não pode desativar a própria conta.' }, { status: 409, statusText: 'Conflict' });

@@ -1,7 +1,9 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { API_BASE, DashboardSummary, MonthlySummary } from '../../core/models';
+import { Router, provideRouter } from '@angular/router';
+import { API_BASE, CategoryBreakdown, DashboardSummary, MonthlySummary } from '../../core/models';
+import { ListStateService } from '../../core/services/list-state.service';
 import { ToastService } from '../../core/services/toast.service';
 import { NETWORK_ERROR_MESSAGE, UNEXPECTED_ERROR_MESSAGE } from '../../core/http-error';
 import { AuthService } from '../../core/services/auth.service';
@@ -33,6 +35,7 @@ function payload(monthlyEvolution: MonthlySummary[]): DashboardSummary {
     balance: 0,
     paidExpense: 0,
     pendingExpense: 0,
+    paidExpensePercent: null,
     transactionCount: 0,
     categoryBreakdown: [],
     monthlyEvolution,
@@ -49,7 +52,7 @@ describe('Dashboard', () => {
 
     await TestBed.configureTestingModule({
       imports: [Dashboard],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
     }).compileComponents();
 
     httpMock = TestBed.inject(HttpTestingController);
@@ -643,45 +646,220 @@ describe('Dashboard', () => {
       expect(all('circle.balance-point')).toHaveLength(2);
     });
 
-    it('mostra os cards Saldo, Receitas, Despesas e Pendentes com os valores e as linhas de apoio', async () => {
+  });
+
+  describe('cartões Saldo e Pendentes', () => {
+    // Fixtures alcançáveis: saldo = receitas − despesas pagas e o percentual coerente com elas (issue #48).
+    const JULY = {
+      totalIncome: 4000,
+      totalExpense: 1170,
+      paidExpense: 1170,
+      pendingExpense: 300,
+      balance: 2830,
+      paidExpensePercent: 29.3,
+    };
+
+    function allowTransactions(canView: boolean, canCreate: boolean): void {
+      TestBed.inject(AuthService).permissions.set([
+        { screen: 'DASHBOARD', canView: true, canCreate: false, canEdit: false, canDelete: false },
+        { screen: 'TRANSACTIONS', canView, canCreate, canEdit: false, canDelete: false },
+      ]);
+    }
+
+    function pendingCard(): HTMLElement {
+      return one('.pending-card') as HTMLElement;
+    }
+
+    it('troca os quatro cartões pelo Saldo (com Receitas e Despesas) e pelo Pendentes', async () => {
+      summaryRequest().flush({ ...payload(evolution({ 7: [4000, 1170, 2830] })), ...JULY });
+      await settle();
+
+      expect(all('.metric-card')).toHaveLength(0);
+      expect(label(one('.balance-card .balance-label'))).toBe('Saldo do mês');
+      expect(label(one('.balance-card .balance-value'))).toBe('R$ 2.830,00');
+      expect(label(one('.balance-card .balance-hint'))).toBe('Receitas menos despesas pagas');
+      expect(all('.balance-item-value').map(label)).toEqual(['R$ 4.000,00', 'R$ 1.170,00']);
+      expect(all('.balance-item-hint').map(label)).toEqual(['Entradas no mês', 'Já pagas no mês']);
+      expect(all('.balance-item-label').map(label)).toEqual([
+        'Receitas · entradas no mês',
+        'Despesas · já pagas no mês',
+      ]);
+      expect(label(pendingCard().querySelector('.pending-label'))).toBe('Pendentes · despesas a pagar');
+      expect(label(pendingCard().querySelector('.pending-value'))).toBe('R$ 300,00');
+    });
+
+    it('mostra o percentual da API com vírgula e a barra na mesma medida', async () => {
+      summaryRequest().flush({ ...payload(evolution({ 7: [4000, 1170, 2830] })), ...JULY });
+      await settle();
+
+      expect(label(one('.balance-ratio-text'))).toBe('Despesas pagas equivalem a 29,3% das receitas');
+      expect((one('.balance-bar') as HTMLElement).style.width).toBe('29.3%');
+    });
+
+    it('acima de 100% mostra o percentual real e para a barra cheia', async () => {
       summaryRequest().flush({
-        ...payload(evolution()),
-        totalIncome: 10550,
-        totalExpense: 2092.27,
-        paidExpense: 2092.27,
-        pendingExpense: 2514.9,
-        balance: 8457.73,
+        ...payload(evolution({ 7: [1000, 1300, -300] })),
+        totalIncome: 1000,
+        totalExpense: 1300,
+        paidExpense: 1300,
+        balance: -300,
+        paidExpensePercent: 130,
       });
       await settle();
 
-      expect(all('.metric-card .metric-label').map(label)).toEqual([
-        'Saldo do mês',
-        'Receitas',
-        'Despesas',
-        'Pendentes',
+      expect(label(one('.balance-ratio-text'))).toBe('Despesas pagas equivalem a 130,0% das receitas');
+      expect((one('.balance-bar') as HTMLElement).style.width).toBe('100%');
+    });
+
+    it('sem receitas no mês avisa no lugar do percentual e deixa a barra vazia', async () => {
+      summaryRequest().flush({
+        ...payload(evolution({ 7: [0, 250, -250] })),
+        totalExpense: 250,
+        paidExpense: 250,
+        balance: -250,
+        paidExpensePercent: null,
+      });
+      await settle();
+
+      expect(label(one('.balance-ratio-text'))).toBe('Sem receitas no mês');
+      expect((one('.balance-bar') as HTMLElement).style.width).toBe('0%');
+    });
+
+    it('"Ver pendentes" abre Lançamentos no mês do Resumo, com Pendente e Despesa', async () => {
+      allowTransactions(true, false);
+      const router = TestBed.inject(Router);
+      const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+      summaryRequest().flush({ ...payload(evolution()), ...JULY });
+      await settle();
+
+      expect(pendingCard().tagName).toBe('BUTTON');
+      expect(label(pendingCard().querySelector('.pending-link'))).toBe('Ver pendentes');
+      pendingCard().click();
+
+      expect(navigate).toHaveBeenCalledWith(['/transactions']);
+      expect(TestBed.inject(ListStateService).get('transactions')).toEqual({
+        filters: { description: '', categoryId: '', type: 'EXPENSE', status: 'PENDING', month: '2026-07' },
+        page: 1,
+      });
+      httpMock.expectNone(() => true);
+    });
+
+    it('sem ver Lançamentos, o Pendentes mostra o valor sem o atalho', async () => {
+      allowTransactions(false, false);
+      summaryRequest().flush({ ...payload(evolution()), ...JULY });
+      await settle();
+
+      expect(pendingCard().tagName).toBe('DIV');
+      expect(pendingCard().querySelector('.pending-link')).toBeNull();
+      expect(label(pendingCard().querySelector('.pending-value'))).toBe('R$ 300,00');
+    });
+
+    it('"Novo lançamento" só aparece com a permissão de incluir e leva ao cadastro', async () => {
+      allowTransactions(true, false);
+      const router = TestBed.inject(Router);
+      const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+      summaryRequest().flush(payload(evolution()));
+      await settle();
+
+      expect(one('.new-transaction')).toBeNull();
+
+      allowTransactions(true, true);
+      await settle();
+
+      const create = one('.new-transaction') as HTMLButtonElement;
+      expect(label(create)).toBe('Novo lançamento');
+      create.click();
+      expect(navigate).toHaveBeenCalledWith(['/transactions/new']);
+    });
+  });
+
+  describe('mês do período no gráfico', () => {
+    it('destaca a faixa e o rótulo do mês do período, sem depender do foco', async () => {
+      await render(evolution({ 7: [4000, 1170, 2830] }));
+
+      const bands = all('rect.month-band');
+      expect(bands.filter((band) => band.classList.contains('is-period')).map((band) => bands.indexOf(band))).toEqual([
+        6,
       ]);
-      expect(all('.metric-card .metric-value').map(label)).toEqual([
-        'R$ 8.457,73',
-        'R$ 10.550,00',
-        'R$ 2.092,27',
-        'R$ 2.514,90',
+      expect(bands.filter((band) => band.classList.contains('is-active'))).toHaveLength(0);
+      const months = all('text.chart-month');
+      expect(months.filter((month) => month.classList.contains('is-period')).map(label)).toEqual(['Jul']);
+    });
+
+    it('o bloco do celular mostra o mês do período e troca pelo mês tocado, sem nova requisição', async () => {
+      await render(evolution({ 3: [1500, 400, 1100], 7: [4000, 1170, 2830] }));
+
+      expect(label(one('.month-block-title'))).toBe('Julho');
+      expect(all('.month-block-values span').map(label)).toEqual([
+        'Receita R$ 4.000,00',
+        'Despesa R$ 1.170,00',
+        'Saldo R$ 2.830,00',
       ]);
-      expect(all('.metric-card .metric-hint').map(label)).toEqual([
-        'Receitas menos despesas pagas',
-        'Entradas no mês',
-        'Já pagas no mês',
-        'Despesas a pagar',
+      expect(all('.month-block-hint').map(label)).toEqual([
+        'Toque em um mês do gráfico para ver os valores.',
+        'Clique em um mês do gráfico para ver os valores.',
       ]);
-      expect(one('.metric-card')?.classList.contains('balance-card')).toBe(true);
-      expect(host().textContent).not.toContain('Pagas: R$');
+      expect(one('.month-block-hint.only-mobile')).not.toBeNull();
+      expect(one('.month-block-hint.only-desktop')).not.toBeNull();
+
+      await touch(hitArea(2));
+
+      expect(label(one('.month-block-title'))).toBe('Março');
+      expect(all('.month-block-values span').map(label)[0]).toBe('Receita R$ 1.500,00');
+      httpMock.expectNone(() => true);
+    });
+
+    it('no desktop, passar o mouse só move o informativo; clicar num mês troca o bloco', async () => {
+      await render(evolution({ 3: [1500, 400, 1100], 7: [4000, 1170, 2830] }));
+
+      await hover(2);
+      expect(one('.chart-tooltip')).not.toBeNull();
+      expect(label(one('.month-block-title'))).toBe('Julho');
+
+      (hitArea(2) as SVGElement).dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await settle();
+      hitArea(2).dispatchEvent(new MouseEvent('mouseleave', { bubbles: false }));
+      await settle();
+
+      expect(one('.chart-tooltip')).toBeNull();
+      expect(label(one('.month-block-title'))).toBe('Março');
+      expect(all('.month-block-values span').map(label)).toEqual([
+        'Receita R$ 1.500,00',
+        'Despesa R$ 400,00',
+        'Saldo R$ 1.100,00',
+      ]);
+      httpMock.expectNone(() => true);
+    });
+
+    it('volta o bloco ao mês do período quando o mês muda', async () => {
+      await render(evolution({ 3: [1500, 400, 1100], 7: [4000, 1170, 2830] }));
+      await touch(hitArea(2));
+      expect(label(one('.month-block-title'))).toBe('Março');
+
+      (host().querySelector('button[aria-label="Próximo mês"]') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      httpMock
+        .expectOne((request) => request.url.startsWith(`${API_BASE}/dashboard/summary`))
+        .flush({ ...payload(evolution({ 8: [100, 0, 100] })), period: { year: 2026, month: 8, startDate: '2026-08-01', endDate: '2026-08-31' } });
+      await settle();
+
+      expect(label(one('.month-block-title'))).toBe('Agosto');
+    });
+
+    it('mantém os rótulos do eixo Y e os pontos do saldo', async () => {
+      await render(evolution({ 7: [4000, 1170, 2830] }));
+
+      expect(axisLabels().length).toBeGreaterThan(0);
+      expect(all('circle.balance-point')).toHaveLength(7);
     });
   });
 
   describe('Por categoria', () => {
-    const BREAKDOWN = [
-      { categoryId: 'moradia', categoryName: 'Moradia', categoryColor: '#7C6FD6', type: 'EXPENSE' as const, totalAmount: 2300, transactionCount: 1 },
-      { categoryId: 'mercado', categoryName: 'Alimentação', categoryColor: null, type: 'EXPENSE' as const, totalAmount: 575, transactionCount: 3 },
-      { categoryId: null, categoryName: 'Sem categoria', categoryColor: null, type: 'INCOME' as const, totalAmount: 8450, transactionCount: 1 },
+    // sharePercent coerente com os totais de cada tipo: 2300/2875 = 80,0% e 575/2875 = 20,0%.
+    const BREAKDOWN: CategoryBreakdown[] = [
+      { categoryId: 'moradia', categoryName: 'Moradia', categoryColor: '#7C6FD6', type: 'EXPENSE', totalAmount: 2300, transactionCount: 1, sharePercent: 80 },
+      { categoryId: 'mercado', categoryName: 'Alimentação', categoryColor: null, type: 'EXPENSE', totalAmount: 575, transactionCount: 3, sharePercent: 20 },
+      { categoryId: null, categoryName: 'Sem categoria', categoryColor: null, type: 'INCOME', totalAmount: 8450, transactionCount: 1, sharePercent: 100 },
     ];
 
     async function renderBreakdown(): Promise<void> {
@@ -701,6 +879,8 @@ describe('Dashboard', () => {
       expect(toggleButtons().map((button) => button.getAttribute('aria-pressed'))).toEqual(['true', 'false']);
       expect(all('.category-row .category-name').map(label)).toEqual(['Moradia', 'Alimentação']);
       expect(all('.category-row .category-amount').map(label)).toEqual(['R$ 2.300,00', 'R$ 575,00']);
+      expect(all('.category-row .category-share').map(label)).toEqual(['80,0%', '20,0%']);
+      expect(one('.breakdown-panel .panel-heading .toggle-group')).not.toBeNull();
 
       const rows = all('.category-row') as HTMLElement[];
       expect((rows[0].querySelector('.category-dot') as HTMLElement).style.background).toBe('rgb(124, 111, 214)');
@@ -721,6 +901,7 @@ describe('Dashboard', () => {
 
       expect(toggleButtons().map((button) => button.getAttribute('aria-pressed'))).toEqual(['false', 'true']);
       expect(all('.category-row .category-name').map(label)).toEqual(['Sem categoria']);
+      expect(all('.category-row .category-share').map(label)).toEqual(['100,0%']);
       expect(all('.breakdown-panel .panel-footer > *').map(label)).toEqual(['1 categoria', 'R$ 8.450,00']);
       httpMock.expectNone(() => true);
     });

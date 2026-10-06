@@ -8,20 +8,11 @@ import { FieldErrorState, focusFirstInvalidField } from '../../core/field-errors
 import { PermissionEntry, Profile, Screen } from '../../core/models';
 import { ProfileService } from '../../core/services/profile.service';
 import { ToastService } from '../../core/services/toast.service';
+import { PROFILE_SCREENS as SCREENS } from './profile-screens';
 
 const LIST_ROUTE = '/profiles';
 const LOAD_FALLBACK = 'Não foi possível carregar o perfil.';
 const SAVE_FALLBACK = 'Não foi possível salvar o perfil. Revise os campos e tente novamente.';
-
-const SCREENS: { code: Screen; label: string; viewOnly?: boolean }[] = [
-  { code: 'DASHBOARD', label: 'Resumo' },
-  { code: 'TRANSACTIONS', label: 'Lançamentos' },
-  { code: 'CATEGORIES', label: 'Categorias' },
-  { code: 'USERS', label: 'Usuários' },
-  { code: 'PROFILES', label: 'Perfis' },
-  { code: 'DOCUMENTATION', label: 'Documentação', viewOnly: true },
-  { code: 'RELEASE_NOTES', label: 'Novidades por versão', viewOnly: true },
-];
 
 function blankPermissions(): PermissionEntry[] {
   return SCREENS.map((screen) => ({

@@ -6,6 +6,11 @@ table {
   table {
     min-width: 0;
   }
+
+  // No celular, Editar e Excluir ficam no Detalhe, aberto ao tocar na linha.
+  td.row-actions {
+    display: none;
+  }
 }
 
 .name-cell {
