@@ -4,7 +4,7 @@ url: https://github.com/thiagodjlz/financeos/issues/109
 title: "Reformulação de layout"
 domains: [dashboard, transactions, categories, users, auth, documentation]
 target: main
-stage: validated
+stage: pr-open
 branch: feature/issue-109-reformulacao-layout
 created: 2026-10-03
 ---
