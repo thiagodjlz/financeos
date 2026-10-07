@@ -25,6 +25,11 @@ public final class ReleaseNotesContent {
     private static ReleaseNoteVersion versao_1_0_3() {
         List<ReleaseNoteCategory> categories = new ArrayList<>();
 
+        addIfPresent(categories, Kind.NEW,
+                "Auditoria: nova tela, no menu Configurações, que mostra quem incluiu, alterou ou excluiu cada "
+                        + "registro, com o valor anterior e o novo de cada campo, e os acessos ao sistema, como "
+                        + "entradas, saídas e telas abertas.");
+
         addIfPresent(categories, Kind.IMPROVEMENT,
                 "Resumo redesenhado: o Saldo do mês mostra numa barra quanto das receitas já foi para despesas "
                         + "pagas, junto com as Receitas e as Despesas, e o quadro Pendentes leva direto às "

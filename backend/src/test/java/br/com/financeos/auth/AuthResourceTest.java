@@ -68,7 +68,8 @@ class AuthResourceTest {
                 .when().get("/auth/me")
                 .then()
                 .statusCode(200)
-                .body("permissions", hasSize(7))
+                .body("permissions", hasSize(8))
+                .body("permissions.screen", hasItem("AUDIT"))
                 .body("permissions.screen", hasItem("DOCUMENTATION"))
                 .body("permissions.screen", hasItem("RELEASE_NOTES"));
     }

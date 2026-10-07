@@ -4,6 +4,9 @@ import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 
+import br.com.financeos.audit.AuditTrail;
+import br.com.financeos.audit.AuditValues;
+import br.com.financeos.audit.Audited;
 import br.com.financeos.profiles.Screen;
 import br.com.financeos.shared.AccessControl;
 import br.com.financeos.shared.Action;
@@ -36,12 +39,14 @@ public class CategoryResource {
     private final CategoryRepository repository;
     private final CategoryUsageCheck usageCheck;
     private final AccessControl accessControl;
+    private final AuditTrail auditTrail;
 
     public CategoryResource(CategoryRepository repository, CategoryUsageCheck usageCheck,
-            AccessControl accessControl) {
+            AccessControl accessControl, AuditTrail auditTrail) {
         this.repository = repository;
         this.usageCheck = usageCheck;
         this.accessControl = accessControl;
+        this.auditTrail = auditTrail;
     }
 
     @GET
@@ -78,6 +83,7 @@ public class CategoryResource {
 
     @POST
     @Transactional
+    @Audited
     public Response create(@Valid CategoryRequest request) {
         accessControl.require(Screen.CATEGORIES, Action.CREATE);
         validateParent(request, null);
@@ -86,6 +92,7 @@ public class CategoryResource {
         Category category = new Category();
         apply(category, request);
         repository.persistAndFlush(category);
+        auditTrail.created(Screen.CATEGORIES, category.id, category.name, auditValues(category));
 
         return Response.created(URI.create("/api/categories/" + category.id))
                 .entity(CategoryResponse.from(category))
@@ -95,6 +102,7 @@ public class CategoryResource {
     @PUT
     @Path("/{id}")
     @Transactional
+    @Audited
     public CategoryResponse update(@PathParam("id") UUID id, @Valid CategoryRequest request) {
         accessControl.require(Screen.CATEGORIES, Action.EDIT);
         Category category = repository.findByIdOptional(id)
@@ -102,13 +110,16 @@ public class CategoryResource {
 
         validateParent(request, id);
         validateDuplicate(request, id);
+        AuditValues before = auditValues(category);
         apply(category, request);
+        auditTrail.updated(Screen.CATEGORIES, id, category.name, before, auditValues(category));
         return CategoryResponse.from(category);
     }
 
     @DELETE
     @Path("/{id}")
     @Transactional
+    @Audited
     public Response delete(@PathParam("id") UUID id) {
         accessControl.require(Screen.CATEGORIES, Action.DELETE);
         Category category = repository.findByIdOptional(id)
@@ -118,7 +129,9 @@ public class CategoryResource {
             throw new WebApplicationException(message, Response.Status.CONFLICT);
         });
 
+        AuditValues values = auditValues(category);
         repository.delete(category);
+        auditTrail.deleted(Screen.CATEGORIES, id, category.name, values);
         return Response.noContent().build();
     }
 
@@ -147,6 +160,18 @@ public class CategoryResource {
             throw new WebApplicationException(
                     "Já existe uma categoria com esse nome e tipo.", Response.Status.CONFLICT);
         }
+    }
+
+    private AuditValues auditValues(Category category) {
+        String parentName = category.parentId == null ? null
+                : repository.findByIdOptional(category.parentId).map(parent -> parent.name).orElse(null);
+
+        return AuditValues.create()
+                .text("Nome", category.name)
+                .text("Tipo", category.type == CategoryType.INCOME ? "Receita" : "Despesa")
+                .text("Categoria pai", parentName)
+                .text("Cor", category.color)
+                .text("Situação", category.active ? "Ativo" : "Inativo");
     }
 
     private static void apply(Category category, CategoryRequest request) {

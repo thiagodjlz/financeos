@@ -3,6 +3,9 @@ package br.com.financeos.transactions;
 import java.net.URI;
 import java.util.UUID;
 
+import br.com.financeos.audit.AuditTrail;
+import br.com.financeos.audit.AuditValues;
+import br.com.financeos.audit.Audited;
 import br.com.financeos.categories.Category;
 import br.com.financeos.categories.CategoryRepository;
 import br.com.financeos.profiles.Screen;
@@ -39,13 +42,15 @@ public class TransactionResource {
     private final CategoryRepository categoryRepository;
     private final CurrentUser currentUser;
     private final AccessControl accessControl;
+    private final AuditTrail auditTrail;
 
     public TransactionResource(TransactionRepository repository, CategoryRepository categoryRepository,
-            CurrentUser currentUser, AccessControl accessControl) {
+            CurrentUser currentUser, AccessControl accessControl, AuditTrail auditTrail) {
         this.repository = repository;
         this.categoryRepository = categoryRepository;
         this.currentUser = currentUser;
         this.accessControl = accessControl;
+        this.auditTrail = auditTrail;
     }
 
     @GET
@@ -74,6 +79,7 @@ public class TransactionResource {
 
     @POST
     @Transactional
+    @Audited
     public Response create(@Valid TransactionRequest request) {
         accessControl.require(Screen.TRANSACTIONS, Action.CREATE);
         validateStatus(request);
@@ -83,6 +89,8 @@ public class TransactionResource {
         transaction.userId = currentUser.id();
         apply(transaction, request);
         repository.persistAndFlush(transaction);
+        auditTrail.created(Screen.TRANSACTIONS, transaction.id, transaction.description,
+                auditValues(transaction, nameOf(category)));
 
         return Response.created(URI.create("/api/transactions/" + transaction.id))
                 .entity(TransactionResponse.from(transaction, nameOf(category), colorOf(category)))
@@ -92,6 +100,7 @@ public class TransactionResource {
     @PUT
     @Path("/{id}")
     @Transactional
+    @Audited
     public TransactionResponse update(@PathParam("id") UUID id, @Valid TransactionRequest request) {
         accessControl.require(Screen.TRANSACTIONS, Action.EDIT);
         FinancialTransaction transaction = repository.findByUserAndId(currentUser.id(), id)
@@ -99,19 +108,25 @@ public class TransactionResource {
 
         validateStatus(request);
         Category category = validateCategory(request, transaction);
+        AuditValues before = auditValues(transaction, transaction.categoryName);
         apply(transaction, request);
+        auditTrail.updated(Screen.TRANSACTIONS, id, transaction.description, before,
+                auditValues(transaction, nameOf(category)));
         return TransactionResponse.from(transaction, nameOf(category), colorOf(category));
     }
 
     @DELETE
     @Path("/{id}")
     @Transactional
+    @Audited
     public Response delete(@PathParam("id") UUID id) {
         accessControl.require(Screen.TRANSACTIONS, Action.DELETE);
         FinancialTransaction transaction = repository.findByUserAndId(currentUser.id(), id)
                 .orElseThrow(NotFoundException::new);
 
+        AuditValues values = auditValues(transaction, transaction.categoryName);
         repository.delete(transaction);
+        auditTrail.deleted(Screen.TRANSACTIONS, id, transaction.description, values);
         return Response.noContent().build();
     }
 
@@ -151,6 +166,43 @@ public class TransactionResource {
         if (request.type() == TransactionType.EXPENSE && request.status() == null) {
             throw new WebApplicationException("O status é obrigatório.", Response.Status.BAD_REQUEST);
         }
+    }
+
+    private static AuditValues auditValues(FinancialTransaction transaction, String categoryName) {
+        return AuditValues.create()
+                .text("Tipo", transaction.type == TransactionType.INCOME ? "Receita" : "Despesa")
+                .money("Valor", transaction.amount)
+                .text("Descrição", transaction.description)
+                .text("Categoria", categoryName)
+                .date("Data", transaction.transactionDate)
+                .text("Status", statusLabel(transaction.status))
+                .text("Origem", sourceLabel(transaction.source))
+                .number("Parcela", transaction.installmentNumber)
+                .number("Total de parcelas", transaction.installmentTotal)
+                .text("Observações", transaction.notes);
+    }
+
+    private static String statusLabel(TransactionStatus status) {
+        if (status == null) {
+            return null;
+        }
+
+        return switch (status) {
+            case PENDING -> "Pendente";
+            case PAID -> "Pago";
+        };
+    }
+
+    private static String sourceLabel(TransactionSource source) {
+        if (source == null) {
+            return null;
+        }
+
+        return switch (source) {
+            case MANUAL -> "Manual";
+            case EXCEL_IMPORT -> "Importação de planilha";
+            case RECURRENCE -> "Recorrência";
+        };
     }
 
     private static void apply(FinancialTransaction transaction, TransactionRequest request) {

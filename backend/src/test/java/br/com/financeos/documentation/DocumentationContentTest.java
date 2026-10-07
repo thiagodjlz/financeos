@@ -65,12 +65,12 @@ class DocumentationContentTest {
     }
 
     @Test
-    void shouldPublishIntroductionAndFiveAreas() {
+    void shouldPublishIntroductionAndSixAreas() {
         assertTrue(CONTENT.title() != null && !CONTENT.title().isBlank());
         assertTrue(CONTENT.introduction() != null);
-        assertEquals(5, CONTENT.areas().size());
+        assertEquals(6, CONTENT.areas().size());
         assertEquals(
-                List.of("Resumo", "Lançamentos", "Categorias", "Usuários", "Perfis"),
+                List.of("Resumo", "Lançamentos", "Categorias", "Usuários", "Perfis", "Auditoria"),
                 CONTENT.areas().stream().map(DocumentationArea::title).toList());
     }
 

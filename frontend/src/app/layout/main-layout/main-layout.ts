@@ -11,10 +11,11 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { filter, map } from 'rxjs';
 import { initials } from '../../core/formatters';
+import { ScreenAccessTracker } from '../../core/screen-access-tracker';
 import { AuthService } from '../../core/services/auth.service';
 import { APP_NAME, APP_VERSION } from '../../core/version';
 
@@ -23,19 +24,21 @@ type NavSheet = 'more';
 const OVERLAY_OPEN_CLASS = 'overlay-open';
 const FOCUSABLE_SELECTOR = 'button:not([disabled]), a[href], input, select, [tabindex]:not([tabindex="-1"])';
 const FORM_ROUTE = /^\/(transactions|categories|users|profiles)\/(new|[^/?#]+\/edit)(?:[?#]|$)/;
-const MORE_ROUTE = /^\/(categories|users|profiles|documentation|release-notes)(?:[/?#]|$)/;
+const MORE_ROUTE = /^\/(categories|users|profiles|audit|documentation|release-notes)(?:[/?#]|$)/;
 
 @Component({
   selector: 'app-main-layout',
   imports: [CommonModule, RouterLink, RouterLinkActive, RouterOutlet],
   templateUrl: './main-layout.html',
   styleUrl: './main-layout.scss',
+  providers: [ScreenAccessTracker],
 })
 export class MainLayout implements OnDestroy {
   protected readonly authService = inject(AuthService);
   protected readonly router = inject(Router);
   private readonly injector = inject(Injector);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly screenAccess = inject(ScreenAccessTracker);
 
   protected readonly appName = APP_NAME;
   protected readonly appVersion = APP_VERSION;
@@ -57,6 +60,21 @@ export class MainLayout implements OnDestroy {
   private sheetTrigger: HTMLElement | null = null;
 
   @ViewChild('workspace') private workspace?: ElementRef<HTMLElement>;
+
+  // O shell nasce durante a navegação que o ativa, então o NavigationEnd dela ainda chega aqui; o
+  // `navigated` cobre o shell criado depois de uma navegação já concluída.
+  constructor() {
+    this.router.events
+      .pipe(
+        filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+        takeUntilDestroyed(),
+      )
+      .subscribe((event) => this.screenAccess.track(event.urlAfterRedirects));
+
+    if (this.router.navigated) {
+      this.screenAccess.track(this.router.url);
+    }
+  }
 
   ngOnDestroy(): void {
     this.unlockBackground();
@@ -156,16 +174,20 @@ export class MainLayout implements OnDestroy {
   }
 
   protected canSeeSettings(): boolean {
-    return this.authService.can('USERS', 'VIEW') || this.authService.can('PROFILES', 'VIEW');
+    return (
+      this.authService.can('USERS', 'VIEW') ||
+      this.authService.can('PROFILES', 'VIEW') ||
+      this.authService.can('AUDIT', 'VIEW')
+    );
   }
 
   protected canSeeAbout(): boolean {
     return this.authService.can('DOCUMENTATION', 'VIEW') || this.authService.can('RELEASE_NOTES', 'VIEW');
   }
 
-  protected logout(): void {
+  protected async logout(): Promise<void> {
     this.closeSheet(false);
-    this.authService.logout();
+    await this.authService.signOut();
     void this.router.navigate(['/login']);
   }
 }

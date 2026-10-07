@@ -27,6 +27,21 @@ export class AuthService {
     await this.fetchMe();
   }
 
+  // "Sair" do menu: registra o Logout no servidor enquanto o token ainda vale e só então o descarta.
+  // A falha da chamada não prende ninguém na sessão. O 401 do interceptor usa `logout()` direto:
+  // o token já não vale e não há o que registrar.
+  async signOut(): Promise<void> {
+    if (this.token()) {
+      try {
+        await firstValueFrom(this.http.post<void>(`${API_BASE}/auth/logout`, null));
+      } catch {
+        // Sair continua valendo sem o registro.
+      }
+    }
+
+    this.logout();
+  }
+
   logout(): void {
     this.setToken(null);
     this.superAdmin.set(false);

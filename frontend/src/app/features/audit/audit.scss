@@ -1,0 +1,80 @@
+table.audit-table {
+  min-width: 920px;
+}
+
+col.col-when {
+  width: 180px;
+}
+
+col.col-type,
+col.col-action {
+  width: 140px;
+}
+
+col.col-screen {
+  width: 160px;
+}
+
+// Mesmo select solto dos filtros de Lançamentos no desktop.
+.filter-select {
+  width: auto;
+  min-height: var(--control-h);
+  border-color: var(--border-control);
+  padding-left: 10px;
+
+  &.is-set {
+    border-color: var(--accent-chip);
+    background-color: var(--accent-soft);
+    color: var(--accent-strong);
+  }
+}
+
+.when-cell {
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
+// O Detalhe empilha rótulo e tabela de campos: a linha padrão do `.detail-list` é rótulo à esquerda
+// e valor à direita, estreita demais para Campo / Anterior / Novo. Sem `.detail-list` no seletor: ele
+// é do RecordDetail, e o encapsulamento desta tela só alcança o conteúdo projetado por ela.
+div.changes-row {
+  flex-direction: column;
+  align-items: stretch;
+  padding: 12px 14px;
+
+  dd {
+    display: block;
+    text-align: left;
+  }
+}
+
+table.changes-table {
+  width: 100%;
+  min-width: 0;
+  table-layout: fixed;
+
+  td {
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+}
+
+@media (max-width: 680px) {
+  table.audit-table {
+    min-width: 0;
+  }
+
+  // Tipo e Funcionalidade têm até 9 opções ("Novidades por versão" incluída): a grade de colunas
+  // iguais do `.toggle-group` no celular não cabe em 320px, então aqui os botões quebram linha.
+  .toggle-group.choice-toggle {
+    display: flex;
+    flex-wrap: wrap;
+
+    button {
+      flex: 1 1 auto;
+      min-width: 0;
+      padding: 6px 12px;
+      white-space: normal;
+    }
+  }
+}

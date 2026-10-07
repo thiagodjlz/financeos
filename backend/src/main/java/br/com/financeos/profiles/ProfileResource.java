@@ -1,11 +1,15 @@
 package br.com.financeos.profiles;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+import br.com.financeos.audit.AuditTrail;
+import br.com.financeos.audit.AuditValues;
+import br.com.financeos.audit.Audited;
 import br.com.financeos.shared.AccessControl;
 import br.com.financeos.shared.Action;
 import br.com.financeos.shared.ListParams;
@@ -37,19 +41,22 @@ public class ProfileResource {
 
     // Telas cuja funcionalidade e somente de leitura: a matriz nem oferece as tres acoes de escrita
     // para elas, e saneamos aqui porque o payload pode chegar por chamada direta a API.
-    private static final Set<Screen> VIEW_ONLY_SCREENS = EnumSet.of(Screen.DOCUMENTATION, Screen.RELEASE_NOTES);
+    private static final Set<Screen> VIEW_ONLY_SCREENS = EnumSet.of(Screen.AUDIT, Screen.DOCUMENTATION,
+            Screen.RELEASE_NOTES);
 
     private final ProfileRepository repository;
     private final ProfilePermissionRepository permissionRepository;
     private final AppUserRepository userRepository;
     private final AccessControl accessControl;
+    private final AuditTrail auditTrail;
 
     public ProfileResource(ProfileRepository repository, ProfilePermissionRepository permissionRepository,
-            AppUserRepository userRepository, AccessControl accessControl) {
+            AppUserRepository userRepository, AccessControl accessControl, AuditTrail auditTrail) {
         this.repository = repository;
         this.permissionRepository = permissionRepository;
         this.userRepository = userRepository;
         this.accessControl = accessControl;
+        this.auditTrail = auditTrail;
     }
 
     @GET
@@ -81,6 +88,7 @@ public class ProfileResource {
 
     @POST
     @Transactional
+    @Audited
     public Response create(@Valid ProfileRequest request) {
         accessControl.require(Screen.PROFILES, Action.CREATE);
         validatePermissions(request.permissions());
@@ -90,40 +98,49 @@ public class ProfileResource {
         repository.persistAndFlush(profile);
 
         savePermissions(profile.id, request.permissions());
+        List<PermissionEntry> permissions = resolvePermissions(profile.id);
+        auditTrail.created(Screen.PROFILES, profile.id, profile.name, auditValues(profile, permissions));
 
         return Response.status(Response.Status.CREATED)
-                .entity(ProfileResponse.from(profile, resolvePermissions(profile.id)))
+                .entity(ProfileResponse.from(profile, permissions))
                 .build();
     }
 
     @PUT
     @Path("/{id}")
     @Transactional
+    @Audited
     public ProfileResponse update(@PathParam("id") UUID id, @Valid ProfileRequest request) {
         accessControl.require(Screen.PROFILES, Action.EDIT);
         validatePermissions(request.permissions());
         Profile profile = repository.findByIdOptional(id).orElseThrow(NotFoundException::new);
 
+        AuditValues before = auditValues(profile, resolvePermissions(id));
         profile.name = request.name().trim();
         permissionRepository.deleteByProfile(id);
         savePermissions(id, request.permissions());
 
-        return ProfileResponse.from(profile, resolvePermissions(id));
+        List<PermissionEntry> permissions = resolvePermissions(id);
+        auditTrail.updated(Screen.PROFILES, id, profile.name, before, auditValues(profile, permissions));
+        return ProfileResponse.from(profile, permissions);
     }
 
     @DELETE
     @Path("/{id}")
     @Transactional
+    @Audited
     public Response delete(@PathParam("id") UUID id) {
         accessControl.require(Screen.PROFILES, Action.DELETE);
-        repository.findByIdOptional(id).orElseThrow(NotFoundException::new);
+        Profile profile = repository.findByIdOptional(id).orElseThrow(NotFoundException::new);
 
         if (userRepository.count("profileId", id) > 0) {
             throw new WebApplicationException("Perfil em uso por usuários.", Response.Status.CONFLICT);
         }
 
+        AuditValues values = auditValues(profile, resolvePermissions(id));
         permissionRepository.deleteByProfile(id);
         repository.deleteById(id);
+        auditTrail.deleted(Screen.PROFILES, id, profile.name, values);
 
         return Response.noContent().build();
     }
@@ -152,6 +169,36 @@ public class ProfileResource {
             permission.canDelete = writable && entry.canDelete();
             permissionRepository.persist(permission);
         }
+    }
+
+    // Uma linha por tela ("Permissões: Lançamentos" = "Ver, Incluir"); na alteração o diff deixa só
+    // as telas cuja combinação mudou.
+    private static AuditValues auditValues(Profile profile, List<PermissionEntry> permissions) {
+        AuditValues values = AuditValues.create().text("Nome", profile.name);
+
+        for (PermissionEntry entry : permissions) {
+            values.text("Permissões: " + entry.screen().label(), permissionLabel(entry));
+        }
+
+        return values;
+    }
+
+    private static String permissionLabel(PermissionEntry entry) {
+        List<String> actions = new ArrayList<>();
+        if (entry.canView()) {
+            actions.add("Ver");
+        }
+        if (entry.canCreate()) {
+            actions.add("Incluir");
+        }
+        if (entry.canEdit()) {
+            actions.add("Alterar");
+        }
+        if (entry.canDelete()) {
+            actions.add("Excluir");
+        }
+
+        return actions.isEmpty() ? "Sem acesso" : String.join(", ", actions);
     }
 
     private ProfileResponse toResponse(Profile profile) {

@@ -1,9 +1,13 @@
 package br.com.financeos.auth;
 
 import java.time.Duration;
+import java.util.Optional;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
+import br.com.financeos.audit.AuditActor;
+import br.com.financeos.audit.AuditEventType;
+import br.com.financeos.audit.AuditWriter;
 import br.com.financeos.shared.AccessControl;
 import br.com.financeos.shared.CurrentUser;
 import br.com.financeos.users.AppUser;
@@ -32,13 +36,15 @@ public class AuthResource {
     private final AppUserRepository repository;
     private final CurrentUser currentUser;
     private final AccessControl accessControl;
+    private final AuditWriter auditWriter;
     private final String issuer;
 
     public AuthResource(AppUserRepository repository, CurrentUser currentUser, AccessControl accessControl,
-            @ConfigProperty(name = "mp.jwt.verify.issuer") String issuer) {
+            AuditWriter auditWriter, @ConfigProperty(name = "mp.jwt.verify.issuer") String issuer) {
         this.repository = repository;
         this.currentUser = currentUser;
         this.accessControl = accessControl;
+        this.auditWriter = auditWriter;
         this.issuer = issuer;
     }
 
@@ -47,19 +53,48 @@ public class AuthResource {
     @PermitAll
     public AuthResponse login(@Valid LoginRequest request) {
         String email = request.email().trim().toLowerCase();
+        Optional<AppUser> account = repository.findByEmail(email);
 
-        AppUser user = repository.findByEmail(email)
+        Optional<AppUser> authenticated = account
                 .filter(candidate -> candidate.active)
-                .filter(candidate -> BcryptUtil.matches(request.password(), candidate.passwordHash))
-                .orElseThrow(() -> new WebApplicationException("Credenciais inválidas.", Response.Status.UNAUTHORIZED));
+                .filter(candidate -> BcryptUtil.matches(request.password(), candidate.passwordHash));
 
+        if (authenticated.isEmpty()) {
+            // O e-mail digitado fica no registro mesmo sem conta, para quem consulta ver a tentativa;
+            // existindo a conta, o registro também fica vinculado a ela.
+            String typedEmail = request.email().trim();
+            AuditActor actor = account
+                    .map(user -> new AuditActor(user.id, user.name, typedEmail, user.superAdmin))
+                    .orElseGet(() -> AuditActor.unknown(typedEmail));
+            auditWriter.writeEvent(AuditEventType.LOGIN_FAILED, actor, null, null);
+
+            throw new WebApplicationException("Credenciais inválidas.", Response.Status.UNAUTHORIZED);
+        }
+
+        AppUser user = authenticated.get();
         String token = Jwt.issuer(issuer)
                 .subject(user.id.toString())
                 .upn(user.email)
                 .expiresIn(TOKEN_TTL)
                 .sign();
 
+        auditWriter.writeEvent(AuditEventType.LOGIN, AuditActor.of(user), null, null);
         return new AuthResponse(token, TOKEN_TTL.toSeconds());
+    }
+
+    // Sem accessControl.require, como o /me: sair não depende de tela. Só registra o Logout; quem
+    // descarta o token é o front-end, depois desta resposta. Sem corpo, então aceita qualquer
+    // Content-Type (o POST vazio do front-end não manda nenhum).
+    @POST
+    @Path("/logout")
+    @Consumes(MediaType.WILDCARD)
+    @Authenticated
+    public Response logout() {
+        AppUser user = repository.findByIdOptional(currentUser.id())
+                .orElseThrow(() -> new WebApplicationException(Response.Status.UNAUTHORIZED));
+
+        auditWriter.writeEvent(AuditEventType.LOGOUT, AuditActor.of(user), null, null);
+        return Response.noContent().build();
     }
 
     @GET

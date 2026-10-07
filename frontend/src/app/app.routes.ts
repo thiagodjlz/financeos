@@ -79,6 +79,11 @@ export const routes: Routes = [
         loadComponent: () => import('./features/profiles/profile-form').then((m) => m.ProfileForm),
       },
       {
+        path: 'audit',
+        canActivate: [permissionGuard('AUDIT', 'VIEW')],
+        loadComponent: () => import('./features/audit/audit').then((m) => m.Audit),
+      },
+      {
         path: 'documentation',
         canActivate: [permissionGuard('DOCUMENTATION', 'VIEW')],
         loadComponent: () => import('./features/documentation/documentation').then((m) => m.Documentation),

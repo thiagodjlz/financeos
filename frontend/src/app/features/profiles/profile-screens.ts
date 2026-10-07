@@ -7,6 +7,7 @@ export const PROFILE_SCREENS: { code: Screen; label: string; viewOnly?: boolean 
   { code: 'CATEGORIES', label: 'Categorias' },
   { code: 'USERS', label: 'Usuários' },
   { code: 'PROFILES', label: 'Perfis' },
+  { code: 'AUDIT', label: 'Auditoria', viewOnly: true },
   { code: 'DOCUMENTATION', label: 'Documentação', viewOnly: true },
   { code: 'RELEASE_NOTES', label: 'Novidades por versão', viewOnly: true },
 ];

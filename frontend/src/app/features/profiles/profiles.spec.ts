@@ -102,6 +102,7 @@ describe('Profiles', () => {
       ['Categorias', 'Sem acesso'],
       ['Usuários', 'Sem acesso'],
       ['Perfis', 'Sem acesso'],
+      ['Auditoria', 'Sem acesso'],
       ['Documentação', 'Ver'],
       ['Novidades por versão', 'Sem acesso'],
     ]);

@@ -1,9 +1,9 @@
 import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Component } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
-import { PermissionEntry, Screen } from '../../core/models';
+import { API_BASE, PermissionEntry, Screen } from '../../core/models';
 import { AuthService } from '../../core/services/auth.service';
 import { MainLayout } from './main-layout';
 
@@ -125,6 +125,7 @@ describe('MainLayout', () => {
         'Categorias',
         'Usuários',
         'Perfis',
+        'Auditoria',
         'Documentação',
         'Novidades por versão',
       ]);
@@ -171,6 +172,42 @@ describe('MainLayout', () => {
 
       expect(sectionTitles(fixture)).toEqual(['Configurações']);
       expect(navLabels(fixture)).toEqual(['Perfis']);
+    });
+
+    it('mostra Configurações com só Auditoria, logo o item Auditoria e nenhum outro', () => {
+      withPermissions('AUDIT');
+      const fixture = createFixture();
+
+      expect(sectionTitles(fixture)).toEqual(['Configurações']);
+      expect(navLabels(fixture)).toEqual(['Auditoria']);
+      expect(sheetItems(fixture, 'more')).toEqual(['Auditoria', 'Sair']);
+    });
+
+    it('esconde Auditoria no menu e no painel Mais sem permissão de ver Auditoria', () => {
+      withPermissions('USERS', 'PROFILES');
+      const fixture = createFixture();
+
+      expect(navLabels(fixture)).toEqual(['Usuários', 'Perfis']);
+      expect(sheetItems(fixture, 'more')).not.toContain('Auditoria');
+    });
+
+    it('sai pelo Sair do rodapé registrando o logout antes de descartar o token', async () => {
+      const authService = TestBed.inject(AuthService);
+      authService.token.set('token-ativo');
+      const fixture = createFixture();
+      const httpMock = TestBed.inject(HttpTestingController);
+
+      (root(fixture).querySelector('.sidebar-footer button[aria-label="Sair"]') as HTMLButtonElement).click();
+      const request = httpMock.expectOne(`${API_BASE}/auth/logout`);
+      expect(request.request.method).toBe('POST');
+      expect(authService.token()).toBe('token-ativo');
+
+      request.flush(null, { status: 204, statusText: 'No Content' });
+      await new Promise((resolve) => setTimeout(resolve));
+      await fixture.whenStable();
+
+      expect(authService.token()).toBeNull();
+      expect(TestBed.inject(Router).url).toBe('/login');
     });
 
     it('mostra Sobre só com Novidades por versão, sem Documentação', () => {
@@ -264,6 +301,7 @@ describe('MainLayout', () => {
         'Categorias',
         'Usuários',
         'Perfis',
+        'Auditoria',
         'Documentação',
         'Novidades por versão',
         'Sair',
@@ -322,6 +360,7 @@ describe('MainLayout', () => {
       ['/categories', 'Mais'],
       ['/users', 'Mais'],
       ['/profiles', 'Mais'],
+      ['/audit', 'Mais'],
       ['/documentation', 'Mais'],
       ['/release-notes', 'Mais'],
     ])('destaca só o item da barra do grupo de %s', async (url, active) => {
@@ -360,7 +399,7 @@ describe('MainLayout', () => {
       expect(root(fixture).querySelector('.app-shell')?.classList.contains('form-route')).toBe(true);
     });
 
-    it.each(['/dashboard', '/transactions', '/categories', '/users', '/profiles', '/documentation', '/release-notes'])(
+    it.each(['/dashboard', '/transactions', '/categories', '/users', '/profiles', '/audit', '/documentation', '/release-notes'])(
       'mantém a barra inferior em %s',
       async (url) => {
         asSuperAdmin();
@@ -513,16 +552,23 @@ describe('MainLayout', () => {
       expect(TestBed.inject(Router).url).toBe('/categories');
     });
 
-    it('sai pelo item Sair do painel Mais', async () => {
+    it('sai pelo item Sair do painel Mais, registrando o logout antes de descartar o token', async () => {
       asSuperAdmin();
       const fixture = createFixture();
       const authService = TestBed.inject(AuthService);
+      authService.token.set('token-ativo');
       const logout = vi.spyOn(authService, 'logout');
+      const httpMock = TestBed.inject(HttpTestingController);
 
       bottomItem(fixture, 'Mais').click();
       fixture.detectChanges();
       (sheet(fixture, 'more')?.querySelector('.sheet-logout') as HTMLButtonElement).click();
       fixture.detectChanges();
+
+      const request = httpMock.expectOne(`${API_BASE}/auth/logout`);
+      expect(logout).not.toHaveBeenCalled();
+      request.flush(null, { status: 204, statusText: 'No Content' });
+      await new Promise((resolve) => setTimeout(resolve));
       await fixture.whenStable();
 
       expect(logout).toHaveBeenCalled();
@@ -550,5 +596,42 @@ describe('MainLayout', () => {
     expect(addSpy.mock.calls.filter(([type]) => type === 'scroll')).toHaveLength(0);
     Object.defineProperty(window, 'scrollY', { value: 0, configurable: true });
     addSpy.mockRestore();
+  });
+
+  describe('registro de acesso às telas', () => {
+    function screenAccessRequests(): string[] {
+      return TestBed.inject(HttpTestingController)
+        .match(`${API_BASE}/audit/screen-access`)
+        .map((request) => (request.request.body as { screen: string }).screen);
+    }
+
+    it('registra a tela da carga inicial e cada troca de tela do menu', async () => {
+      asSuperAdmin();
+      const router = TestBed.inject(Router);
+      await router.navigateByUrl('/dashboard');
+      const fixture = createFixture();
+
+      await router.navigateByUrl('/transactions');
+      await router.navigateByUrl('/audit');
+      fixture.detectChanges();
+
+      expect(screenAccessRequests()).toEqual(['DASHBOARD', 'TRANSACTIONS', 'AUDIT']);
+    });
+
+    it('não registra ao abrir o cadastro da mesma tela, trocar de aba ou paginar', async () => {
+      asSuperAdmin();
+      const router = TestBed.inject(Router);
+      createFixture();
+
+      await router.navigateByUrl('/transactions');
+      await router.navigateByUrl('/transactions/7/edit');
+      await router.navigateByUrl('/transactions');
+      await router.navigateByUrl('/documentation');
+      await router.navigateByUrl('/documentation#perfis');
+      await router.navigateByUrl('/audit');
+      await router.navigateByUrl('/audit?page=2');
+
+      expect(screenAccessRequests()).toEqual(['TRANSACTIONS', 'DOCUMENTATION', 'AUDIT']);
+    });
   });
 });

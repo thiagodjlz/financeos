@@ -99,6 +99,20 @@ export function shortDate(value: string): string {
   return day && month && year ? `${day}/${month}/${year}` : value;
 }
 
+// Data e hora de um instante da API (ISO com fuso) no fuso do navegador: "06/10/2026 14:05:09".
+export function dateTimeLabel(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  const pad = (part: number) => String(part).padStart(2, '0');
+  return (
+    `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()} ` +
+    `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+  );
+}
+
 export function isoDate(date: Date): string {
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');

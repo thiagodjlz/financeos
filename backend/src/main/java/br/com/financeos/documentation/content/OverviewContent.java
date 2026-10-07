@@ -58,7 +58,7 @@ final class OverviewContent {
                         "Resumo: os totais e os gráficos do mês escolhido.",
                         "Lançamentos: o cadastro das receitas e despesas.",
                         "Cadastros: seção com a tela de Categorias.",
-                        "Configurações: seção com as telas de Usuários e Perfis.",
+                        "Configurações: seção com as telas de Usuários, Perfis e Auditoria.",
                         "Sobre: seção com esta Central de Documentação e a tela de Novidades por versão."),
                 DocumentationBlock.paragraph(
                         "Em telas estreitas, como as de celular, o menu dá lugar a uma barra fixa na parte de "
@@ -99,8 +99,8 @@ final class OverviewContent {
                                 + "novamente. O mesmo aviso aparece para quem está inativo, mesmo que a senha "
                                 + "esteja correta.",
                         "Depois de entrar, abre a primeira tela que o seu perfil pode ver, na ordem do menu: "
-                                + "Resumo, Lançamentos, Categorias, Usuários, Perfis, Documentação e Novidades por "
-                                + "versão.",
+                                + "Resumo, Lançamentos, Categorias, Usuários, Perfis, Auditoria, Documentação e "
+                                + "Novidades por versão.",
                         "Se o seu perfil não pode ver nenhuma tela, abre a tela Sem acesso."));
     }
 
@@ -149,9 +149,9 @@ final class OverviewContent {
                 "Listas sem resultado ou com falha",
                 DocumentationBlock.list(
                         "Enquanto uma lista carrega, linhas cinzas ocupam o lugar dos registros.",
-                        "Em Lançamentos, Categorias, Usuários e Perfis, tocar ou clicar num registro abre o detalhe "
-                                + "dele, num painel na parte de baixo da tela no celular e numa janela no meio da "
-                                + "tela no computador.",
+                        "Em Lançamentos, Categorias, Usuários, Perfis e Auditoria, tocar ou clicar num registro "
+                                + "abre o detalhe dele, num painel na parte de baixo da tela no celular e numa "
+                                + "janela no meio da tela no computador.",
                         "Se uma lista não consegue carregar, a mensagem do problema aparece no lugar dela, em vez "
                                 + "de uma lista vazia. Em Lançamentos, a mensagem vem com o botão Tentar novamente, "
                                 + "que carrega a lista de novo.",

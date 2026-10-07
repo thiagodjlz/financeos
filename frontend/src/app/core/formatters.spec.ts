@@ -1,4 +1,5 @@
 import {
+  dateTimeLabel,
   currentMonth,
   dayHeading,
   formatAmountInput,
@@ -189,5 +190,24 @@ describe('meses do filtro de período', () => {
     expect(monthRange('2026-12')).toEqual({ startDate: '2026-12-01', endDate: '2026-12-31' });
     expect(monthRange('2026-04')).toEqual({ startDate: '2026-04-01', endDate: '2026-04-30' });
     expect(monthRange('')).toBeNull();
+  });
+});
+
+describe('dateTimeLabel', () => {
+  it('mostra data e hora com segundos no fuso do navegador', () => {
+    const instant = new Date(2026, 9, 6, 14, 5, 9).toISOString();
+
+    expect(dateTimeLabel(instant)).toBe('06/10/2026 14:05:09');
+  });
+
+  it('converte o instante com fuso informado para o horário local', () => {
+    const local = new Date('2026-03-01T15:00:00Z');
+    const expected = `${String(local.getDate()).padStart(2, '0')}/${String(local.getMonth() + 1).padStart(2, '0')}/2026 ${String(local.getHours()).padStart(2, '0')}:00:00`;
+
+    expect(dateTimeLabel('2026-03-01T12:00:00-03:00')).toBe(expected);
+  });
+
+  it('devolve o texto recebido quando não é uma data', () => {
+    expect(dateTimeLabel('sem data')).toBe('sem data');
   });
 });

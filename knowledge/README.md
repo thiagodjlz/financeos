@@ -21,6 +21,7 @@ Duas dimensoes independentes. Uma tarefa tipica carrega 3 ou 4 arquivos, nao dez
 | Arquivo | Quando ler |
 |---|---|
 | [auth-and-permissions.md](auth-and-permissions.md) | login, JWT, perfis, telas (`Screen`) ou permissoes (`Action`) |
+| [audit.md](audit.md) | tela/API de Auditoria — e **sempre** que a issue criar endpoint de escrita, tipo de evento ou mexer em login/logout |
 | [users.md](users.md) | tela/API de Usuarios |
 | [categories.md](categories.md) | Categorias |
 | [transactions.md](transactions.md) | Lancamentos/Transacoes |
@@ -31,7 +32,7 @@ Duas dimensoes independentes. Uma tarefa tipica carrega 3 ou 4 arquivos, nao dez
 
 ## Convencao dos "dominios" usados na esteira (`specs/<n>-slug/spec.md` -> `domains:`)
 
-Valores possiveis: `auth`, `users`, `categories`, `transactions`, `dashboard`, `documentation`. Uma spec pode listar mais de um. `accounts`/`cards` nao sao mais dominios ativos.
+Valores possiveis: `auth`, `users`, `categories`, `transactions`, `dashboard`, `documentation`, `audit`. Uma spec pode listar mais de um. `accounts`/`cards` nao sao mais dominios ativos.
 
 ## Quem le esta pasta na esteira
 

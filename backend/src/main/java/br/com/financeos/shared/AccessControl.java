@@ -3,6 +3,10 @@ package br.com.financeos.shared;
 import java.util.Arrays;
 import java.util.List;
 
+import br.com.financeos.audit.AuditAction;
+import br.com.financeos.audit.AuditActor;
+import br.com.financeos.audit.AuditEventType;
+import br.com.financeos.audit.AuditWriter;
 import br.com.financeos.profiles.PermissionEntry;
 import br.com.financeos.profiles.ProfilePermission;
 import br.com.financeos.profiles.ProfilePermissionRepository;
@@ -33,6 +37,9 @@ public class AccessControl {
     @Inject
     ProfilePermissionRepository permissionRepository;
 
+    @Inject
+    AuditWriter auditWriter;
+
     private AppUser cachedUser;
     private List<ProfilePermission> cachedPermissions;
 
@@ -56,6 +63,7 @@ public class AccessControl {
 
         if (!allowed) {
             LOG.debugf("Acesso negado para o usuario %s: %s em %s", user.id, action, screen);
+            auditWriter.writeEvent(AuditEventType.ACCESS_DENIED, AuditActor.of(user), screen, AuditAction.of(action));
             throw new ForbiddenException(ACCESS_DENIED_MESSAGE);
         }
     }

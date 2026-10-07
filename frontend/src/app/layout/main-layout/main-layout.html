@@ -108,6 +108,23 @@
           </svg>
           <span class="nav-label">Perfis</span>
         </button>
+        <button
+          *ngIf="authService.can('AUDIT', 'VIEW')"
+          type="button"
+          routerLink="/audit"
+          routerLinkActive="active"
+          (click)="onNavigate()"
+          [attr.title]="collapsed() ? 'Auditoria' : null"
+          [attr.aria-label]="collapsed() ? 'Auditoria' : null"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M9 4.5h6M9 4.5a1.5 1.5 0 0 0 0 3h6a1.5 1.5 0 0 0 0-3M9 4.5H7a2 2 0 0 0-2 2V19a2 2 0 0 0 2 2h4.5"></path>
+            <path d="M15 4.5h2a2 2 0 0 1 2 2v4"></path>
+            <circle cx="16.5" cy="16.5" r="3"></circle>
+            <path d="M18.7 18.7L21 21"></path>
+          </svg>
+          <span class="nav-label">Auditoria</span>
+        </button>
       </div>
 
       <div class="nav-section" *ngIf="canSeeAbout()">
@@ -290,6 +307,22 @@
           <path d="M8.5 12.5l2.3 2.3 4.7-4.7"></path>
         </svg>
         <span>Perfis</span>
+      </button>
+      <button
+        *ngIf="authService.can('AUDIT', 'VIEW')"
+        type="button"
+        class="sheet-item"
+        routerLink="/audit"
+        routerLinkActive="active"
+        (click)="onNavigate()"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M9 4.5h6M9 4.5a1.5 1.5 0 0 0 0 3h6a1.5 1.5 0 0 0 0-3M9 4.5H7a2 2 0 0 0-2 2V19a2 2 0 0 0 2 2h4.5"></path>
+          <path d="M15 4.5h2a2 2 0 0 1 2 2v4"></path>
+          <circle cx="16.5" cy="16.5" r="3"></circle>
+          <path d="M18.7 18.7L21 21"></path>
+        </svg>
+        <span>Auditoria</span>
       </button>
       <span class="sheet-section-title" *ngIf="canSeeAbout()">Sobre</span>
       <button
