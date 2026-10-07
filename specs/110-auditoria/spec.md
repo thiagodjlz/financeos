@@ -4,7 +4,7 @@ url: https://github.com/thiagodjlz/financeos/issues/110
 title: "Inclusão de auditoria"
 domains: [auth, users, categories, transactions, documentation]
 target: main
-stage: validated
+stage: pr-open
 branch: feature/issue-110-auditoria
 created: 2026-10-06
 ---
