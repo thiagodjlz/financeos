@@ -18,6 +18,7 @@ public final class DocumentationContent {
                         TransactionsAreaContent.build(),
                         CategoriesAreaContent.build(),
                         UsersAreaContent.build(),
-                        ProfilesAreaContent.build()));
+                        ProfilesAreaContent.build(),
+                        AuditAreaContent.build()));
     }
 }

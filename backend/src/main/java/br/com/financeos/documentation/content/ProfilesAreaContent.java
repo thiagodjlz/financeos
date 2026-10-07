@@ -63,8 +63,9 @@ final class ProfilesAreaContent {
                                                 + "Categorias, uma desativação em Usuários e a remoção do perfil "
                                                 + "sem uso em Perfis."))),
                 DocumentationBlock.paragraph(
-                        "As linhas da matriz são Resumo, Lançamentos, Categorias, Usuários, Perfis, Documentação e "
-                                + "Novidades por versão, na mesma ordem em que as telas aparecem no menu."));
+                        "As linhas da matriz são Resumo, Lançamentos, Categorias, Usuários, Perfis, Auditoria, "
+                                + "Documentação e Novidades por versão, na mesma ordem em que as telas aparecem no "
+                                + "menu."));
     }
 
     private static DocumentationSection regras() {
@@ -81,6 +82,9 @@ final class ProfilesAreaContent {
                                 + "para leitura: não há o que incluir, alterar ou excluir nela.",
                         "A linha Novidades por versão também tem apenas a coluna Ver, pelo mesmo motivo: é uma "
                                 + "tela só de consulta.",
+                        "A linha Auditoria também tem apenas a coluna Ver: o histórico é só para consulta e "
+                                + "ninguém pode alterá-lo. De início, só o perfil Administrador pode ver a "
+                                + "Auditoria.",
                         "O nome do perfil é obrigatório."),
                 DocumentationBlock.highlight(
                         "Incluir, Alterar e Excluir só são exercidos por botões que ficam dentro da própria tela. "

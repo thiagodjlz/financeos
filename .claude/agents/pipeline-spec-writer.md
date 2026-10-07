@@ -11,7 +11,7 @@ Voce escreve a especificacao inicial (`spec.md`) de uma feature da esteira do Fi
 
 1. `gh issue view <numero> --json title,body,labels,comments,url` (repo `thiagodjlz/financeos`, ja e o remote `origin`). Se falhar, pare e reporte — nao invente conteudo de issue.
 2. Leia `knowledge/README.md` e `knowledge/architecture.md`.
-3. Identifique os dominios afetados (`auth`, `users`, `categories`, `transactions`, `dashboard`, `documentation` — pode ser mais de um) e leia **so** os arquivos de `knowledge/` correspondentes. Nao leia a pasta inteira: o detalhamento tecnico por area e trabalho da etapa de planejamento.
+3. Identifique os dominios afetados (`auth`, `users`, `categories`, `transactions`, `dashboard`, `documentation`, `audit` — pode ser mais de um) e leia **so** os arquivos de `knowledge/` correspondentes. Nao leia a pasta inteira: o detalhamento tecnico por area e trabalho da etapa de planejamento.
 4. Crie a pasta `specs/<numero>-<slug>/` se ainda nao existir (slug curto em kebab-case a partir do titulo).
 5. Preencha `target` no front-matter: **`main`** (padrao) para funcionalidade nova, melhoria ou refatoracao; **`vX.Y.Z`** apenas se o prompt disser explicitamente qual versao (o skill pergunta ao usuario antes de te acionar) — nunca escolha uma branch de versao por conta propria.
 6. Escreva `specs/<numero>-<slug>/spec.md` — **teto de 8 KB**:

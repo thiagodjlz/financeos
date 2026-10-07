@@ -290,6 +290,50 @@ class ProfileResourceTest {
     }
 
     @Test
+    void shouldForceAuditPermissionToViewOnlyOnCreateAndUpdate() {
+        String body = WRITABLE_RELEASE_NOTES_BODY.replace("RELEASE_NOTES", "AUDIT");
+
+        String id = given()
+                .contentType(ContentType.JSON)
+                .body(body.formatted("Teste Perfil " + UUID.randomUUID()))
+                .when().post("/profiles")
+                .then()
+                .statusCode(201)
+                .body("permissions.find { it.screen == 'AUDIT' }.canView", equalTo(true))
+                .body("permissions.find { it.screen == 'AUDIT' }.canCreate", equalTo(false))
+                .body("permissions.find { it.screen == 'AUDIT' }.canEdit", equalTo(false))
+                .body("permissions.find { it.screen == 'AUDIT' }.canDelete", equalTo(false))
+                .extract()
+                .path("id");
+
+        given()
+                .contentType(ContentType.JSON)
+                .body(body.formatted("Teste Perfil " + UUID.randomUUID()))
+                .when().put("/profiles/{id}", id)
+                .then()
+                .statusCode(200);
+
+        given()
+                .when().get("/profiles/{id}", id)
+                .then()
+                .statusCode(200)
+                .body("permissions.find { it.screen == 'AUDIT' }.canView", equalTo(true))
+                .body("permissions.find { it.screen == 'AUDIT' }.canCreate", equalTo(false))
+                .body("permissions.find { it.screen == 'AUDIT' }.canEdit", equalTo(false))
+                .body("permissions.find { it.screen == 'AUDIT' }.canDelete", equalTo(false));
+    }
+
+    @Test
+    void shouldGrantAuditOnlyToAdministratorProfileBySeed() {
+        given()
+                .when().get("/profiles/{id}", ADMIN_PROFILE_ID)
+                .then()
+                .statusCode(200)
+                .body("permissions.find { it.screen == 'AUDIT' }.canView", equalTo(true))
+                .body("permissions.find { it.screen == 'AUDIT' }.canCreate", equalTo(false));
+    }
+
+    @Test
     void shouldKeepWriteFlagsForOtherScreens() {
         given()
                 .contentType(ContentType.JSON)

@@ -31,7 +31,8 @@ public class InvalidFormatExceptionMapper implements ExceptionMapper<InvalidForm
             "transactionDate", "A data informada é inválida.",
             "type", "O tipo informado é inválido.",
             "status", "O status informado é inválido.",
-            "categoryId", "A categoria informada é inválida.");
+            "categoryId", "A categoria informada é inválida.",
+            "screen", "A tela informada é inválida.");
 
     @Override
     public Response toResponse(InvalidFormatException exception) {

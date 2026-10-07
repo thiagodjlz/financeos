@@ -91,4 +91,15 @@ describe('authInterceptor', () => {
 
     expect(await captured).toMatchObject({ status: 401 });
   });
+
+  it('no 401 descarta o token localmente, sem chamar o registro de logout', async () => {
+    authService.token.set('token-vencido');
+
+    const done = request(`${API_BASE}/dashboard/summary`);
+    httpMock.expectOne(`${API_BASE}/dashboard/summary`).flush(null, { status: 401, statusText: 'Unauthorized' });
+    await done;
+
+    httpMock.expectNone(`${API_BASE}/auth/logout`);
+    expect(authService.token()).toBeNull();
+  });
 });

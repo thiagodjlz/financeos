@@ -50,9 +50,9 @@ Fonte da verdade: arquivo `VERSION` na raiz. Formato `X.Y.Z-NN` (versao + build)
 ## Convencoes de codigo
 
 - **Sem comentarios** a menos que expliquem um "porque" nao-obvio (regra geral do projeto, nao so desta esteira).
-- Todo endpoint que le ou escreve dado chama `accessControl.require(Screen.X, Action.Y)` como primeira linha do metodo — ver [auth-and-permissions.md](auth-and-permissions.md). Qualquer endpoint novo deve seguir esse padrao.
+- Todo endpoint que le ou escreve dado comeca com `accessControl.require(Screen.X, Action.Y)` ([auth-and-permissions.md](auth-and-permissions.md)); o de escrita leva tambem `@Audited` + `AuditTrail` ([audit.md](audit.md), issue #110).
 - Exclusao de registro de negocio e **soft delete** (`active=false`) por padrao; hard delete so em perfis sem usuario, categorias sem lancamento (issue #77) e lancamentos (issue #104) — ver docs de dominio.
-- **Toda regra de negocio e validacao e imposta no back-end** (Bean Validation no DTO ou checagem no `Resource`, com erro em portugues). O front-end pode espelhar a regra como UX, mas nunca ser o unico lugar dela; constraint de banco e rede de seguranca (excecao: PKs e FKs). Detalhes de como o erro chega a tela em [backend-patterns.md](backend-patterns.md).
+- **Toda regra de negocio e validacao e imposta no back-end** (Bean Validation no DTO ou checagem no `Resource`, com erro em portugues). O front-end pode espelhar a regra como UX, mas nunca ser o unico lugar dela; constraint de banco e rede de seguranca (excecao: PKs e FKs). Como o erro chega a tela: [backend-patterns.md](backend-patterns.md).
 
 ## Idioma
 

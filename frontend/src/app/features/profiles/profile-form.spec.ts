@@ -22,6 +22,7 @@ const SCREEN_ROWS = [
   'Categorias',
   'Usuários',
   'Perfis',
+  'Auditoria',
   'Documentação',
   'Novidades por versão',
 ];
@@ -114,11 +115,11 @@ describe('ProfileForm', () => {
     expect(query('.page-title').textContent?.trim()).toBe('Novo perfil');
     expect(query<HTMLInputElement>('input[name="name"]').value).toBe('');
     const boxes = Array.from(fixture.nativeElement.querySelectorAll('form input[type="checkbox"]')) as HTMLInputElement[];
-    expect(boxes).toHaveLength(22);
+    expect(boxes).toHaveLength(23);
     expect(boxes.every((box) => !box.checked)).toBe(true);
   });
 
-  it('tem sete linhas e só a coluna Ver nas linhas Documentação e Novidades por versão', async () => {
+  it('tem oito linhas e só a coluna Ver nas linhas Auditoria, Documentação e Novidades por versão', async () => {
     await setup(null);
 
     const rows = Array.from(fixture.nativeElement.querySelectorAll('form tbody tr')) as HTMLElement[];
@@ -137,7 +138,7 @@ describe('ProfileForm', () => {
     const request = httpMock.expectOne(`${API_BASE}/profiles`);
     expect(request.request.method).toBe('POST');
     expect(request.request.body.name).toBe('Leitura');
-    expect(request.request.body.permissions).toHaveLength(7);
+    expect(request.request.body.permissions).toHaveLength(8);
     expect(request.request.body.permissions[0]).toEqual({
       screen: 'DASHBOARD',
       canView: true,

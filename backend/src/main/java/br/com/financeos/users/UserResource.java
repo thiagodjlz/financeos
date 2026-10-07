@@ -4,6 +4,9 @@ import java.net.URI;
 import java.util.Objects;
 import java.util.UUID;
 
+import br.com.financeos.audit.AuditTrail;
+import br.com.financeos.audit.AuditValues;
+import br.com.financeos.audit.Audited;
 import br.com.financeos.profiles.Profile;
 import br.com.financeos.profiles.ProfileRepository;
 import br.com.financeos.profiles.Screen;
@@ -41,13 +44,15 @@ public class UserResource {
     private final ProfileRepository profileRepository;
     private final CurrentUser currentUser;
     private final AccessControl accessControl;
+    private final AuditTrail auditTrail;
 
     public UserResource(AppUserRepository repository, ProfileRepository profileRepository,
-            CurrentUser currentUser, AccessControl accessControl) {
+            CurrentUser currentUser, AccessControl accessControl, AuditTrail auditTrail) {
         this.repository = repository;
         this.profileRepository = profileRepository;
         this.currentUser = currentUser;
         this.accessControl = accessControl;
+        this.auditTrail = auditTrail;
     }
 
     @GET
@@ -73,6 +78,7 @@ public class UserResource {
 
     @POST
     @Transactional
+    @Audited
     public Response create(@Valid UserCreateRequest request) {
         accessControl.require(Screen.USERS, Action.CREATE);
         String email = request.email().trim().toLowerCase();
@@ -89,6 +95,7 @@ public class UserResource {
         user.passwordHash = BcryptUtil.bcryptHash(request.password());
         user.profileId = request.profileId();
         repository.persistAndFlush(user);
+        auditTrail.created(Screen.USERS, user.id, user.name, auditValues(user, profile.name));
 
         return Response.created(URI.create("/api/users/" + user.id))
                 .entity(UserResponse.from(user, profile.name))
@@ -98,6 +105,7 @@ public class UserResource {
     @PUT
     @Path("/{id}")
     @Transactional
+    @Audited
     public UserResponse update(@PathParam("id") UUID id, @Valid UserUpdateRequest request) {
         accessControl.require(Screen.USERS, Action.EDIT);
         AppUser user = repository.findVisibleById(id).orElseThrow(NotFoundException::new);
@@ -121,6 +129,7 @@ public class UserResource {
             }
         }
 
+        AuditValues before = auditValues(user, user.profileName);
         user.name = request.name().trim();
         user.email = email;
         user.profileId = request.profileId();
@@ -130,12 +139,15 @@ public class UserResource {
             user.passwordHash = BcryptUtil.bcryptHash(request.password());
         }
 
+        auditTrail.updated(Screen.USERS, id, user.name, before, auditValues(user, profile.name));
         return UserResponse.from(user, profile.name);
     }
 
+    // Desativar não exclui: fica registrado como Alteração do campo "Ativo" (Sim -> Não).
     @DELETE
     @Path("/{id}")
     @Transactional
+    @Audited
     public Response deactivate(@PathParam("id") UUID id) {
         accessControl.require(Screen.USERS, Action.DELETE);
 
@@ -144,9 +156,20 @@ public class UserResource {
         }
 
         AppUser user = repository.findVisibleById(id).orElseThrow(NotFoundException::new);
+        AuditValues before = auditValues(user, user.profileName);
         user.active = false;
+        auditTrail.updated(Screen.USERS, id, user.name, before, auditValues(user, user.profileName));
 
         return Response.noContent().build();
+    }
+
+    // Senha e hash ficam de fora de propósito: a auditoria é lida na tela por outros usuários.
+    private static AuditValues auditValues(AppUser user, String profileName) {
+        return AuditValues.create()
+                .text("Nome", user.name)
+                .text("E-mail", user.email)
+                .text("Perfil", profileName)
+                .yesNo("Ativo", user.active);
     }
 
     private Profile requireProfileExists(UUID profileId) {

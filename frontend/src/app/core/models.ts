@@ -76,6 +76,7 @@ export type Screen =
   | 'CATEGORIES'
   | 'USERS'
   | 'PROFILES'
+  | 'AUDIT'
   | 'DOCUMENTATION'
   | 'RELEASE_NOTES';
 export type Action = 'VIEW' | 'CREATE' | 'EDIT' | 'DELETE';
@@ -166,6 +167,41 @@ export interface ReleaseNoteCategory {
 export interface ReleaseNoteVersion {
   version: string;
   categories: ReleaseNoteCategory[];
+}
+
+export interface AuditChange {
+  field: string;
+  oldValue: string | null;
+  newValue: string | null;
+}
+
+// Tipo, ação e funcionalidade chegam com o rótulo pronto do back-end: a tela exibe o rótulo e não
+// mantém mapa próprio, para que um tipo de evento novo apareça sem mudança aqui.
+export interface AuditRecord {
+  id: string;
+  occurredAt: string;
+  userName: string | null;
+  userEmail: string | null;
+  type: string;
+  typeLabel: string;
+  action: string | null;
+  actionLabel: string | null;
+  screen: string | null;
+  screenLabel: string | null;
+  recordId: string | null;
+  recordLabel: string | null;
+  changes: AuditChange[];
+}
+
+export interface AuditOption {
+  code: string;
+  label: string;
+}
+
+export interface AuditOptions {
+  types: AuditOption[];
+  actions: AuditOption[];
+  screens: AuditOption[];
 }
 
 export interface ReleaseNotesResponse {

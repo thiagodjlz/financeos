@@ -1,0 +1,232 @@
+<header class="page-header">
+  <div class="page-heading">
+    <h1 class="page-title">Auditoria</h1>
+    <p class="page-subtitle">Consulte quem incluiu, alterou ou excluiu registros e os acessos ao sistema</p>
+  </div>
+</header>
+
+<section class="panel list-panel">
+  <app-filter-panel [list]="list" [chips]="chips()">
+    <label filterSearch class="input-affix search-field">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="6.5"></circle>
+        <path d="M20 20l-4.2-4.2"></path>
+      </svg>
+      <input
+        name="filterUser"
+        placeholder="Buscar por usuário"
+        aria-label="Buscar por usuário"
+        [(ngModel)]="list.filters.user"
+        (change)="list.apply()"
+        (keydown.enter)="list.apply()"
+      />
+    </label>
+
+    <label class="filter-field" [class.is-set]="list.applied().startDate">
+      <span>Data inicial</span>
+      <input type="date" name="filterStartDate" [(ngModel)]="list.filters.startDate" (change)="list.apply()" />
+    </label>
+    <label class="filter-field" [class.is-set]="list.applied().endDate">
+      <span>Data final</span>
+      <input type="date" name="filterEndDate" [(ngModel)]="list.filters.endDate" (change)="list.apply()" />
+    </label>
+    <div class="filter-field only-mobile" role="group" aria-labelledby="audit-filter-type-label">
+      <span id="audit-filter-type-label">Tipo</span>
+      <div class="toggle-group choice-toggle">
+        <button type="button" [attr.aria-pressed]="!list.filters.type" (click)="chooseDraft('type', '')">Todos</button>
+        <button
+          *ngFor="let option of options().types"
+          type="button"
+          [attr.aria-pressed]="list.filters.type === option.code"
+          (click)="chooseDraft('type', option.code)"
+        >
+          {{ option.label }}
+        </button>
+      </div>
+    </div>
+    <div class="filter-field only-mobile" role="group" aria-labelledby="audit-filter-action-label">
+      <span id="audit-filter-action-label">Ação</span>
+      <div class="toggle-group choice-toggle">
+        <button type="button" [attr.aria-pressed]="!list.filters.action" (click)="chooseDraft('action', '')">Todas</button>
+        <button
+          *ngFor="let option of options().actions"
+          type="button"
+          [attr.aria-pressed]="list.filters.action === option.code"
+          (click)="chooseDraft('action', option.code)"
+        >
+          {{ option.label }}
+        </button>
+      </div>
+    </div>
+    <div class="filter-field only-mobile" role="group" aria-labelledby="audit-filter-screen-label">
+      <span id="audit-filter-screen-label">Funcionalidade</span>
+      <div class="toggle-group choice-toggle">
+        <button type="button" [attr.aria-pressed]="!list.filters.screen" (click)="chooseDraft('screen', '')">Todas</button>
+        <button
+          *ngFor="let option of options().screens"
+          type="button"
+          [attr.aria-pressed]="list.filters.screen === option.code"
+          (click)="chooseDraft('screen', option.code)"
+        >
+          {{ option.label }}
+        </button>
+      </div>
+    </div>
+
+    <select
+      class="filter-select only-desktop"
+      name="filterType"
+      aria-label="Tipo"
+      [class.is-set]="list.applied().type"
+      [(ngModel)]="list.filters.type"
+      (change)="list.apply()"
+    >
+      <option value="">Tipo: todos</option>
+      <option *ngFor="let option of options().types" [value]="option.code">{{ option.label }}</option>
+    </select>
+    <select
+      class="filter-select only-desktop"
+      name="filterAction"
+      aria-label="Ação"
+      [class.is-set]="list.applied().action"
+      [(ngModel)]="list.filters.action"
+      (change)="list.apply()"
+    >
+      <option value="">Ação: todas</option>
+      <option *ngFor="let option of options().actions" [value]="option.code">{{ option.label }}</option>
+    </select>
+    <select
+      class="filter-select only-desktop"
+      name="filterScreen"
+      aria-label="Funcionalidade"
+      [class.is-set]="list.applied().screen"
+      [(ngModel)]="list.filters.screen"
+      (change)="list.apply()"
+    >
+      <option value="">Funcionalidade: todas</option>
+      <option *ngFor="let option of options().screens" [value]="option.code">{{ option.label }}</option>
+    </select>
+  </app-filter-panel>
+
+  <div class="table-wrap" [attr.aria-busy]="list.loading()">
+    <table class="audit-table fixed-layout" *ngIf="list.items().length">
+      <colgroup>
+        <col class="col-when" />
+        <col />
+        <col class="col-type" />
+        <col class="col-action" />
+        <col class="col-screen" />
+        <col />
+      </colgroup>
+      <thead>
+        <tr>
+          <th scope="col">Data e hora</th>
+          <th scope="col">Usuário</th>
+          <th scope="col">Tipo</th>
+          <th scope="col">Ação</th>
+          <th scope="col">Funcionalidade</th>
+          <th scope="col">Registro</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let record of list.items()" class="clickable-row" (click)="openDetail(record)">
+          <td class="when-cell" data-label="Data e hora">
+            <button type="button" class="detail-trigger" aria-haspopup="dialog">{{ occurredAt(record) }}</button>
+          </td>
+          <td data-label="Usuário">{{ userLabel(record) }}</td>
+          <td data-label="Tipo">{{ record.typeLabel }}</td>
+          <td data-label="Ação">{{ text(record.actionLabel) }}</td>
+          <td data-label="Funcionalidade">{{ text(record.screenLabel) }}</td>
+          <td data-label="Registro">{{ text(record.recordLabel) }}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <app-list-feedback
+      [loading]="list.loading()"
+      [error]="list.loadError()"
+      [empty]="!list.items().length"
+      [filtered]="list.activeCount() > 0"
+      [canClear]="list.differsFromDefault()"
+      (clear)="list.clear()"
+    >
+      <div class="list-state">
+        <strong>Nenhum registro de auditoria</strong>
+        <p class="empty-state">As alterações e os acessos ao sistema aparecem aqui.</p>
+      </div>
+    </app-list-feedback>
+  </div>
+
+  <app-pagination
+    [page]="list.page()"
+    [totalPages]="list.totalPages()"
+    [totalItems]="list.totalItems()"
+    (pageChange)="list.goTo($event)"
+  />
+</section>
+
+@if (detailRecord(); as record) {
+  <app-record-detail [heading]="detailHeading(record)" (close)="closeDetail()">
+    <span detailIcon class="detail-icon" aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 4.5h6M9 4.5a1.5 1.5 0 0 0 0 3h6a1.5 1.5 0 0 0 0-3M9 4.5H7a2 2 0 0 0-2 2V19a2 2 0 0 0 2 2h4.5"></path>
+        <path d="M15 4.5h2a2 2 0 0 1 2 2v4"></path>
+        <circle cx="16.5" cy="16.5" r="3"></circle>
+        <path d="M18.7 18.7L21 21"></path>
+      </svg>
+    </span>
+    <div>
+      <dt>Data e hora</dt>
+      <dd>{{ occurredAt(record) }}</dd>
+    </div>
+    <div>
+      <dt>Usuário</dt>
+      <dd>{{ text(record.userName) }}</dd>
+    </div>
+    <div>
+      <dt>E-mail</dt>
+      <dd>{{ text(record.userEmail) }}</dd>
+    </div>
+    <div>
+      <dt>Tipo</dt>
+      <dd>{{ record.typeLabel }}</dd>
+    </div>
+    <div>
+      <dt>Ação</dt>
+      <dd>{{ text(record.actionLabel) }}</dd>
+    </div>
+    <div>
+      <dt>Funcionalidade</dt>
+      <dd>{{ text(record.screenLabel) }}</dd>
+    </div>
+    <div>
+      <dt>Registro</dt>
+      <dd>{{ text(record.recordLabel) }}</dd>
+    </div>
+    @if (record.changes.length) {
+      <div class="changes-row">
+        <dt>Campos</dt>
+        <dd>
+          <table class="changes-table">
+            <thead>
+              <tr>
+                <th scope="col">Campo</th>
+                <th scope="col">Anterior</th>
+                <th scope="col">Novo</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (change of record.changes; track $index) {
+                <tr>
+                  <td data-label="Campo">{{ change.field }}</td>
+                  <td data-label="Anterior">{{ text(change.oldValue) }}</td>
+                  <td data-label="Novo">{{ text(change.newValue) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </dd>
+      </div>
+    }
+  </app-record-detail>
+}

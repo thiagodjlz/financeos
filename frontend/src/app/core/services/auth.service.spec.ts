@@ -85,4 +85,35 @@ describe('AuthService', () => {
     expect(service.me()).toBeNull();
     expect(service.can('DASHBOARD', 'VIEW')).toBe(false);
   });
+
+  it('ao sair chama POST /auth/logout com o token ainda válido e só depois o descarta', async () => {
+    service.token.set('token-ativo');
+
+    const signOut = service.signOut();
+    const req = httpMock.expectOne(`${API_BASE}/auth/logout`);
+    expect(req.request.method).toBe('POST');
+    expect(service.token()).toBe('token-ativo');
+    req.flush(null, { status: 204, statusText: 'No Content' });
+    await signOut;
+
+    expect(service.token()).toBeNull();
+    expect(localStorage.getItem('financeos_token')).toBeNull();
+  });
+
+  it('sai mesmo quando o registro do logout falha', async () => {
+    service.token.set('token-ativo');
+
+    const signOut = service.signOut();
+    httpMock.expectOne(`${API_BASE}/auth/logout`).flush(null, { status: 500, statusText: 'Server Error' });
+    await signOut;
+
+    expect(service.token()).toBeNull();
+  });
+
+  it('não chama o servidor ao sair sem token', async () => {
+    await service.signOut();
+
+    httpMock.expectNone(`${API_BASE}/auth/logout`);
+    expect(service.token()).toBeNull();
+  });
 });
