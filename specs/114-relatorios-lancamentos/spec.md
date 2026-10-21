@@ -4,7 +4,7 @@ url: https://github.com/thiagodjlz/financeos/issues/114
 title: "Relatórios"
 domains: [transactions, dashboard, auth, audit, documentation]
 target: main
-stage: validated
+stage: pr-open
 branch: feature/issue-114-relatorios-lancamentos
 created: 2026-10-20
 ---
