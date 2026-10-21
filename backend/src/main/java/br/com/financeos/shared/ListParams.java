@@ -1,7 +1,10 @@
 package br.com.financeos.shared;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -79,6 +82,50 @@ public record ListParams(int page, int size) {
         }
     }
 
+    // Parâmetro repetido ("?groupBy=CATEGORY&groupBy=MONTH") ou separado por vírgula, na ordem recebida;
+    // valores em branco são ignorados.
+    public static <E extends Enum<E>> List<E> enumValues(UriInfo uriInfo, String name, Class<E> type,
+            String errorMessage) {
+        List<E> parsed = new ArrayList<>();
+        for (String value : allValues(uriInfo, name)) {
+            try {
+                parsed.add(Enum.valueOf(type, value));
+            } catch (IllegalArgumentException ex) {
+                throw new BadRequestException(errorMessage);
+            }
+        }
+
+        return List.copyOf(parsed);
+    }
+
+    public static List<UUID> uuids(UriInfo uriInfo, String name, String errorMessage) {
+        List<UUID> parsed = new ArrayList<>();
+        for (String value : allValues(uriInfo, name)) {
+            try {
+                parsed.add(UUID.fromString(value));
+            } catch (IllegalArgumentException ex) {
+                throw new BadRequestException(errorMessage);
+            }
+        }
+
+        return List.copyOf(parsed);
+    }
+
+    // Aceita ponto ou vírgula como separador decimal ("100.5" e "100,5"); a mensagem da
+    // NumberFormatException não chega à tela.
+    public static BigDecimal decimal(UriInfo uriInfo, String name, String errorMessage) {
+        String value = text(uriInfo, name);
+        if (value == null) {
+            return null;
+        }
+
+        try {
+            return new BigDecimal(value.replace(',', '.'));
+        } catch (NumberFormatException ex) {
+            throw new BadRequestException(errorMessage);
+        }
+    }
+
     public static Boolean bool(UriInfo uriInfo, String name, String errorMessage) {
         String value = text(uriInfo, name);
         if (value == null) {
@@ -90,6 +137,20 @@ public record ListParams(int page, int size) {
             case "false" -> Boolean.FALSE;
             default -> throw new BadRequestException(errorMessage);
         };
+    }
+
+    private static List<String> allValues(UriInfo uriInfo, String name) {
+        List<String> values = uriInfo.getQueryParameters().get(name);
+        if (values == null) {
+            return List.of();
+        }
+
+        return values.stream()
+                .filter(value -> value != null)
+                .flatMap(value -> Arrays.stream(value.split(",")))
+                .map(String::trim)
+                .filter(value -> !value.isEmpty())
+                .toList();
     }
 
     private static String raw(UriInfo uriInfo, String name) {

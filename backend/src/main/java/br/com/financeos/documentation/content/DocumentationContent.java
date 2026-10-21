@@ -16,6 +16,7 @@ public final class DocumentationContent {
                 List.of(
                         SummaryAreaContent.build(),
                         TransactionsAreaContent.build(),
+                        TransactionReportsAreaContent.build(),
                         CategoriesAreaContent.build(),
                         UsersAreaContent.build(),
                         ProfilesAreaContent.build(),

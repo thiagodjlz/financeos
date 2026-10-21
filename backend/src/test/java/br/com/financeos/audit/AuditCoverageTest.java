@@ -30,7 +30,8 @@ class AuditCoverageTest {
     private static final Set<String> EVENT_ENDPOINTS = Set.of(
             "AuthResource.login",
             "AuthResource.logout",
-            "AuditResource.screenAccess");
+            "AuditResource.screenAccess",
+            "AuditResource.print");
 
     private static final List<Class<? extends Annotation>> WRITE_METHODS =
             List.of(POST.class, PUT.class, DELETE.class, PATCH.class);

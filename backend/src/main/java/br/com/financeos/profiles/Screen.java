@@ -3,6 +3,7 @@ package br.com.financeos.profiles;
 public enum Screen {
     DASHBOARD("Resumo"),
     TRANSACTIONS("Lançamentos"),
+    TRANSACTION_REPORTS("Relatórios - Lançamentos"),
     CATEGORIES("Categorias"),
     USERS("Usuários"),
     PROFILES("Perfis"),

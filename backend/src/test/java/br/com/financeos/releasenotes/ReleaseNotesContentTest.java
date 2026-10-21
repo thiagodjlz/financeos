@@ -98,6 +98,18 @@ class ReleaseNotesContentTest {
     }
 
     @Test
+    void shouldAnnounceTheTransactionReportAsNewIn103() {
+        List<String> news = version("1.0.3").categories().stream()
+                .filter(category -> category.kind() == ReleaseNoteCategory.Kind.NEW)
+                .flatMap(category -> category.items().stream())
+                .toList();
+
+        assertTrue(news.stream().anyMatch(item -> item.startsWith("Relatório de lançamentos:")
+                && item.contains("menu Relatórios") && item.contains("Saldo atual") && item.contains("preferência")),
+                "1.0.3 sem a novidade do relatório de lançamentos");
+    }
+
+    @Test
     void shouldAnnounceTheLayoutRedesignAsImprovementIn103() {
         List<String> improvements = version("1.0.3").categories().stream()
                 .filter(category -> category.kind() == ReleaseNoteCategory.Kind.IMPROVEMENT)

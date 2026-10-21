@@ -29,4 +29,8 @@ export class AuditService {
   async screenAccess(screen: Screen): Promise<void> {
     await firstValueFrom(this.http.post<void>(`${API_BASE}/audit/screen-access`, { screen }));
   }
+
+  async print(screen: Screen): Promise<void> {
+    await firstValueFrom(this.http.post<void>(`${API_BASE}/audit/print`, { screen }));
+  }
 }

@@ -1,0 +1,316 @@
+<header class="page-header">
+  <div class="page-heading">
+    <h1 class="page-title">Relatório de lançamentos</h1>
+    <p class="page-subtitle">Monte o relatório com filtros, agrupamentos e colunas e salve a montagem como preferência</p>
+  </div>
+  <div class="page-actions no-print">
+    <button type="button" class="ghost-button print-button" [disabled]="!report()" (click)="print()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M7 9V4h10v5"></path>
+        <rect x="4" y="9" width="16" height="7" rx="1.5"></rect>
+        <path d="M7 14h10v6H7z"></path>
+      </svg>
+      <span>Imprimir</span>
+    </button>
+  </div>
+</header>
+
+<section class="report-balances" aria-label="Saldos do relatório">
+  <div class="report-balance">
+    <span class="report-balance-label">Saldo</span>
+    <strong class="report-balance-value tabular" data-balance="period">{{ report() ? formatMoney(report()!.totals.balance) : '—' }}</strong>
+    <span class="report-balance-hint">Receitas menos despesas pagas do período filtrado</span>
+  </div>
+  <div class="report-balance">
+    <span class="report-balance-label">Saldo atual</span>
+    <strong class="report-balance-value tabular" data-balance="current">{{ report() ? formatMoney(report()!.currentBalance) : '—' }}</strong>
+    <span class="report-balance-hint">Receitas menos despesas pagas de 01/10/2026 até hoje, sem os filtros</span>
+  </div>
+</section>
+
+@if (report(); as current) {
+  <div class="print-only report-print-summary">
+    <p><strong>Período:</strong> {{ periodSummary(current) }}</p>
+    <p>
+      <strong>Filtros:</strong>
+      {{ appliedFilters().length ? appliedFilters().join('; ') : 'nenhum' }}
+    </p>
+    <p><strong>Gerado em:</strong> {{ generatedOn(current) }}</p>
+  </div>
+}
+
+<section class="panel report-preferences no-print" aria-labelledby="report-preferences-title">
+  <div class="panel-heading">
+    <h2 id="report-preferences-title">Preferências</h2>
+  </div>
+  <div class="report-preference-fields">
+    <label>
+      <span>Preferência</span>
+      <select name="preference" [ngModel]="selectedPreferenceId()" (ngModelChange)="choosePreference($event)">
+        <option value="">Nenhuma</option>
+        @for (preference of preferences(); track preference.id) {
+          <option [value]="preference.id">{{ preference.name }}{{ preference.defaultPreference ? ' (padrão)' : '' }}</option>
+        }
+      </select>
+    </label>
+    @if (canCreate() || canEdit()) {
+      <label>
+        <span>Nome da preferência</span>
+        <input name="preferenceName" maxlength="100" placeholder="Ex.: Despesas do mês" [(ngModel)]="preferenceName" />
+      </label>
+      <label class="check-option">
+        <input type="checkbox" name="preferenceDefault" [(ngModel)]="preferenceDefault" />
+        <span>Abrir a tela com esta preferência</span>
+      </label>
+    }
+  </div>
+  <div class="report-preference-actions">
+    @if (canCreate()) {
+      <button type="button" class="ghost-button" [disabled]="saving()" (click)="saveAsNew()">Salvar como nova</button>
+    }
+    @if (canEdit() && selectedPreference()) {
+      <button type="button" class="ghost-button" [disabled]="saving()" (click)="saveChanges()">Salvar alterações</button>
+    }
+    @if (canDelete() && selectedPreference()) {
+      <button type="button" class="danger-button" (click)="askDelete()">Excluir preferência</button>
+    }
+  </div>
+</section>
+
+<form class="panel report-filters no-print" (ngSubmit)="generate()" aria-labelledby="report-filters-title">
+  <div class="panel-heading">
+    <h2 id="report-filters-title">Filtros</h2>
+  </div>
+
+  <div class="report-filter-grid">
+    <label>
+      <span>Período</span>
+      <select name="period" [(ngModel)]="form.period">
+        @for (option of periodOptions; track option.code) {
+          <option [value]="option.code">{{ option.label }}</option>
+        }
+      </select>
+    </label>
+    @if (form.period === 'CUSTOM') {
+      <label>
+        <span>Data inicial</span>
+        <input type="date" name="startDate" [(ngModel)]="form.startDate" />
+      </label>
+      <label>
+        <span>Data final</span>
+        <input type="date" name="endDate" [(ngModel)]="form.endDate" />
+      </label>
+    }
+    <label>
+      <span>Tipo</span>
+      <select name="type" [(ngModel)]="form.type">
+        <option value="">Todos</option>
+        @for (option of typeOptions; track option.code) {
+          <option [value]="option.code">{{ option.label }}</option>
+        }
+      </select>
+    </label>
+    <label>
+      <span>Status</span>
+      <select name="status" [(ngModel)]="form.status">
+        <option value="">Todos</option>
+        @for (option of statusOptions; track option.code) {
+          <option [value]="option.code">{{ option.label }}</option>
+        }
+      </select>
+    </label>
+    <label>
+      <span>Origem</span>
+      <select name="source" [(ngModel)]="form.source">
+        <option value="">Todas</option>
+        @for (option of sourceOptions; track option.code) {
+          <option [value]="option.code">{{ option.label }}</option>
+        }
+      </select>
+    </label>
+    <label>
+      <span>Valor mínimo</span>
+      <input name="minAmount" inputmode="decimal" placeholder="0,00" [(ngModel)]="form.minAmount" />
+    </label>
+    <label>
+      <span>Valor máximo</span>
+      <input name="maxAmount" inputmode="decimal" placeholder="0,00" [(ngModel)]="form.maxAmount" />
+    </label>
+    <label>
+      <span>Parcelamento</span>
+      <select name="installments" [(ngModel)]="form.installments">
+        @for (option of installmentOptions; track option.code) {
+          <option [value]="option.code">{{ option.label }}</option>
+        }
+      </select>
+    </label>
+  </div>
+
+  @if (canViewCategories()) {
+    <fieldset class="report-fieldset report-categories">
+      <legend>Categoria</legend>
+      <p class="report-fieldset-hint">Sem nenhuma marcada, entram todas.</p>
+      <div class="check-list">
+        @for (category of categories(); track category.id) {
+          <label class="check-option">
+            <input
+              type="checkbox"
+              [name]="'category-' + category.id"
+              [checked]="isCategorySelected(category.id)"
+              (change)="toggleCategory(category.id)"
+            />
+            <span>{{ category.name }}{{ category.active ? '' : ' (inativa)' }}</span>
+          </label>
+        }
+      </div>
+    </fieldset>
+  }
+
+  <fieldset class="report-fieldset report-grouping">
+    <legend>Agrupar por</legend>
+    @if (groupBy().length) {
+      <ol class="grouping-list">
+        @for (code of groupBy(); track code; let index = $index; let last = $last) {
+          <li>
+            <span class="grouping-name">{{ index + 1 }}. {{ groupingLabel(code) }}</span>
+            <span class="grouping-actions">
+              <button type="button" class="icon-button" [disabled]="index === 0" [attr.aria-label]="'Subir ' + groupingLabel(code)" [attr.title]="'Subir ' + groupingLabel(code)" (click)="moveGrouping(index, -1)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"></path></svg>
+              </button>
+              <button type="button" class="icon-button" [disabled]="last" [attr.aria-label]="'Descer ' + groupingLabel(code)" [attr.title]="'Descer ' + groupingLabel(code)" (click)="moveGrouping(index, 1)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
+              </button>
+              <button type="button" class="icon-button" [attr.aria-label]="'Remover ' + groupingLabel(code)" [attr.title]="'Remover ' + groupingLabel(code)" (click)="removeGrouping(index)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"></path></svg>
+              </button>
+            </span>
+          </li>
+        }
+      </ol>
+    } @else {
+      <p class="report-fieldset-hint">Sem agrupamento, os lançamentos aparecem numa lista só, por data.</p>
+    }
+    @if (availableGroupings().length) {
+      <select name="addGrouping" aria-label="Adicionar agrupamento" (change)="addGrouping($event)">
+        <option value="">Adicionar agrupamento</option>
+        @for (option of availableGroupings(); track option.code) {
+          <option [value]="option.code">{{ option.label }}</option>
+        }
+      </select>
+    }
+  </fieldset>
+
+  <fieldset class="report-fieldset report-columns">
+    <legend>Colunas</legend>
+    <div class="check-list">
+      @for (option of columnOptions; track option.code) {
+        <label class="check-option">
+          <input
+            type="checkbox"
+            [name]="'column-' + option.code"
+            [checked]="isColumnSelected(option.code)"
+            (change)="toggleColumn(option.code)"
+          />
+          <span>{{ option.label }}</span>
+        </label>
+      }
+    </div>
+    @if (columnsMissing() || !columns().length) {
+      <p class="field-error" role="alert">Escolha ao menos uma coluna.</p>
+    }
+  </fieldset>
+
+  <div class="report-filter-actions">
+    <button type="button" class="ghost-button" (click)="clearFilters()">Limpar filtros</button>
+    <button type="submit" class="primary-button" [disabled]="loading()">Gerar relatório</button>
+  </div>
+</form>
+
+<section class="panel report-result" aria-label="Resultado do relatório" [attr.aria-busy]="loading()">
+  @if (report(); as current) {
+    <p class="report-count no-print">
+      {{ current.transactionCount === 1 ? '1 lançamento' : current.transactionCount + ' lançamentos' }} ·
+      {{ periodSummary(current) }}
+    </p>
+  }
+
+  @if (loading() && !report()) {
+    <div class="loading-state skeleton-list">
+      <span class="sr-only">Carregando...</span>
+      <span class="skeleton-row" aria-hidden="true">
+        <span class="skeleton-block"></span>
+        <span class="skeleton-line"></span>
+        <span class="skeleton-line short"></span>
+      </span>
+    </div>
+  } @else if (loadError()) {
+    <div class="list-state load-failed">
+      <p class="load-error" role="alert">{{ loadError() }}</p>
+    </div>
+  } @else if (report(); as current) {
+    @if (!current.transactionCount) {
+      <div class="list-state">
+        <strong>Nenhum lançamento no relatório</strong>
+        <p class="empty-state">Não há lançamentos no período com os filtros escolhidos.</p>
+      </div>
+    } @else if (visibleColumns().length) {
+      <div class="table-wrap scroll-table">
+        <table class="report-table">
+          <thead>
+            <tr>
+              @for (column of visibleColumns(); track column) {
+                <th scope="col" [class.amount-cell]="column === 'AMOUNT'">{{ columnLabel(column) }}</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (line of lines(); track $index) {
+              @if (line.kind === 'group') {
+                <tr class="group-row" [attr.data-depth]="line.depth">
+                  <th scope="rowgroup" [attr.colspan]="visibleColumns().length" [style.padding-left.px]="16 + line.depth * 20">
+                    {{ line.fieldLabel }}: {{ line.label }}
+                  </th>
+                </tr>
+              } @else if (line.kind === 'row') {
+                <tr class="report-row">
+                  @for (column of visibleColumns(); track column) {
+                    <td [attr.data-label]="columnLabel(column)" [class.amount-cell]="column === 'AMOUNT'">{{ cell(line.row!, column) }}</td>
+                  }
+                </tr>
+              } @else {
+                <tr class="subtotal-row" [attr.data-depth]="line.depth">
+                  <td [attr.colspan]="visibleColumns().length" [style.padding-left.px]="16 + line.depth * 20">
+                    <span class="subtotal-title">Subtotal de {{ line.label }}</span>
+                    <span>Receitas {{ formatMoney(line.totals!.income) }}</span>
+                    <span>Despesas pagas {{ formatMoney(line.totals!.paidExpense) }}</span>
+                    <strong>Saldo {{ formatMoney(line.totals!.balance) }}</strong>
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+          <tfoot>
+            <tr class="total-row">
+              <td [attr.colspan]="visibleColumns().length">
+                <span class="subtotal-title">Total do período</span>
+                <span>Receitas {{ formatMoney(current.totals.income) }}</span>
+                <span>Despesas pagas {{ formatMoney(current.totals.paidExpense) }}</span>
+                <strong>Saldo {{ formatMoney(current.totals.balance) }}</strong>
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    }
+  }
+</section>
+
+<app-confirm-dialog
+  *ngIf="deletingPreference() as preference"
+  [message]="deleteMessage(preference)"
+  cancelLabel="Cancelar"
+  confirmLabel="Excluir preferência"
+  [destructive]="true"
+  (cancel)="cancelDelete()"
+  (confirm)="confirmDelete()"
+/>

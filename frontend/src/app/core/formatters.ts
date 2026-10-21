@@ -1,4 +1,4 @@
-import { TransactionStatus } from './models';
+import { TransactionSource, TransactionStatus, TransactionType } from './models';
 
 export function money(value: number | null | undefined): string {
   return new Intl.NumberFormat('pt-BR', {
@@ -17,6 +17,30 @@ export function transactionStatusLabel(status: TransactionStatus | null): string
       return 'Pendente';
     case 'PAID':
       return 'Pago';
+    default:
+      return '-';
+  }
+}
+
+export function transactionTypeLabel(type: TransactionType | null | undefined): string {
+  switch (type) {
+    case 'INCOME':
+      return 'Receita';
+    case 'EXPENSE':
+      return 'Despesa';
+    default:
+      return '-';
+  }
+}
+
+export function transactionSourceLabel(source: TransactionSource | string | null | undefined): string {
+  switch (source) {
+    case 'MANUAL':
+      return 'Manual';
+    case 'EXCEL_IMPORT':
+      return 'Importação de planilha';
+    case 'RECURRENCE':
+      return 'Recorrência';
     default:
       return '-';
   }

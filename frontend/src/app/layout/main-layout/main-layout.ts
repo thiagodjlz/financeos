@@ -24,7 +24,7 @@ type NavSheet = 'more';
 const OVERLAY_OPEN_CLASS = 'overlay-open';
 const FOCUSABLE_SELECTOR = 'button:not([disabled]), a[href], input, select, [tabindex]:not([tabindex="-1"])';
 const FORM_ROUTE = /^\/(transactions|categories|users|profiles)\/(new|[^/?#]+\/edit)(?:[?#]|$)/;
-const MORE_ROUTE = /^\/(categories|users|profiles|audit|documentation|release-notes)(?:[/?#]|$)/;
+const MORE_ROUTE = /^\/(transaction-reports|categories|users|profiles|audit|documentation|release-notes)(?:[/?#]|$)/;
 
 @Component({
   selector: 'app-main-layout',
@@ -167,6 +167,10 @@ export class MainLayout implements OnDestroy {
   protected onNavigate(): void {
     this.closeSheet(false);
     this.workspace?.nativeElement.focus();
+  }
+
+  protected canSeeReports(): boolean {
+    return this.authService.can('TRANSACTION_REPORTS', 'VIEW');
   }
 
   protected canSeeRegisters(): boolean {

@@ -122,6 +122,7 @@ describe('MainLayout', () => {
       expect(navLabels(fixture)).toEqual([
         'Resumo',
         'Lançamentos',
+        'Lançamentos',
         'Categorias',
         'Usuários',
         'Perfis',
@@ -129,7 +130,7 @@ describe('MainLayout', () => {
         'Documentação',
         'Novidades por versão',
       ]);
-      expect(sectionTitles(fixture)).toEqual(['Cadastros', 'Configurações', 'Sobre']);
+      expect(sectionTitles(fixture)).toEqual(['Relatórios', 'Cadastros', 'Configurações', 'Sobre']);
       for (const button of navButtons(fixture)) {
         expect(button.querySelector('svg')).not.toBeNull();
       }
@@ -140,6 +141,27 @@ describe('MainLayout', () => {
 
       expect(navButtons(fixture)).toHaveLength(0);
       expect(sectionTitles(fixture)).toEqual([]);
+    });
+
+    it('mostra a seção Relatórios com o item Lançamentos só com permissão de ver o relatório', () => {
+      withPermissions('TRANSACTION_REPORTS');
+      const fixture = createFixture();
+
+      expect(sectionTitles(fixture)).toEqual(['Relatórios']);
+      expect(navLabels(fixture)).toEqual(['Lançamentos']);
+      expect(navButtons(fixture)[0].getAttribute('routerLink')).toBe('/transaction-reports');
+      expect(sheetSectionTitles(fixture)).toEqual(['Relatórios']);
+      expect(sheetItems(fixture, 'more')).toEqual(['Lançamentos', 'Sair']);
+    });
+
+    it('esconde a seção Relatórios no menu e no painel Mais sem permissão de ver o relatório', () => {
+      withPermissions('DASHBOARD', 'TRANSACTIONS', 'CATEGORIES');
+      const fixture = createFixture();
+
+      expect(sectionTitles(fixture)).toEqual(['Cadastros']);
+      expect(navLabels(fixture)).toEqual(['Resumo', 'Lançamentos', 'Categorias']);
+      expect(sheetSectionTitles(fixture)).toEqual(['Cadastros']);
+      expect(sheetItems(fixture, 'more')).toEqual(['Categorias', 'Sair']);
     });
 
     it('mostra a seção Cadastros só com permissão de ver Categorias', () => {
@@ -244,9 +266,15 @@ describe('MainLayout', () => {
       expect(root(fixture).querySelector('.app-shell.menu-collapsed')).not.toBeNull();
       expect(toggle.getAttribute('aria-label')).toBe('Expandir menu');
       expect(toggle.getAttribute('aria-expanded')).toBe('false');
+      // No trilho só há ícones: o item do relatório leva o nome da tela inteira para não se confundir
+      // com o Lançamentos do cadastro.
       for (const button of navButtons(fixture)) {
-        expect(button.getAttribute('aria-label')).toBe(button.textContent?.trim());
-        expect(button.getAttribute('title')).toBe(button.textContent?.trim());
+        const expected =
+          button.closest('.nav-section')?.querySelector('.nav-section-title')?.textContent?.trim() === 'Relatórios'
+            ? 'Relatórios - Lançamentos'
+            : button.textContent?.trim();
+        expect(button.getAttribute('aria-label')).toBe(expected);
+        expect(button.getAttribute('title')).toBe(expected);
       }
 
       toggle.click();
@@ -296,8 +324,9 @@ describe('MainLayout', () => {
       asSuperAdmin();
       const fixture = createFixture();
 
-      expect(sheetSectionTitles(fixture)).toEqual(['Cadastros', 'Configurações', 'Sobre']);
+      expect(sheetSectionTitles(fixture)).toEqual(['Relatórios', 'Cadastros', 'Configurações', 'Sobre']);
       expect(sheetItems(fixture, 'more')).toEqual([
+        'Lançamentos',
         'Categorias',
         'Usuários',
         'Perfis',
@@ -357,6 +386,7 @@ describe('MainLayout', () => {
     it.each([
       ['/dashboard', 'Resumo'],
       ['/transactions', 'Lançamentos'],
+      ['/transaction-reports', 'Mais'],
       ['/categories', 'Mais'],
       ['/users', 'Mais'],
       ['/profiles', 'Mais'],
@@ -549,7 +579,7 @@ describe('MainLayout', () => {
       expect(sheet(fixture, 'more')?.classList.contains('open')).toBe(false);
       expect(document.body.classList.contains('overlay-open')).toBe(false);
       expect(document.activeElement).toBe(root(fixture).querySelector('.workspace'));
-      expect(TestBed.inject(Router).url).toBe('/categories');
+      expect(TestBed.inject(Router).url).toBe('/transaction-reports');
     });
 
     it('sai pelo item Sair do painel Mais, registrando o logout antes de descartar o token', async () => {
@@ -612,10 +642,12 @@ describe('MainLayout', () => {
       const fixture = createFixture();
 
       await router.navigateByUrl('/transactions');
+      await router.navigateByUrl('/transaction-reports');
+      await router.navigateByUrl('/transaction-reports?x=1');
       await router.navigateByUrl('/audit');
       fixture.detectChanges();
 
-      expect(screenAccessRequests()).toEqual(['DASHBOARD', 'TRANSACTIONS', 'AUDIT']);
+      expect(screenAccessRequests()).toEqual(['DASHBOARD', 'TRANSACTIONS', 'TRANSACTION_REPORTS', 'AUDIT']);
     });
 
     it('não registra ao abrir o cadastro da mesma tela, trocar de aba ou paginar', async () => {

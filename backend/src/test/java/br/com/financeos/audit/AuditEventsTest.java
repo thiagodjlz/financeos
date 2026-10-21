@@ -304,6 +304,69 @@ class AuditEventsTest {
     @JwtSecurity(claims = {
             @Claim(key = "sub", value = USER_ID)
     })
+    void shouldRecordPrintWithTheScreen() {
+        Instant before = Instant.now();
+
+        given()
+                .contentType(ContentType.JSON)
+                .body("{ \"screen\": \"TRANSACTION_REPORTS\" }")
+                .when().post("/audit/print")
+                .then()
+                .statusCode(204);
+
+        List<AuditProbe.Entry> entries = recentFor(UUID.fromString(USER_ID), before);
+        assertEquals(1, entries.size());
+        assertEquals("PRINT", entries.get(0).type());
+        assertEquals("TRANSACTION_REPORTS", entries.get(0).screen());
+        assertEquals("VIEW", entries.get(0).action());
+        assertEquals("Usuario Eventos", entries.get(0).userName());
+    }
+
+    @Test
+    @TestSecurity(user = USER_EMAIL)
+    @JwtSecurity(claims = {
+            @Claim(key = "sub", value = USER_ID)
+    })
+    void shouldRejectPrintWithoutScreenInPortuguese() {
+        Instant before = Instant.now();
+
+        given()
+                .contentType(ContentType.JSON)
+                .body("{}")
+                .when().post("/audit/print")
+                .then()
+                .statusCode(400)
+                .body("message", equalTo("Informe os campos obrigatórios: Tela."));
+
+        assertTrue(recentFor(UUID.fromString(USER_ID), before).isEmpty());
+    }
+
+    @Test
+    @TestSecurity(user = RESTRICTED_EMAIL)
+    @JwtSecurity(claims = {
+            @Claim(key = "sub", value = RESTRICTED_ID)
+    })
+    void shouldDenyPrintWithoutViewPermission() {
+        Instant before = Instant.now();
+
+        given()
+                .contentType(ContentType.JSON)
+                .body("{ \"screen\": \"TRANSACTION_REPORTS\" }")
+                .when().post("/audit/print")
+                .then()
+                .statusCode(403)
+                .body("message", equalTo("Você não tem permissão para realizar esta ação."));
+
+        List<AuditProbe.Entry> entries = recentFor(UUID.fromString(RESTRICTED_ID), before);
+        assertEquals(List.of("ACCESS_DENIED"), entries.stream().map(AuditProbe.Entry::type).toList());
+        assertEquals("TRANSACTION_REPORTS", entries.get(0).screen());
+    }
+
+    @Test
+    @TestSecurity(user = USER_EMAIL)
+    @JwtSecurity(claims = {
+            @Claim(key = "sub", value = USER_ID)
+    })
     void shouldOfferPrintTypeAndLabelsInOptions() {
         given()
                 .when().get("/audit/options")

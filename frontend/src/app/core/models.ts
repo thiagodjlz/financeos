@@ -15,6 +15,7 @@ export type ListFilters = Record<string, string>;
 
 export type TransactionType = 'INCOME' | 'EXPENSE';
 export type TransactionStatus = 'PENDING' | 'PAID';
+export type TransactionSource = 'MANUAL' | 'EXCEL_IMPORT' | 'RECURRENCE';
 
 export interface Period {
   year: number;
@@ -77,6 +78,7 @@ export interface AuthResponse {
 export type Screen =
   | 'DASHBOARD'
   | 'TRANSACTIONS'
+  | 'TRANSACTION_REPORTS'
   | 'CATEGORIES'
   | 'USERS'
   | 'PROFILES'
@@ -211,4 +213,112 @@ export interface AuditOptions {
 export interface ReleaseNotesResponse {
   currentVersion: string;
   versions: ReleaseNoteVersion[];
+}
+
+export type ReportPeriod = 'CURRENT_MONTH' | 'PREVIOUS_MONTH' | 'CURRENT_YEAR' | 'PREVIOUS_YEAR' | 'CUSTOM';
+export type ReportGrouping = 'CATEGORY' | 'TYPE' | 'STATUS' | 'SOURCE' | 'DAY' | 'MONTH' | 'YEAR';
+export type ReportColumn =
+  | 'DATE'
+  | 'DESCRIPTION'
+  | 'CATEGORY'
+  | 'TYPE'
+  | 'STATUS'
+  | 'SOURCE'
+  | 'INSTALLMENT'
+  | 'AMOUNT'
+  | 'NOTES';
+export type InstallmentFilter = 'ALL' | 'INSTALLMENT' | 'SINGLE';
+
+// Filtros e agrupamentos do relatório. Valores vazios ('') valem "todos"; os valores mínimo e máximo
+// seguem como texto digitado, e quem recusa o inválido é o back-end.
+export interface ReportCriteria {
+  period: ReportPeriod;
+  startDate: string;
+  endDate: string;
+  categoryIds: string[];
+  type: TransactionType | '';
+  status: TransactionStatus | '';
+  source: TransactionSource | '';
+  minAmount: string;
+  maxAmount: string;
+  installments: InstallmentFilter;
+  groupBy: ReportGrouping[];
+}
+
+export interface ReportTotals {
+  income: number;
+  paidExpense: number;
+  balance: number;
+}
+
+export interface ReportRow {
+  id: string;
+  transactionDate: string;
+  description: string;
+  categoryId: string | null;
+  categoryName: string | null;
+  type: TransactionType;
+  status: TransactionStatus | null;
+  source: TransactionSource;
+  installmentNumber: number | null;
+  installmentTotal: number | null;
+  amount: number;
+  notes: string | null;
+}
+
+// Grupo folha traz `rows`; intermediário traz `groups`. Rótulo e subtotais chegam prontos.
+export interface ReportGroup {
+  field: ReportGrouping;
+  fieldLabel: string;
+  key: string;
+  label: string;
+  totals: ReportTotals;
+  transactionCount: number;
+  groups: ReportGroup[];
+  rows: ReportRow[];
+}
+
+export interface TransactionReport {
+  period: { code: ReportPeriod; label: string; startDate: string; endDate: string };
+  generatedOn: string;
+  currentBalance: number;
+  totals: ReportTotals;
+  transactionCount: number;
+  groups: ReportGroup[];
+  rows: ReportRow[];
+}
+
+export interface ReportPreference {
+  id: string;
+  name: string;
+  defaultPreference: boolean;
+  period: ReportPeriod;
+  startDate: string | null;
+  endDate: string | null;
+  categoryIds: string[];
+  type: TransactionType | null;
+  status: TransactionStatus | null;
+  source: TransactionSource | null;
+  minAmount: number | null;
+  maxAmount: number | null;
+  installments: InstallmentFilter;
+  groupBy: ReportGrouping[];
+  columns: ReportColumn[];
+}
+
+export interface ReportPreferencePayload {
+  name: string;
+  defaultPreference: boolean;
+  period: ReportPeriod;
+  startDate: string | null;
+  endDate: string | null;
+  categoryIds: string[];
+  type: string | null;
+  status: string | null;
+  source: string | null;
+  minAmount: number | string | null;
+  maxAmount: number | string | null;
+  installments: InstallmentFilter;
+  groupBy: ReportGrouping[];
+  columns: ReportColumn[];
 }

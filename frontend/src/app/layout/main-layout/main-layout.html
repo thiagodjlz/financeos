@@ -57,6 +57,25 @@
         </button>
       </div>
 
+      <div class="nav-section" *ngIf="canSeeReports()">
+        <span class="nav-section-title">Relatórios</span>
+        <button
+          *ngIf="authService.can('TRANSACTION_REPORTS', 'VIEW')"
+          type="button"
+          routerLink="/transaction-reports"
+          routerLinkActive="active"
+          (click)="onNavigate()"
+          [attr.title]="collapsed() ? 'Relatórios - Lançamentos' : null"
+          [attr.aria-label]="collapsed() ? 'Relatórios - Lançamentos' : null"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M6 3.5h8l4 4V20a.5.5 0 0 1-.5.5h-11A.5.5 0 0 1 6 20z"></path>
+            <path d="M9.5 16.5v-3M12.5 16.5v-6M15.5 16.5v-4"></path>
+          </svg>
+          <span class="nav-label">Lançamentos</span>
+        </button>
+      </div>
+
       <div class="nav-section" *ngIf="canSeeRegisters()">
         <span class="nav-section-title">Cadastros</span>
         <button
@@ -264,6 +283,21 @@
       </button>
     </div>
     <div class="sheet-list">
+      <span class="sheet-section-title" *ngIf="canSeeReports()">Relatórios</span>
+      <button
+        *ngIf="authService.can('TRANSACTION_REPORTS', 'VIEW')"
+        type="button"
+        class="sheet-item"
+        routerLink="/transaction-reports"
+        routerLinkActive="active"
+        (click)="onNavigate()"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M6 3.5h8l4 4V20a.5.5 0 0 1-.5.5h-11A.5.5 0 0 1 6 20z"></path>
+          <path d="M9.5 16.5v-3M12.5 16.5v-6M15.5 16.5v-4"></path>
+        </svg>
+        <span>Lançamentos</span>
+      </button>
       <span class="sheet-section-title" *ngIf="canSeeRegisters()">Cadastros</span>
       <button
         *ngIf="authService.can('CATEGORIES', 'VIEW')"

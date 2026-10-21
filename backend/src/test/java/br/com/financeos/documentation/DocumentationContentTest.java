@@ -19,7 +19,7 @@ class DocumentationContentTest {
     private static final int MAX_PARAGRAPH_LENGTH = 600;
 
     private static final Pattern REMOVED_OR_UNIMPLEMENTED = Pattern.compile(
-            "Contas|Cartões|Cartoes|Relatórios|Relatorios|Excel|Recorrência|Recorrencia|Subcategoria",
+            "Contas|Cartões|Cartoes|Excel|Recorrência|Recorrencia|Subcategoria",
             Pattern.CASE_INSENSITIVE);
 
     private static final Pattern TECHNICAL_IDENTIFIER = Pattern.compile(
@@ -65,12 +65,13 @@ class DocumentationContentTest {
     }
 
     @Test
-    void shouldPublishIntroductionAndSixAreas() {
+    void shouldPublishIntroductionAndSevenAreas() {
         assertTrue(CONTENT.title() != null && !CONTENT.title().isBlank());
         assertTrue(CONTENT.introduction() != null);
-        assertEquals(6, CONTENT.areas().size());
+        assertEquals(7, CONTENT.areas().size());
         assertEquals(
-                List.of("Resumo", "Lançamentos", "Categorias", "Usuários", "Perfis", "Auditoria"),
+                List.of("Resumo", "Lançamentos", "Relatórios - Lançamentos", "Categorias", "Usuários", "Perfis",
+                        "Auditoria"),
                 CONTENT.areas().stream().map(DocumentationArea::title).toList());
     }
 
@@ -434,5 +435,33 @@ class DocumentationContentTest {
                 "não o apaga", "valor riscado", "Data de", "Data até", "Não há lançamentos no ano informado",
                 "um cancelamento em Lançamentos")
                 .forEach(removed -> assertFalse(published.contains(removed), "Central ainda menciona " + removed));
+    }
+
+    @Test
+    void shouldDescribeBothBalancesAndThePreferencesOfTheTransactionReport() {
+        String report = areaText(CONTENT.areas().stream()
+                .filter(area -> "Relatórios - Lançamentos".equals(area.title()))
+                .findFirst()
+                .orElseThrow());
+
+        List.of("Receitas menos Despesas pagas de tudo o que passou nos filtros", "não entra no Saldo",
+                "1º de outubro de 2026 até hoje", "não muda com os filtros", "não podem ser escondidos",
+                "Mês atual", "Personalizado", "Parcelados", "Sem status", "Sem categoria", "sem páginas",
+                "Escolha ao menos uma coluna.", "A data inicial não pode ser posterior à data final.",
+                "ninguém mais a vê", "desmarca a anterior", "acompanha a data", "inativa continua", "Imprimir",
+                "rola para os lados")
+                .forEach(expected -> assertTrue(report.contains(expected), "Relatório sem mencionar " + expected));
+
+        String navegacao = CONTENT.introduction().sections().stream()
+                .filter(section -> "Como navegar".equals(section.title()))
+                .flatMap(section -> section.blocks().stream())
+                .map(block -> block.text() == null ? String.join(" ", block.items()) : block.text())
+                .reduce("", (left, right) -> left + " " + right);
+        assertTrue(navegacao.contains("Relatórios: seção com o relatório de Lançamentos."), navegacao);
+
+        String published = String.join(" ", displayedTexts());
+        assertFalse(published.contains("que ainda não tem registros"),
+                "Auditoria ainda diz que Impressão não tem registros");
+        assertTrue(published.contains("A Impressão é registrada quando alguém usa o botão Imprimir"));
     }
 }

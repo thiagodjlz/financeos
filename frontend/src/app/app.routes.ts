@@ -34,6 +34,12 @@ export const routes: Routes = [
         loadComponent: () => import('./features/transactions/transaction-form').then((m) => m.TransactionForm),
       },
       {
+        path: 'transaction-reports',
+        canActivate: [permissionGuard('TRANSACTION_REPORTS', 'VIEW')],
+        loadComponent: () =>
+          import('./features/transaction-reports/transaction-reports').then((m) => m.TransactionReports),
+      },
+      {
         path: 'categories',
         canActivate: [permissionGuard('CATEGORIES', 'VIEW')],
         loadComponent: () => import('./features/categories/categories').then((m) => m.Categories),

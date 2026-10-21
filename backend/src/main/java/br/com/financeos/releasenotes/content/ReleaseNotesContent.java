@@ -31,7 +31,10 @@ public final class ReleaseNotesContent {
                         + "entradas, saídas e telas abertas.",
                 "Saldo acumulado: a partir de outubro de 2026, o que sobra de cada mês passa para o seguinte, e "
                         + "o Resumo mostra o Saldo anterior e o Saldo acumulado no quadro Saldo do mês e no quadro "
-                        + "abaixo do gráfico.");
+                        + "abaixo do gráfico.",
+                "Relatório de lançamentos: nova tela, no menu Relatórios, que reúne os seus lançamentos com os "
+                        + "filtros, agrupamentos e colunas que você escolher, mostra o Saldo do período e o Saldo "
+                        + "atual, salva a montagem como preferência e imprime ou gera PDF pelo navegador.");
 
         addIfPresent(categories, Kind.IMPROVEMENT,
                 "Resumo redesenhado: o Saldo do mês mostra numa barra quanto das receitas já foi para despesas "

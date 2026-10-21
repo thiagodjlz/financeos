@@ -19,6 +19,7 @@ const PROFILE: Profile = {
 const SCREEN_ROWS = [
   'Resumo',
   'Lançamentos',
+  'Relatórios - Lançamentos',
   'Categorias',
   'Usuários',
   'Perfis',
@@ -115,17 +116,18 @@ describe('ProfileForm', () => {
     expect(query('.page-title').textContent?.trim()).toBe('Novo perfil');
     expect(query<HTMLInputElement>('input[name="name"]').value).toBe('');
     const boxes = Array.from(fixture.nativeElement.querySelectorAll('form input[type="checkbox"]')) as HTMLInputElement[];
-    expect(boxes).toHaveLength(23);
+    expect(boxes).toHaveLength(27);
     expect(boxes.every((box) => !box.checked)).toBe(true);
   });
 
-  it('tem oito linhas e só a coluna Ver nas linhas Auditoria, Documentação e Novidades por versão', async () => {
+  it('tem nove linhas e só a coluna Ver nas linhas Auditoria, Documentação e Novidades por versão', async () => {
     await setup(null);
 
     const rows = Array.from(fixture.nativeElement.querySelectorAll('form tbody tr')) as HTMLElement[];
     expect(rows.map((row) => row.querySelector('.screen-cell')?.textContent?.trim())).toEqual(SCREEN_ROWS);
     rows.forEach((row) => expect(row.querySelectorAll('td')).toHaveLength(5));
-    rows.slice(5).forEach((row) => expect(row.querySelectorAll('input[type="checkbox"]')).toHaveLength(1));
+    rows.slice(0, 6).forEach((row) => expect(row.querySelectorAll('input[type="checkbox"]')).toHaveLength(4));
+    rows.slice(6).forEach((row) => expect(row.querySelectorAll('input[type="checkbox"]')).toHaveLength(1));
   });
 
   it('salva a inclusão com POST da matriz completa e volta à listagem', async () => {
@@ -138,7 +140,7 @@ describe('ProfileForm', () => {
     const request = httpMock.expectOne(`${API_BASE}/profiles`);
     expect(request.request.method).toBe('POST');
     expect(request.request.body.name).toBe('Leitura');
-    expect(request.request.body.permissions).toHaveLength(8);
+    expect(request.request.body.permissions).toHaveLength(9);
     expect(request.request.body.permissions[0]).toEqual({
       screen: 'DASHBOARD',
       canView: true,

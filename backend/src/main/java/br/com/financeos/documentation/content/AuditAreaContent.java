@@ -61,17 +61,19 @@ final class AuditAreaContent {
                                                 + "e-mail digitado."),
                                 List.of("Tipo",
                                         "Alteração, Login, Login com falha, Logout, Sessão expirada, Acesso "
-                                                + "negado ou Acesso à tela."),
+                                                + "negado, Acesso à tela ou Impressão."),
                                 List.of("Ação",
-                                        "Nas alterações, Inclusão, Alteração ou Exclusão. No Acesso à tela, "
-                                                + "Visualização. No Acesso negado, a ação que foi recusada."),
+                                        "Nas alterações, Inclusão, Alteração ou Exclusão. No Acesso à tela e na "
+                                                + "Impressão, Visualização. No Acesso negado, a ação que foi "
+                                                + "recusada."),
                                 List.of("Funcionalidade", "A tela em que a ação aconteceu, como Lançamentos ou "
                                         + "Perfis."),
                                 List.of("Registro",
                                         "O registro alterado, pelo nome que tinha no momento: a descrição do "
                                                 + "lançamento ou o nome da categoria, do usuário ou do perfil."))),
                 DocumentationBlock.paragraph(
-                        "O filtro Tipo também lista Impressão, que ainda não tem registros."));
+                        "A Impressão é registrada quando alguém usa o botão Imprimir do relatório de Lançamentos, "
+                                + "com a tela em que ele foi usado."));
     }
 
     private static DocumentationSection regras() {
