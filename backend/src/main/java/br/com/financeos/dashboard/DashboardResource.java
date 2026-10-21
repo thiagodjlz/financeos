@@ -33,15 +33,19 @@ public class DashboardResource {
     private static final int MIN_YEAR = 1000;
     private static final int MAX_YEAR = 9999;
     private static final BigDecimal HUNDRED = BigDecimal.valueOf(100);
+    private static final YearMonth ACCUMULATION_START = YearMonth.of(2026, 10);
 
     private final DashboardRepository repository;
     private final CurrentUser currentUser;
     private final AccessControl accessControl;
+    private final CurrentMonth currentMonth;
 
-    public DashboardResource(DashboardRepository repository, CurrentUser currentUser, AccessControl accessControl) {
+    public DashboardResource(DashboardRepository repository, CurrentUser currentUser, AccessControl accessControl,
+            CurrentMonth currentMonth) {
         this.repository = repository;
         this.currentUser = currentUser;
         this.accessControl = accessControl;
+        this.currentMonth = currentMonth;
     }
 
     // Os parâmetros são lidos do UriInfo, e não por @QueryParam Integer: a conversão falharia fora do
@@ -51,23 +55,30 @@ public class DashboardResource {
     @Path("/summary")
     public DashboardSummaryResponse summary(@Context UriInfo uriInfo) throws Exception {
         accessControl.require(Screen.DASHBOARD, Action.VIEW);
-        YearMonth period = resolvePeriod(queryParam(uriInfo, "year"), queryParam(uriInfo, "month"));
+        YearMonth current = currentMonth.current();
+        YearMonth period = resolvePeriod(queryParam(uriInfo, "year"), queryParam(uriInfo, "month"), current);
         LocalDate startDate = period.atDay(1);
         LocalDate endDate = period.atEndOfMonth();
 
         DashboardTotals totals = repository.totals(currentUser.id(), startDate, endDate);
+        BigDecimal balance = totals.totalIncome().subtract(totals.paidExpense());
+        List<MonthlySummaryResponse> evolution = withAccumulatedBalance(
+                repository.monthlyEvolution(currentUser.id(), period.getYear()), period.getYear(), current);
+        BigDecimal accumulatedBalance = evolution.get(period.getMonthValue() - 1).accumulatedBalance();
 
         return new DashboardSummaryResponse(
                 new PeriodResponse(period.getYear(), period.getMonthValue(), startDate, endDate),
                 totals.totalIncome(),
                 totals.totalExpense(),
-                totals.totalIncome().subtract(totals.paidExpense()),
+                balance,
+                accumulatedBalance.subtract(balance),
+                accumulatedBalance,
                 totals.paidExpense(),
                 totals.pendingExpense(),
                 percent(totals.paidExpense(), totals.totalIncome()),
                 totals.transactionCount(),
                 withSharePercent(repository.categoryBreakdown(currentUser.id(), startDate, endDate)),
-                repository.monthlyEvolution(currentUser.id(), period.getYear()));
+                evolution);
     }
 
     @GET
@@ -87,6 +98,28 @@ public class DashboardResource {
         }
 
         return List.copyOf(periods);
+    }
+
+    // O saldo anterior soma o saldo de cada mês desde ACCUMULATION_START até o mês corrente, inclusive:
+    // mês futuro não carrega os meses que ainda não aconteceram entre o corrente e ele (PA-7 da issue #113).
+    private List<MonthlySummaryResponse> withAccumulatedBalance(List<MonthlySummaryResponse> months, int year,
+            YearMonth current) throws Exception {
+        YearMonth lastBeforeYear = YearMonth.of(year - 1, 12);
+        YearMonth carriedUntil = lastBeforeYear.isBefore(current) ? lastBeforeYear : current;
+        BigDecimal previous = carriedUntil.isBefore(ACCUMULATION_START)
+                ? BigDecimal.ZERO
+                : repository.balanceBetween(currentUser.id(), ACCUMULATION_START.atDay(1), carriedUntil.atEndOfMonth());
+
+        List<MonthlySummaryResponse> accumulated = new ArrayList<>(months.size());
+        for (MonthlySummaryResponse month : months) {
+            YearMonth yearMonth = YearMonth.of(month.year(), month.month());
+            accumulated.add(month.withAccumulatedBalance(previous.add(month.balance())));
+            if (!yearMonth.isBefore(ACCUMULATION_START) && !yearMonth.isAfter(current)) {
+                previous = previous.add(month.balance());
+            }
+        }
+
+        return List.copyOf(accumulated);
     }
 
     private static List<CategoryBreakdownResponse> withSharePercent(List<CategoryBreakdownResponse> items) {
@@ -110,9 +143,9 @@ public class DashboardResource {
 
     // A checagem do mês vem antes da do ano de propósito: ano fixo em teste/URL antiga com mês inválido
     // tem de continuar respondendo o erro de mês, mesmo quando aquele ano deixar de ser o corrente.
-    private static YearMonth resolvePeriod(String year, String month) {
+    private static YearMonth resolvePeriod(String year, String month, YearMonth current) {
         if (year == null && month == null) {
-            return YearMonth.now();
+            return current;
         }
 
         if (year == null || month == null) {

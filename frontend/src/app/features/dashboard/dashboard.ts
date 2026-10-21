@@ -76,6 +76,7 @@ interface ChartMonth {
   income: number;
   expense: number;
   balance: number;
+  accumulatedBalance: number;
   incomeX: number;
   incomeY: number;
   incomeH: number;
@@ -120,6 +121,10 @@ interface MonthTooltip {
   income: string;
   expense: string;
   balance: string;
+}
+
+interface MonthBlock extends MonthTooltip {
+  accumulated: string;
 }
 
 const LOAD_FALLBACK = 'Não foi possível carregar o resumo.';
@@ -222,6 +227,7 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
           income: 0,
           expense: 0,
           balance: 0,
+          accumulatedBalance: 0,
         }
       );
     });
@@ -265,6 +271,7 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
         income: item.income,
         expense: item.expense,
         balance: item.balance,
+        accumulatedBalance: item.accumulatedBalance,
         incomeX: center - barWidth - BAR_GAP / 2,
         incomeY,
         incomeH: Math.max(0, zeroY - incomeY),
@@ -308,9 +315,13 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
   });
 
   // Bloco fixo abaixo do gráfico, nas duas faixas (DEC-13): o mês escolhido ou, sem escolha, o do período.
-  protected readonly monthBlock = computed<MonthTooltip | null>(() =>
-    this.monthTooltip(this.pinnedMonth() ?? this.periodMonthIndex()),
-  );
+  // O acumulado só aparece aqui, e não no informativo flutuante: a linha do gráfico segue mensal (D1 da #48).
+  protected readonly monthBlock = computed<MonthBlock | null>(() => {
+    const index = this.pinnedMonth() ?? this.periodMonthIndex();
+    const tooltip = this.monthTooltip(index);
+    const month = this.chart().months[index];
+    return tooltip && month ? { ...tooltip, accumulated: money(month.accumulatedBalance) } : null;
+  });
 
   protected readonly announcement = computed(() => {
     const tooltip = this.activeTooltip();

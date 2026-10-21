@@ -76,7 +76,6 @@
 .balance-value {
   font-size: var(--fs-balance);
   font-weight: 700;
-  font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
   line-height: 1.15;
 }
@@ -103,6 +102,28 @@
 .balance-ratio-text,
 .balance-item-label {
   font-size: var(--fs-card-label);
+}
+
+.balance-carry {
+  display: grid;
+  gap: 4px;
+  max-width: 360px;
+  border-top: 1px solid var(--balance-divider);
+  padding-top: 12px;
+
+  span {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  strong {
+    color: var(--on-accent);
+  }
+
+  .accumulated strong {
+    font-size: 18px;
+  }
 }
 
 .balance-split {
@@ -140,7 +161,6 @@
 .balance-item-value {
   font-size: 18px;
   font-weight: 600;
-  font-variant-numeric: tabular-nums;
 }
 
 .balance-item-hint {
@@ -199,7 +219,6 @@
 .pending-value {
   font-size: var(--fs-card-value);
   font-weight: 600;
-  font-variant-numeric: tabular-nums;
 }
 
 .pending-link {
@@ -356,7 +375,6 @@
     margin-left: auto;
     color: var(--text);
     font-weight: 600;
-    font-variant-numeric: tabular-nums;
   }
 }
 
@@ -376,7 +394,7 @@
 
 .month-block-values {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
 
   span {
@@ -385,7 +403,6 @@
     min-width: 0;
     font-size: var(--fs-label);
     font-weight: 600;
-    font-variant-numeric: tabular-nums;
   }
 
   small {
@@ -447,13 +464,11 @@
 .category-share {
   color: var(--text-muted);
   font-size: var(--fs-share);
-  font-variant-numeric: tabular-nums;
 }
 
 .category-amount {
   min-width: var(--category-amount-w);
   font-weight: 600;
-  font-variant-numeric: tabular-nums;
   text-align: right;
 }
 
@@ -482,7 +497,6 @@
   strong {
     color: var(--text);
     font-weight: 600;
-    font-variant-numeric: tabular-nums;
   }
 }
 
@@ -567,6 +581,10 @@
 
   .balance-item {
     align-items: flex-start;
+  }
+
+  .month-block-values {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .balance-item-icon {

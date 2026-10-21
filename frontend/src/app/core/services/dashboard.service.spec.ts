@@ -28,6 +28,8 @@ describe('DashboardService', () => {
       totalIncome: 100,
       totalExpense: 40,
       balance: 60,
+      previousBalance: 0,
+      accumulatedBalance: 60,
       paidExpense: 40,
       pendingExpense: 0,
       paidExpensePercent: 40,

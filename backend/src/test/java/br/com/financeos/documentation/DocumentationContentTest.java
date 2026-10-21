@@ -367,6 +367,19 @@ class DocumentationContentTest {
     }
 
     @Test
+    void shouldDescribeTheAccumulatedBalanceRulesInSummary() {
+        String summary = areaText(CONTENT.areas().stream()
+                .filter(area -> "Resumo".equals(area.title()))
+                .findFirst()
+                .orElseThrow());
+
+        List.of("Saldo anterior", "Saldo acumulado", "1º de outubro de 2026", "Receitas menos Despesas pagas",
+                "saldo negativo desconta do acumulado", "segue adiante", "soma só até o mês atual",
+                "o saldo e o acumulado do mês do período", "muda o acumulado")
+                .forEach(expected -> assertTrue(summary.contains(expected), "Resumo sem mencionar " + expected));
+    }
+
+    @Test
     void shouldDescribeTheNewLayoutOfSummaryAndTransactions() {
         String summary = areaText(CONTENT.areas().stream()
                 .filter(area -> "Resumo".equals(area.title()))
