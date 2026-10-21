@@ -334,6 +334,52 @@ class ProfileResourceTest {
     }
 
     @Test
+    void shouldGrantTransactionReportsWithEveryActionToEveryProfileBySeed() {
+        given()
+                .when().get("/profiles/{id}", ADMIN_PROFILE_ID)
+                .then()
+                .statusCode(200)
+                .body("permissions.find { it.screen == 'TRANSACTION_REPORTS' }.canView", equalTo(true))
+                .body("permissions.find { it.screen == 'TRANSACTION_REPORTS' }.canCreate", equalTo(true))
+                .body("permissions.find { it.screen == 'TRANSACTION_REPORTS' }.canEdit", equalTo(true))
+                .body("permissions.find { it.screen == 'TRANSACTION_REPORTS' }.canDelete", equalTo(true));
+    }
+
+    @Test
+    void shouldKeepTheFourActionsOfTransactionReports() {
+        String id = given()
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "name": "Teste Perfil %s",
+                          "permissions": [
+                            {
+                              "screen": "TRANSACTION_REPORTS",
+                              "canView": true,
+                              "canCreate": true,
+                              "canEdit": true,
+                              "canDelete": true
+                            }
+                          ]
+                        }
+                        """.formatted(UUID.randomUUID()))
+                .when().post("/profiles")
+                .then()
+                .statusCode(201)
+                .extract()
+                .path("id");
+
+        given()
+                .when().get("/profiles/{id}", id)
+                .then()
+                .statusCode(200)
+                .body("permissions.find { it.screen == 'TRANSACTION_REPORTS' }.canView", equalTo(true))
+                .body("permissions.find { it.screen == 'TRANSACTION_REPORTS' }.canCreate", equalTo(true))
+                .body("permissions.find { it.screen == 'TRANSACTION_REPORTS' }.canEdit", equalTo(true))
+                .body("permissions.find { it.screen == 'TRANSACTION_REPORTS' }.canDelete", equalTo(true));
+    }
+
+    @Test
     void shouldKeepWriteFlagsForOtherScreens() {
         given()
                 .contentType(ContentType.JSON)

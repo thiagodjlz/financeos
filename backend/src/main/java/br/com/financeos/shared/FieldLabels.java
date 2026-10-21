@@ -28,6 +28,16 @@ public final class FieldLabels {
         LABELS.put("installmentNumber", "Parcela");
         LABELS.put("installmentTotal", "Total de parcelas");
         LABELS.put("notes", "Observações");
+        LABELS.put("period", "Período");
+        LABELS.put("startDate", "Data inicial");
+        LABELS.put("endDate", "Data final");
+        LABELS.put("categoryIds", "Categorias");
+        LABELS.put("source", "Origem");
+        LABELS.put("minAmount", "Valor mínimo");
+        LABELS.put("maxAmount", "Valor máximo");
+        LABELS.put("installments", "Parcelamento");
+        LABELS.put("groupBy", "Agrupamento");
+        LABELS.put("columns", "Colunas");
 
         int position = 0;
         for (String field : LABELS.keySet()) {

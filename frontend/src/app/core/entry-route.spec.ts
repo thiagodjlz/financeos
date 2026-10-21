@@ -37,6 +37,19 @@ describe('resolveEntryRoute', () => {
     expect(resolveEntryRoute(authWith([entry('TRANSACTIONS')]))).toBe('/transactions');
   });
 
+  it('leva ao relatório de lançamentos quando só há essa permissão', () => {
+    expect(resolveEntryRoute(authWith([entry('TRANSACTION_REPORTS')]))).toBe('/transaction-reports');
+  });
+
+  it('põe o relatório depois de Lançamentos e antes de Categorias na ordem do menu', () => {
+    expect(resolveEntryRoute(authWith([entry('CATEGORIES'), entry('TRANSACTION_REPORTS')]))).toBe(
+      '/transaction-reports',
+    );
+    expect(resolveEntryRoute(authWith([entry('TRANSACTION_REPORTS'), entry('TRANSACTIONS')]))).toBe(
+      '/transactions',
+    );
+  });
+
   it('leva a Usuários quando só há permissão de Usuários', () => {
     expect(resolveEntryRoute(authWith([entry('USERS')]))).toBe('/users');
   });
@@ -77,6 +90,8 @@ describe('screenForUrl', () => {
     ['/dashboard', 'DASHBOARD'],
     ['/transactions', 'TRANSACTIONS'],
     ['/transactions/7/edit', 'TRANSACTIONS'],
+    ['/transaction-reports', 'TRANSACTION_REPORTS'],
+    ['/transaction-reports?period=CUSTOM', 'TRANSACTION_REPORTS'],
     ['/categories/new', 'CATEGORIES'],
     ['/audit?page=2', 'AUDIT'],
     ['/documentation#area', 'DOCUMENTATION'],

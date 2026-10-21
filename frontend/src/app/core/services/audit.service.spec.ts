@@ -60,4 +60,15 @@ describe('AuditService', () => {
 
     await expect(accessPromise).resolves.toBeUndefined();
   });
+
+  it('registra a impressão de uma tela via POST /audit/print', async () => {
+    const printPromise = service.print('TRANSACTION_REPORTS');
+
+    const req = httpMock.expectOne(`${API_BASE}/audit/print`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ screen: 'TRANSACTION_REPORTS' });
+    req.flush(null, { status: 204, statusText: 'No Content' });
+
+    await expect(printPromise).resolves.toBeUndefined();
+  });
 });

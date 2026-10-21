@@ -6,6 +6,7 @@ export const NO_ACCESS_ROUTE = '/no-access';
 const ENTRY_ROUTES: { screen: Screen; path: string }[] = [
   { screen: 'DASHBOARD', path: '/dashboard' },
   { screen: 'TRANSACTIONS', path: '/transactions' },
+  { screen: 'TRANSACTION_REPORTS', path: '/transaction-reports' },
   { screen: 'CATEGORIES', path: '/categories' },
   { screen: 'USERS', path: '/users' },
   { screen: 'PROFILES', path: '/profiles' },

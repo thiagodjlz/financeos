@@ -14,8 +14,25 @@ import {
   shiftMonth,
   shortDate,
   shortMoney,
+  transactionSourceLabel,
   transactionStatusLabel,
+  transactionTypeLabel,
 } from './formatters';
+
+describe('rótulos de tipo e origem', () => {
+  it('rotula o tipo como em Lançamentos', () => {
+    expect(transactionTypeLabel('INCOME')).toBe('Receita');
+    expect(transactionTypeLabel('EXPENSE')).toBe('Despesa');
+    expect(transactionTypeLabel(null)).toBe('-');
+  });
+
+  it('rotula a origem sem o código', () => {
+    expect(transactionSourceLabel('MANUAL')).toBe('Manual');
+    expect(transactionSourceLabel('EXCEL_IMPORT')).toBe('Importação de planilha');
+    expect(transactionSourceLabel('RECURRENCE')).toBe('Recorrência');
+    expect(transactionSourceLabel(undefined)).toBe('-');
+  });
+});
 
 describe('shortMoney', () => {
   it('formata zero sem abreviação', () => {

@@ -28,7 +28,8 @@ class DocumentationResourceTest {
                 .statusCode(200)
                 .body("title", notNullValue())
                 .body("introduction.title", equalTo("Como utilizar o sistema"))
-                .body("areas", hasSize(6))
-                .body("areas.title", contains("Resumo", "Lançamentos", "Categorias", "Usuários", "Perfis", "Auditoria"));
+                .body("areas", hasSize(7))
+                .body("areas.title", contains("Resumo", "Lançamentos", "Relatórios - Lançamentos", "Categorias", "Usuários",
+                        "Perfis", "Auditoria"));
     }
 }

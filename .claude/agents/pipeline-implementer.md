@@ -39,7 +39,7 @@ Em specs antigas (anteriores a esta versao da esteira) as tarefas estao num `tas
 
      E isso que faz o hook `pre-commit` incrementar a build no commit da etapa final. Sem essa linha, a correcao entra sem gerar build nova.
    - Confirme que os hooks estao ativos (`git config --get core.hooksPath` deve responder `.githooks`); se nao, rode `powershell -File scripts/install-hooks.ps1` e registre nas notas.
-4. Antes de qualquer tarefa que rode `./mvnw test`, confira que o Docker esta de pe (`docker info`): as suites de backend sao `@QuarkusTest` com Dev Services e, sem engine no ar, nem iniciam — o erro parece defeito do codigo recem-escrito. Sem Docker, siga pelas tarefas que nao dependem dele, deixe as dependentes desmarcadas e registre nas notas.
+4. Antes de qualquer tarefa que rode `./mvnw test`, confira o Docker (`docker info`): as suites `@QuarkusTest` usam Dev Services e, sem engine, nem iniciam — o erro parece defeito do codigo novo. Sem Docker, siga pelas tarefas que nao dependem dele, deixe as dependentes desmarcadas e registre nas notas.
 5. Execute as tarefas na ordem e **marque cada uma como `- [x]` em `plan.md` assim que concluir** — nao deixe as marcacoes para o fim: se a sessao for interrompida, o que estiver marcado e o que diz onde a implementacao parou.
    - Siga os padroes das areas vizinhas do codigo. Sem comentarios a menos que expliquem um "porque" nao obvio.
    - Todo endpoint novo comeca com `accessControl.require(Screen.X, Action.Y)`.
@@ -50,6 +50,8 @@ Em specs antigas (anteriores a esta versao da esteira) as tarefas estao num `tas
    - frontend: `cd frontend && npm test` (suite rapida, segundos — nao vale a pena escopar)
 
    Isso e **loop de iteracao, nao aprovacao**: quem aprova e `/pipeline:quality-check`, com a suite completa. Rode tambem as classes de **outros dominios** que consomem o que voce mudou — foi um teste de Dashboard que quebrou quando Lancamentos ganhou campo obrigatorio (issue #45). Na duvida sobre o alcance, deixe para a suite completa em vez de adivinhar.
+
+   Comando que pode nao terminar sozinho (Chrome headless/CDP, servidor, modo watch) roda sob `timeout` curto e encerra o que abriu, tambem na falha: etapa sem saida por 600s e morta pelo watchdog (issue #114).
 7. Se o plano ou uma tarefa se mostrar errado durante a implementacao (arquivo que nao existia, dependencia esquecida, tarefa que eram duas), ajuste a implementacao e registre o desvio nas notas — nao pare, a menos que seja bloqueio real (decisao de produto em aberto). Passo que o plano nao previa vira tarefa nova no fim da lista (proximo numero livre, ja marcada), com arquivos e criterios. Tarefa que voce decidir **nao** fazer fica desmarcada, com o motivo nas notas — **nunca marque como concluido o que nao foi feito**.
    - Caso especial: criterio com **exemplo numerico** que so fecha com fixture que o back-end nunca produziria (issue #48) — **nao fabrique a fixture**. Ajuste o exemplo para um equivalente alcancavel, reescreva o criterio em `spec.md`, registre como decisao nova na secao "Decisoes" e anote o desvio.
 8. **Nao rode `git add` nem `git commit`.** Nunca edite `VERSION`, `backend/pom.xml`, `frontend/src/app/core/version.ts` ou `package.json` para mexer em numero de versao: quem faz isso e o hook `pre-commit`, no commit da etapa final.

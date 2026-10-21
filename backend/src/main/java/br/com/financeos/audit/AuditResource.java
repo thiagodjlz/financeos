@@ -97,6 +97,19 @@ public class AuditResource {
         return Response.noContent().build();
     }
 
+    // Chamado pelo botão Imprimir antes de abrir a impressão do navegador. O corpo é o mesmo do
+    // Acesso à tela: só a tela, que precisa poder ser vista.
+    @POST
+    @Path("/print")
+    public Response print(@Valid @NotNull(message = "A tela é obrigatória.") ScreenAccessRequest request) {
+        accessControl.require(request.screen(), Action.VIEW);
+        AppUser user = userRepository.findByIdOptional(currentUser.id())
+                .orElseThrow(() -> new WebApplicationException(Response.Status.UNAUTHORIZED));
+
+        writer.writeEvent(AuditEventType.PRINT, AuditActor.of(user), request.screen(), AuditAction.VIEW);
+        return Response.noContent().build();
+    }
+
     private static ZoneId zone(String value) {
         if (value == null) {
             return DEFAULT_ZONE;

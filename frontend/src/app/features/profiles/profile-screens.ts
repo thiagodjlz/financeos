@@ -4,6 +4,7 @@ import { PermissionEntry, Screen } from '../../core/models';
 export const PROFILE_SCREENS: { code: Screen; label: string; viewOnly?: boolean }[] = [
   { code: 'DASHBOARD', label: 'Resumo' },
   { code: 'TRANSACTIONS', label: 'Lançamentos' },
+  { code: 'TRANSACTION_REPORTS', label: 'Relatórios - Lançamentos' },
   { code: 'CATEGORIES', label: 'Categorias' },
   { code: 'USERS', label: 'Usuários' },
   { code: 'PROFILES', label: 'Perfis' },

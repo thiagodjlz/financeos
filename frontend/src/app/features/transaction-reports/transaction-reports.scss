@@ -1,0 +1,289 @@
+:host {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+
+.page-header {
+  margin-bottom: 0;
+}
+
+.print-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+// Saldo e Saldo atual sempre visíveis no topo, sem controle para ocultá-los (D8).
+.report-balances {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.report-balance {
+  display: grid;
+  gap: 6px;
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
+.report-balance-label {
+  color: var(--text-muted);
+  font-size: var(--fs-label);
+  font-weight: 600;
+}
+
+.report-balance-value {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.report-balance-hint {
+  color: var(--text-muted);
+  font-size: var(--fs-small);
+}
+
+.report-preferences,
+.report-filters {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+
+  .panel-heading {
+    margin-bottom: 0;
+  }
+}
+
+.report-preference-fields,
+.report-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+  align-items: end;
+}
+
+.report-preference-actions,
+.report-filter-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.report-filter-actions {
+  justify-content: flex-end;
+}
+
+.report-fieldset {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  margin: 0;
+  border: 0;
+  padding: 0;
+
+  legend {
+    margin-bottom: 8px;
+    padding: 0;
+    color: var(--text-label);
+    font-size: var(--fs-label);
+    font-weight: 600;
+  }
+
+  select {
+    max-width: 260px;
+  }
+}
+
+.report-fieldset-hint {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--fs-small);
+}
+
+.check-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+}
+
+.report-categories .check-list {
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+label.check-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+  font-weight: 500;
+
+  input {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    accent-color: var(--accent);
+  }
+}
+
+.grouping-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    max-width: 420px;
+    border: 1px solid var(--border-card);
+    border-radius: var(--radius-md);
+    padding: 4px 6px 4px 12px;
+    background: var(--surface-muted);
+  }
+}
+
+.grouping-name {
+  font-weight: 600;
+}
+
+.grouping-actions {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.report-result {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  padding: 0;
+  overflow: hidden;
+
+  > .report-count,
+  > .list-state,
+  > .loading-state {
+    margin: 0;
+    padding: 16px 20px 0;
+  }
+
+  > .list-state:last-child,
+  > .loading-state:last-child {
+    padding-bottom: 20px;
+  }
+}
+
+.report-count {
+  color: var(--text-muted);
+  font-size: var(--fs-small);
+  font-weight: 600;
+}
+
+table.report-table {
+  .amount-cell {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  th[scope='rowgroup'] {
+    height: auto;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    background: var(--surface-muted);
+    color: var(--text);
+    font-size: var(--fs-table);
+    font-weight: 650;
+  }
+
+  .subtotal-row td,
+  .total-row td {
+    height: auto;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    white-space: normal;
+  }
+
+  .subtotal-row td,
+  .total-row td {
+    span,
+    strong {
+      display: inline-block;
+      margin-right: 18px;
+    }
+  }
+
+  .subtotal-row td {
+    color: var(--text-label);
+    font-size: var(--fs-small);
+  }
+
+  .total-row td {
+    border-top: 1px solid var(--border-th);
+    background: var(--th-bg);
+    font-weight: 600;
+  }
+
+  .subtotal-title {
+    font-weight: 650;
+  }
+}
+
+@media print {
+  // Na tela o overflow só arredonda os cantos do painel; no papel ele cortava as colunas da direita.
+  .report-result {
+    display: block;
+    overflow: visible;
+    border: 0;
+  }
+
+  table.report-table {
+    width: 100%;
+    min-width: 0;
+
+    th,
+    td {
+      height: auto;
+      padding: 4px 6px;
+      font-size: 10.5px;
+      white-space: normal;
+      overflow-wrap: break-word;
+    }
+
+    .amount-cell {
+      white-space: nowrap;
+    }
+  }
+}
+
+@media (max-width: 680px) {
+  .report-balances {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .report-preference-fields,
+  .report-filter-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .report-filter-actions {
+    justify-content: stretch;
+
+    button {
+      flex: 1 1 auto;
+    }
+  }
+
+  .report-result {
+    border: 1px solid var(--border-card);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+  }
+}

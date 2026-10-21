@@ -24,7 +24,7 @@ Duas dimensoes independentes. Uma tarefa tipica carrega 3 ou 4 arquivos, nao dez
 | [audit.md](audit.md) | tela/API de Auditoria — e **sempre** que a issue criar endpoint de escrita, tipo de evento ou mexer em login/logout |
 | [users.md](users.md) | tela/API de Usuarios |
 | [categories.md](categories.md) | Categorias |
-| [transactions.md](transactions.md) | Lancamentos/Transacoes |
+| [transactions.md](transactions.md) | Lancamentos/Transacoes — e o menu Relatorios (relatorio de Lancamentos) |
 | [dashboard.md](dashboard.md) | resumo/dashboard |
 | [documentation.md](documentation.md) | Central de Documentacao e Novidades por versao (menu "Sobre") — e sempre que mudar uma regra que uma delas publica |
 | [accounts.md](accounts.md) | Contas — removida na issue #20; so se for reintroduzir |

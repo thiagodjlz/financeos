@@ -22,7 +22,7 @@ Fonte: `backend/src/main/java/br/com/financeos/dashboard/`. Unica area do backen
 - Evolucao mensal (`monthlyEvolution`) sempre retorna os 12 meses do ano pedido (zero-preenchido via `MonthlySummaryResponse.empty`), sobrepondo os valores reais onde existirem; despesa de cada mes segue a mesma regra acima (so `PAID`), receita segue a mesma regra dos totais.
   - **Invariante**: em todo mes, `balance = income - expense` — o saldo e derivado dentro do proprio `MonthlySummaryResponse.of`, nunca chega solto. Fixture de teste (inclusive de frontend) com saldo que nao bate com receita menos despesa esta assertando sobre um estado que a API nao consegue produzir (issue #48, decisao D6). O mesmo vale para `accumulatedBalance` (nasce igual ao `balance` em `of`/`empty`, so o `withAccumulatedBalance` do `Resource` o ajusta): a fixture `evolution()` de `dashboard.spec.ts` deriva o acumulado simulando o back com C fixo (issue #113).
 
-Qualquer mudanca nos totais/regras de negocio de outras areas (ex.: mudar o que conta como "pendente" em Transacoes) provavelmente exige revisitar esta area tambem, ja que o dashboard e 100% derivado de transacoes.
+Qualquer mudanca nos totais/regras de negocio de outras areas (ex.: mudar o que conta como "pendente" em Transacoes) provavelmente exige revisitar esta area tambem, ja que o dashboard e 100% derivado de transacoes. A regra de saldo tem um segundo consumidor: o relatorio de Lancamentos (Saldo e Saldo atual, este pelo proprio `balanceBetween`; issue #114, ver [transactions.md](transactions.md)) — mudar um muda o outro.
 
 ## Frontend (`frontend/src/app/features/dashboard/`)
 

@@ -2538,3 +2538,104 @@ td.row-actions {
     display: none;
   }
 }
+
+/*
+ * Tabela que rola na horizontal em vez de virar cartão no celular (Relatórios, D11 da issue #114):
+ * exceção global à regra de cartão acima, para nenhuma tela precisar de media query própria.
+ */
+@media (max-width: 680px) {
+  .table-wrap.scroll-table {
+    overflow-x: auto;
+    background-image: linear-gradient(to right, var(--surface), var(--surface-fade)),
+      linear-gradient(to left, var(--surface), var(--surface-fade)),
+      linear-gradient(to right, var(--scroll-shadow-edge), var(--scroll-shadow-fade)),
+      linear-gradient(to left, var(--scroll-shadow-edge), var(--scroll-shadow-fade));
+
+    table {
+      display: table;
+      min-width: 760px;
+    }
+
+    thead {
+      display: table-header-group;
+    }
+
+    tbody {
+      display: table-row-group;
+    }
+
+    tfoot {
+      display: table-footer-group;
+    }
+
+    tbody tr {
+      display: table-row;
+      border: 0;
+      border-radius: 0;
+      padding: 0;
+      background: transparent;
+    }
+
+    tbody tr + tr {
+      margin-top: 0;
+    }
+
+    td {
+      display: table-cell;
+      height: var(--row-h);
+      border-bottom: 1px solid var(--border-td);
+      padding: 8px 16px;
+      white-space: nowrap;
+      overflow-wrap: normal;
+    }
+
+    td::before {
+      content: none;
+    }
+  }
+}
+
+/* Impressão pelo navegador: fica só o conteúdo da tela, sem menu, barras, avisos e controles. */
+
+.print-only {
+  display: none;
+}
+
+@media print {
+  .sidebar,
+  .bottom-bar,
+  .nav-sheet,
+  .sheet-scrim,
+  .toast-stack,
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block;
+  }
+
+  .workspace {
+    margin-left: 0 !important;
+    padding: 0 !important;
+  }
+
+  .panel {
+    box-shadow: none;
+  }
+
+  .table-wrap,
+  .table-wrap.scroll-table {
+    overflow: visible;
+    background-image: none;
+  }
+
+  table,
+  .table-wrap.scroll-table table {
+    min-width: 0;
+  }
+
+  tr {
+    break-inside: avoid;
+  }
+}

@@ -2,7 +2,7 @@
 
 ## Stack
 
-- **Backend**: Java + Quarkus, Panache (JPA simplificado), JAX-RS. Sem camada de "service" separada — as classes `*Resource` (JAX-RS) contem a regra de negocio diretamente e chamam `*Repository` (Panache) para persistencia. Pacote por feature em `backend/src/main/java/br/com/financeos/{auth,categories,dashboard,profiles,shared,transactions,users}` (`accounts`/`cards` existiram ate a issue #20, quando Contas e Cartoes foram removidos por completo do sistema — ver `knowledge/accounts.md`/`knowledge/cards.md`).
+- **Backend**: Java + Quarkus, Panache (JPA simplificado), JAX-RS. Sem camada de "service" separada — as classes `*Resource` (JAX-RS) contem a regra de negocio diretamente e chamam `*Repository` (Panache) para persistencia. Pacote por feature em `backend/src/main/java/br/com/financeos/<feature>` (`accounts`/`cards` removidos na issue #20 — ver `accounts.md`/`cards.md`).
 - **Migrations**: Flyway, `backend/src/main/resources/db/migration/V<n>__descricao.sql`. Nunca editar uma migration ja commitada — sempre criar uma nova `V<n+1>`. `check` constraints criados inline sem nome explicito (ex.: o de `profile_permissions.screen` na V5) recebem nome autogerado pelo Postgres por convencao (`<tabela>_<coluna>_check`), mas isso deve ser **confirmado no banco** (`select conname from pg_constraint where conrelid = '<tabela>'::regclass and contype = 'c';`) antes de escrever `DROP CONSTRAINT <nome>` numa migration nova — um nome errado quebra a migration e a aplicacao inteira nao sobe (issues #20, #104).
 - **Frontend**: Angular standalone (sem NgModules), em `frontend/src/app`. `core/` = services/guards/interceptors/models compartilhados; `features/<nome>/` = tela (componente + `.html` + `.scss`); `layout/` = shell da aplicacao.
 - **Banco**: PostgreSQL via `docker compose up -d postgres`.
@@ -51,7 +51,7 @@ Fonte da verdade: arquivo `VERSION` na raiz. Formato `X.Y.Z-NN` (versao + build)
 
 - **Sem comentarios** a menos que expliquem um "porque" nao-obvio (regra geral do projeto, nao so desta esteira).
 - Todo endpoint que le ou escreve dado comeca com `accessControl.require(Screen.X, Action.Y)` ([auth-and-permissions.md](auth-and-permissions.md)); o de escrita leva tambem `@Audited` + `AuditTrail` ([audit.md](audit.md), issue #110).
-- Exclusao de registro de negocio e **soft delete** (`active=false`) por padrao; hard delete so em perfis sem usuario, categorias sem lancamento (issue #77) e lancamentos (issue #104) — ver docs de dominio.
+- Exclusao de registro de negocio e **soft delete** (`active=false`) por padrao; hard delete so em perfis sem usuario, categorias sem lancamento (issue #77), lancamentos (issue #104) e preferencias de relatorio (issue #114) — ver docs de dominio.
 - **Toda regra de negocio e validacao e imposta no back-end** (Bean Validation no DTO ou checagem no `Resource`, com erro em portugues). O front-end pode espelhar a regra como UX, mas nunca ser o unico lugar dela; constraint de banco e rede de seguranca (excecao: PKs e FKs). Como o erro chega a tela: [backend-patterns.md](backend-patterns.md).
 
 ## Idioma
