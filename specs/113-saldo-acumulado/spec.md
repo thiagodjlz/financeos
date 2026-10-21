@@ -4,7 +4,7 @@ url: https://github.com/thiagodjlz/financeos/issues/113
 title: "Funcionalidade de persistencia do saldo"
 domains: [dashboard, transactions, documentation]
 target: main
-stage: validated
+stage: pr-open
 branch: feature/issue-113-saldo-acumulado
 created: 2026-10-20
 ---
