@@ -19,11 +19,20 @@ const GROUP_WIDTH = (PLOT_RIGHT - PLOT_LEFT) / 12;
 
 type MonthValues = [income: number, expense: number, balance: number];
 
+const ACCUMULATION_START_MONTH = 10;
+
+// Acumulado como o back-end produz em 2026 com o mês corrente em dezembro: antes de outubro é o próprio
+// saldo; de outubro em diante soma o saldo de cada mês desde outubro (issue #113).
 function evolution(values: Partial<Record<number, MonthValues>> = {}): MonthlySummary[] {
+  let carried = 0;
   return Array.from({ length: 12 }, (_, index) => {
     const month = index + 1;
     const [income, expense, balance] = values[month] ?? [0, 0, 0];
-    return { year: 2026, month, income, expense, balance };
+    const accumulatedBalance = carried + balance;
+    if (month >= ACCUMULATION_START_MONTH) {
+      carried = accumulatedBalance;
+    }
+    return { year: 2026, month, income, expense, balance, accumulatedBalance };
   });
 }
 
@@ -33,6 +42,8 @@ function payload(monthlyEvolution: MonthlySummary[]): DashboardSummary {
     totalIncome: 0,
     totalExpense: 0,
     balance: 0,
+    previousBalance: 0,
+    accumulatedBalance: 0,
     paidExpense: 0,
     pendingExpense: 0,
     paidExpensePercent: null,
@@ -656,6 +667,8 @@ describe('Dashboard', () => {
       paidExpense: 1170,
       pendingExpense: 300,
       balance: 2830,
+      previousBalance: 0,
+      accumulatedBalance: 2830,
       paidExpensePercent: 29.3,
     };
 
@@ -794,6 +807,7 @@ describe('Dashboard', () => {
         'Receita R$ 4.000,00',
         'Despesa R$ 1.170,00',
         'Saldo R$ 2.830,00',
+        'Acumulado R$ 2.830,00',
       ]);
       expect(all('.month-block-hint').map(label)).toEqual([
         'Toque em um mês do gráfico para ver os valores.',
@@ -827,6 +841,7 @@ describe('Dashboard', () => {
         'Receita R$ 1.500,00',
         'Despesa R$ 400,00',
         'Saldo R$ 1.100,00',
+        'Acumulado R$ 1.100,00',
       ]);
       httpMock.expectNone(() => true);
     });
@@ -851,6 +866,106 @@ describe('Dashboard', () => {
 
       expect(axisLabels().length).toBeGreaterThan(0);
       expect(all('circle.balance-point')).toHaveLength(7);
+    });
+  });
+
+  describe('saldo acumulado', () => {
+    // Cenário do critério 2 da issue #113: out/2026 sobra 400,00 e nov/2026 fica em -200,00.
+    const SCENARIO = evolution({ 10: [1000, 600, 400], 11: [500, 700, -200] });
+
+    function monthPayload(
+      month: number,
+      totals: Partial<DashboardSummary>,
+      monthlyEvolution: MonthlySummary[] = SCENARIO,
+    ): DashboardSummary {
+      const end = new Date(2026, month, 0).getDate();
+      const key = String(month).padStart(2, '0');
+      return {
+        ...payload(monthlyEvolution),
+        period: { year: 2026, month, startDate: `2026-${key}-01`, endDate: `2026-${key}-${end}` },
+        ...totals,
+      };
+    }
+
+    const NOVEMBER: Partial<DashboardSummary> = {
+      totalIncome: 500,
+      totalExpense: 700,
+      paidExpense: 700,
+      balance: -200,
+      paidExpensePercent: 140,
+      previousBalance: 400,
+      accumulatedBalance: 200,
+    };
+
+    function carryRows(): string[] {
+      return all('.balance-carry > span').map(label);
+    }
+
+    it('mostra Saldo anterior e Saldo acumulado da API no quadro, com o saldo do mês como valor principal', async () => {
+      summaryRequest().flush(monthPayload(11, NOVEMBER));
+      await settle();
+
+      expect(label(one('.balance-card .balance-value'))).toBe('-R$ 200,00');
+      expect(carryRows()).toEqual(['Saldo anterior R$ 400,00', 'Saldo acumulado R$ 200,00']);
+
+      (host().querySelector('button[aria-label="Próximo mês"]') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      httpMock
+        .expectOne((request) => request.url.startsWith(`${API_BASE}/dashboard/summary`))
+        .flush(monthPayload(12, { previousBalance: 200, accumulatedBalance: 200 }));
+      await settle();
+
+      expect(label(one('.balance-card .balance-value'))).toBe('R$ 0,00');
+      expect(carryRows()).toEqual(['Saldo anterior R$ 200,00', 'Saldo acumulado R$ 200,00']);
+    });
+
+    it('mostra o Acumulado do mês no bloco e troca ao escolher outro mês, sem nova requisição', async () => {
+      summaryRequest().flush(monthPayload(11, NOVEMBER));
+      await settle();
+
+      expect(label(one('.month-block-title'))).toBe('Novembro');
+      expect(all('.month-block-values span').map(label)).toEqual([
+        'Receita R$ 500,00',
+        'Despesa R$ 700,00',
+        'Saldo -R$ 200,00',
+        'Acumulado R$ 200,00',
+      ]);
+
+      await touch(hitArea(9));
+
+      expect(label(one('.month-block-title'))).toBe('Outubro');
+      expect(all('.month-block-values span').map(label)[3]).toBe('Acumulado R$ 400,00');
+      httpMock.expectNone(() => true);
+    });
+
+    it('mostra Saldo anterior e acumulado negativos com o sinal de menos', async () => {
+      const negative = evolution({ 10: [100, 600, -500], 11: [0, 100, -100] });
+      summaryRequest().flush(
+        monthPayload(
+          11,
+          {
+            totalExpense: 100,
+            paidExpense: 100,
+            balance: -100,
+            previousBalance: -500,
+            accumulatedBalance: -600,
+          },
+          negative,
+        ),
+      );
+      await settle();
+
+      expect(carryRows()).toEqual(['Saldo anterior -R$ 500,00', 'Saldo acumulado -R$ 600,00']);
+      expect(all('.month-block-values span').map(label)[3]).toBe('Acumulado -R$ 600,00');
+    });
+
+    it('mantém o informativo flutuante com Receita, Despesa e Saldo, sem o acumulado', async () => {
+      summaryRequest().flush(monthPayload(11, NOVEMBER));
+      await settle();
+
+      await hover(10);
+
+      expect(tooltipText()).toBe('Novembro Receita R$ 500,00 Despesa R$ 700,00 Saldo -R$ 200,00');
     });
   });
 

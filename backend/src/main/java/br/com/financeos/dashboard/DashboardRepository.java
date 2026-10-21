@@ -57,6 +57,29 @@ public class DashboardRepository {
         }
     }
 
+    public BigDecimal balanceBetween(UUID userId, LocalDate startDate, LocalDate endDate) throws Exception {
+        String sql = """
+                select
+                    coalesce(sum(case when type = 'INCOME' then amount else 0 end), 0)
+                    - coalesce(sum(case when type = 'EXPENSE' and status = 'PAID' then amount else 0 end), 0) as balance
+                from transactions
+                where user_id = ?
+                  and transaction_date between ? and ?
+                """;
+
+        try (Connection connection = dataSource.getConnection();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setObject(1, userId);
+            statement.setDate(2, Date.valueOf(startDate));
+            statement.setDate(3, Date.valueOf(endDate));
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                resultSet.next();
+                return resultSet.getBigDecimal("balance");
+            }
+        }
+    }
+
     public List<CategoryBreakdownResponse> categoryBreakdown(UUID userId, LocalDate startDate, LocalDate endDate)
             throws Exception {
         String sql = """

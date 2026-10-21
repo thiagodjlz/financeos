@@ -28,7 +28,10 @@ public final class ReleaseNotesContent {
         addIfPresent(categories, Kind.NEW,
                 "Auditoria: nova tela, no menu Configurações, que mostra quem incluiu, alterou ou excluiu cada "
                         + "registro, com o valor anterior e o novo de cada campo, e os acessos ao sistema, como "
-                        + "entradas, saídas e telas abertas.");
+                        + "entradas, saídas e telas abertas.",
+                "Saldo acumulado: a partir de outubro de 2026, o que sobra de cada mês passa para o seguinte, e "
+                        + "o Resumo mostra o Saldo anterior e o Saldo acumulado no quadro Saldo do mês e no quadro "
+                        + "abaixo do gráfico.");
 
         addIfPresent(categories, Kind.IMPROVEMENT,
                 "Resumo redesenhado: o Saldo do mês mostra numa barra quanto das receitas já foi para despesas "

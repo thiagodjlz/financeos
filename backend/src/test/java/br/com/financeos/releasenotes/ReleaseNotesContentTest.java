@@ -86,6 +86,18 @@ class ReleaseNotesContentTest {
     }
 
     @Test
+    void shouldAnnounceTheAccumulatedBalanceAsNewIn103() {
+        List<String> news = version("1.0.3").categories().stream()
+                .filter(category -> category.kind() == ReleaseNoteCategory.Kind.NEW)
+                .flatMap(category -> category.items().stream())
+                .toList();
+
+        assertTrue(news.stream().anyMatch(item -> item.startsWith("Saldo acumulado:")
+                && item.contains("Saldo anterior") && item.contains("outubro de 2026")),
+                "1.0.3 sem a novidade do Saldo acumulado");
+    }
+
+    @Test
     void shouldAnnounceTheLayoutRedesignAsImprovementIn103() {
         List<String> improvements = version("1.0.3").categories().stream()
                 .filter(category -> category.kind() == ReleaseNoteCategory.Kind.IMPROVEMENT)

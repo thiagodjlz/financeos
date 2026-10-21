@@ -53,7 +53,7 @@
       <div class="balance-main">
         <div class="balance-head">
           <span class="balance-label">Saldo do mês</span>
-          <strong class="balance-value">{{ formatMoney(summary()?.balance) }}</strong>
+          <strong class="balance-value tabular">{{ formatMoney(summary()?.balance) }}</strong>
           <span class="balance-hint">Receitas menos despesas pagas</span>
         </div>
         <div class="balance-ratio">
@@ -61,6 +61,14 @@
             <div class="balance-bar" [style.width.%]="balanceBarWidth()"></div>
           </div>
           <span class="balance-ratio-text">{{ balanceRatioText() }}</span>
+        </div>
+        <div class="balance-carry">
+          <span class="balance-ratio-text">
+            Saldo anterior<strong class="tabular">{{ formatMoney(summary()?.previousBalance) }}</strong>
+          </span>
+          <span class="balance-ratio-text accumulated">
+            Saldo acumulado<strong class="tabular">{{ formatMoney(summary()?.accumulatedBalance) }}</strong>
+          </span>
         </div>
       </div>
 
@@ -73,7 +81,7 @@
           </span>
           <span class="balance-item-text">
             <span class="balance-item-label">Receitas<span class="only-desktop"> · entradas no mês</span></span>
-            <strong class="balance-item-value">{{ formatMoney(summary()?.totalIncome) }}</strong>
+            <strong class="balance-item-value tabular">{{ formatMoney(summary()?.totalIncome) }}</strong>
             <span class="balance-item-hint only-mobile">Entradas no mês</span>
           </span>
         </div>
@@ -85,7 +93,7 @@
           </span>
           <span class="balance-item-text">
             <span class="balance-item-label">Despesas<span class="only-desktop"> · já pagas no mês</span></span>
-            <strong class="balance-item-value">{{ formatMoney(summary()?.totalExpense) }}</strong>
+            <strong class="balance-item-value tabular">{{ formatMoney(summary()?.totalExpense) }}</strong>
             <span class="balance-item-hint only-mobile">Já pagas no mês</span>
           </span>
         </div>
@@ -217,7 +225,7 @@
 
         <div class="chart-tooltip-layer" aria-live="polite">
           <ng-container *ngIf="activeTooltip() as tooltip">
-            <div class="chart-tooltip" [style.left.px]="tooltipLeft()">
+            <div class="chart-tooltip tabular" [style.left.px]="tooltipLeft()">
               <strong>{{ tooltip.title }}</strong>
               <span class="chart-tooltip-row">
                 <i class="legend-marker income"></i>Receita<b>{{ tooltip.income }}</b>
@@ -236,10 +244,11 @@
 
       <div class="month-block" *ngIf="monthBlock() as block" aria-hidden="true">
         <strong class="month-block-title">{{ block.title }}</strong>
-        <div class="month-block-values">
+        <div class="month-block-values tabular">
           <span><small>Receita</small>{{ block.income }}</span>
           <span><small>Despesa</small>{{ block.expense }}</span>
           <span><small>Saldo</small>{{ block.balance }}</span>
+          <span><small>Acumulado</small>{{ block.accumulated }}</span>
         </div>
         <span class="month-block-hint only-mobile">Toque em um mês do gráfico para ver os valores.</span>
         <span class="month-block-hint only-desktop">Clique em um mês do gráfico para ver os valores.</span>
@@ -257,7 +266,7 @@
       </span>
       <span class="pending-text">
         <span class="pending-label">Pendentes · despesas a pagar</span>
-        <strong class="pending-value">{{ formatMoney(summary()?.pendingExpense) }}</strong>
+        <strong class="pending-value tabular">{{ formatMoney(summary()?.pendingExpense) }}</strong>
       </span>
     </ng-template>
 
@@ -312,8 +321,8 @@
                 aria-hidden="true"
               ></span>
               <span class="category-name">{{ item.categoryName }}</span>
-              <span class="category-share">{{ shareLabel(item) }}</span>
-              <span class="category-amount">{{ formatMoney(item.totalAmount) }}</span>
+              <span class="category-share tabular">{{ shareLabel(item) }}</span>
+              <span class="category-amount tabular">{{ formatMoney(item.totalAmount) }}</span>
             </div>
             <div class="category-track">
               <div
@@ -329,7 +338,7 @@
       </div>
       <div class="panel-footer">
         <span>{{ breakdownCountLabel() }}</span>
-        <strong>{{ formatMoney(breakdownTotal()) }}</strong>
+        <strong class="tabular">{{ formatMoney(breakdownTotal()) }}</strong>
       </div>
     </section>
   </div>
