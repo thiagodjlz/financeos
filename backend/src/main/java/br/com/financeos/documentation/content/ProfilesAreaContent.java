@@ -63,9 +63,9 @@ final class ProfilesAreaContent {
                                                 + "Categorias, uma desativação em Usuários e a remoção do perfil "
                                                 + "sem uso em Perfis."))),
                 DocumentationBlock.paragraph(
-                        "As linhas da matriz são Resumo, Lançamentos, Categorias, Usuários, Perfis, Auditoria, "
-                                + "Documentação e Novidades por versão, na mesma ordem em que as telas aparecem no "
-                                + "menu."));
+                        "As linhas da matriz são Resumo, Lançamentos, Categorias, Relatórios - Lançamentos, "
+                                + "Usuários, Perfis, Auditoria, Documentação e Novidades por versão, na mesma ordem "
+                                + "em que as telas aparecem no menu."));
     }
 
     private static DocumentationSection regras() {

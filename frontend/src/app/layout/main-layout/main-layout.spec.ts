@@ -11,6 +11,10 @@ import { MainLayout } from './main-layout';
 @Component({ template: '' })
 class BlankPage {}
 
+// Mesmo "d" do frontend/public/favicon.svg: a marca do menu é o símbolo do ícone da guia.
+const FAVICON_SYMBOL_PATH =
+  'M2.125 17a14.875 14.875 0 1 0 29.75 0a14.875 14.875 0 1 0-29.75 0zM4.25 17a12.75 12.75 0 1 0 25.5 0a12.75 12.75 0 1 0-25.5 0zM6.375 17a10.625 10.625 0 1 0 21.25 0a10.625 10.625 0 1 0-21.25 0zM12.75 10.625h8.5v2.125h-6.375v2.125h4.25V17h-4.25v6.375H12.75z';
+
 function viewPermission(screen: Screen): PermissionEntry {
   return { screen, canView: true, canCreate: false, canEdit: false, canDelete: false };
 }
@@ -69,6 +73,12 @@ function sheetSectionTitles(fixture: ComponentFixture<MainLayout>): string[] {
   );
 }
 
+function sheetEntries(fixture: ComponentFixture<MainLayout>): string[] {
+  return Array.from(sheet(fixture, 'more')?.querySelectorAll('.sheet-section-title, .sheet-item') ?? []).map(
+    (entry) => entry.textContent?.trim() ?? '',
+  );
+}
+
 function scrim(fixture: ComponentFixture<MainLayout>): HTMLElement | null {
   return root(fixture).querySelector('.nav-scrim');
 }
@@ -123,18 +133,44 @@ describe('MainLayout', () => {
       expect(navLabels(fixture)).toEqual([
         'Resumo',
         'Lançamentos',
-        'Lançamentos',
         'Categorias',
+        'Lançamentos',
         'Usuários',
         'Perfis',
         'Auditoria',
         'Documentação',
         'Novidades por versão',
       ]);
-      expect(sectionTitles(fixture)).toEqual(['Relatórios', 'Cadastros', 'Configurações', 'Sobre']);
+      expect(sectionTitles(fixture)).toEqual(['Cadastros', 'Relatórios', 'Configurações', 'Sobre']);
       for (const button of navButtons(fixture)) {
         expect(button.querySelector('svg')).not.toBeNull();
       }
+    });
+
+    it('mostra na marca o símbolo do ícone da guia, a moeda com o F desenhado (sem texto), também com o menu recolhido', () => {
+      asSuperAdmin();
+      const fixture = createFixture();
+
+      const assertMark = () => {
+        const mark = root(fixture).querySelector('.brand-block .mark') as HTMLElement;
+        expect(mark).not.toBeNull();
+        expect(mark.textContent?.trim()).toBe('');
+        expect(mark.getAttribute('aria-hidden')).toBe('true');
+        const svg = mark.querySelector('svg') as SVGElement;
+        expect(svg.getAttribute('viewBox')).toBe('0 0 34 34');
+        expect(svg.getAttribute('width')).toBe('34');
+        expect(svg.getAttribute('height')).toBe('34');
+        expect(svg.getAttribute('fill')).toBe('currentColor');
+        const path = svg.querySelector('path') as SVGPathElement;
+        expect(path.getAttribute('d')).toBe(FAVICON_SYMBOL_PATH);
+        expect(path.getAttribute('fill-rule')).toBe('evenodd');
+      };
+
+      assertMark();
+      collapseToggle(fixture).click();
+      fixture.detectChanges();
+      expect(root(fixture).querySelector('.app-shell.menu-collapsed')).not.toBeNull();
+      assertMark();
     });
 
     it('não mostra item nem seção sem permissão de ver', () => {
@@ -339,10 +375,10 @@ describe('MainLayout', () => {
       asSuperAdmin();
       const fixture = createFixture();
 
-      expect(sheetSectionTitles(fixture)).toEqual(['Relatórios', 'Cadastros', 'Configurações', 'Sobre']);
+      expect(sheetSectionTitles(fixture)).toEqual(['Cadastros', 'Relatórios', 'Configurações', 'Sobre']);
       expect(sheetItems(fixture, 'more')).toEqual([
-        'Lançamentos',
         'Categorias',
+        'Lançamentos',
         'Usuários',
         'Perfis',
         'Auditoria',
@@ -350,6 +386,7 @@ describe('MainLayout', () => {
         'Novidades por versão',
         'Sair',
       ]);
+      expect(sheetEntries(fixture).slice(0, 4)).toEqual(['Cadastros', 'Categorias', 'Relatórios', 'Lançamentos']);
     });
 
     it('mostra Categorias no painel Mais só com permissão de ver Categorias', () => {
@@ -594,7 +631,7 @@ describe('MainLayout', () => {
       expect(sheet(fixture, 'more')?.classList.contains('open')).toBe(false);
       expect(document.body.classList.contains('overlay-open')).toBe(false);
       expect(document.activeElement).toBe(root(fixture).querySelector('.workspace'));
-      expect(TestBed.inject(Router).url).toBe('/transaction-reports');
+      expect(TestBed.inject(Router).url).toBe('/categories');
     });
 
     it('sai pelo item Sair do painel Mais, registrando o logout antes de descartar o token', async () => {

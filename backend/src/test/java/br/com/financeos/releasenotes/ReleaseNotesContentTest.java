@@ -115,8 +115,16 @@ class ReleaseNotesContentTest {
                 && item.contains("do maior valor para o menor") && item.contains("receitas e despesas juntas")),
                 "1.0.3 sem a melhoria da ordem por valor");
         assertTrue(improvements.stream().anyMatch(item -> item.startsWith("Ícone da guia:")
-                && item.contains("marca do FinanceOS")),
-                "1.0.3 sem a melhoria do ícone da guia");
+                && item.contains("marca do FinanceOS") && item.contains("menu lateral")
+                && item.contains("tela de entrada") && item.contains("uma moeda com a letra F")),
+                "1.0.3 sem a melhoria do ícone da guia na guia, no menu lateral e na tela de entrada");
+        improvements.stream().filter(item -> item.startsWith("Ícone da guia:")).forEach(item -> {
+            assertFalse(item.contains("carteira"), "Ícone da guia ainda cita a carteira: " + item);
+        });
+        assertEquals(1, version("1.0.3").categories().stream()
+                .flatMap(category -> category.items().stream())
+                .filter(item -> item.startsWith("Ícone da guia:"))
+                .count(), "1.0.3 deve ter um único item do ícone da guia");
         assertTrue(fixes.stream().anyMatch(item -> item.startsWith("Versão no menu:")
                 && item.contains("abaixo do nome FinanceOS") && item.contains("inteiro")),
                 "1.0.3 sem a correção da versão no menu");

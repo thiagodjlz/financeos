@@ -99,8 +99,8 @@ describe('Profiles', () => {
     expect(detailRows()).toEqual([
       ['Resumo', 'Ver'],
       ['Lançamentos', 'Ver, Incluir, Alterar, Excluir'],
-      ['Relatórios - Lançamentos', 'Sem acesso'],
       ['Categorias', 'Sem acesso'],
+      ['Relatórios - Lançamentos', 'Sem acesso'],
       ['Usuários', 'Sem acesso'],
       ['Perfis', 'Sem acesso'],
       ['Auditoria', 'Sem acesso'],
