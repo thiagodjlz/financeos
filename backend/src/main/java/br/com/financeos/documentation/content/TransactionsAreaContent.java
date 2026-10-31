@@ -25,8 +25,9 @@ final class TransactionsAreaContent {
                 "Descrição",
                 DocumentationBlock.paragraph(
                         "A tela de Lançamentos é onde você registra cada entrada e cada saída de dinheiro. Ela "
-                                + "abre na tabela com os lançamentos do mês atual, do mais recente para o mais "
-                                + "antigo, com até 10 registros por página; o rodapé mostra quais estão na tela, "
+                                + "abre na tabela com os lançamentos do mês atual, do maior valor para o menor, "
+                                + "com receitas e despesas juntas (valores iguais seguem do mais recente para o "
+                                + "mais antigo), e com até 10 registros por página; o rodapé mostra quais estão na tela, "
                                 + "como Mostrando 1–10 de 23, e o total encontrado aparece acima da tabela, como "
                                 + "23 lançamentos."),
                 DocumentationBlock.paragraph(
@@ -128,10 +129,8 @@ final class TransactionsAreaContent {
                         "O detalhe do lançamento fecha pelo X, tocando fora dele ou com a tecla Esc, sem alterar "
                                 + "nada. Os botões Editar lançamento e Excluir lançamento da linha, no computador, "
                                 + "agem direto, sem abrir o detalhe.",
-                        "Em telas estreitas, como as de celular, a tabela vira uma lista de cartões agrupados "
-                                + "por dia, com os títulos Hoje, Ontem e, nos demais dias, o dia da semana e a "
-                                + "data, como Sábado, 10 de outubro; o ano só aparece em datas de outro ano. "
-                                + "Editar e excluir ficam no detalhe, e o botão + da barra inferior também abre o "
+                        "Em telas estreitas, como as de celular, a tabela vira uma lista de cartões na mesma "
+                                + "ordem, sem títulos por dia: cada cartão mostra a sua data. Editar e excluir ficam no detalhe, e o botão + da barra inferior também abre o "
                                 + "cadastro Novo lançamento.",
                         "Em telas estreitas, como as de celular, o mês fica acima da busca e os botões Todos, "
                                 + "Despesas e Receitas abaixo dela, valendo na hora. Período (um mês ou Todo o "

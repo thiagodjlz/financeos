@@ -29,6 +29,7 @@ import br.com.financeos.transactions.TransactionSource;
 import br.com.financeos.transactions.TransactionStatus;
 import br.com.financeos.transactions.TransactionType;
 import io.quarkus.narayana.jta.QuarkusTransaction;
+import io.quarkus.test.junit.QuarkusMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.quarkus.test.security.jwt.Claim;
@@ -338,7 +339,10 @@ class DashboardResourceTest {
 
     @Test
     void shouldReturnZeroedSummaryForMonthWithoutData() {
-        int currentYear = Year.now().getValue();
+        // Mês corrente fixo: a partir de jan/2027 o Saldo de setembro do ano real traria o Saldo anterior (issue #117).
+        YearMonth current = YearMonth.of(2026, 12);
+        QuarkusMock.installMockForType(new DashboardAccumulatedBalanceTest.FixedCurrentMonth(current), CurrentMonth.class);
+        int currentYear = current.getYear();
         createTransaction(LocalDate.of(currentYear, 1, 20).toString(),
                 "Teste dashboard janeiro do ano corrente", 800, "EXPENSE", "PAID");
 

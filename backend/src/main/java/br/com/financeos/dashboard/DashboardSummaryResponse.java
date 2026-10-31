@@ -9,7 +9,6 @@ public record DashboardSummaryResponse(
         BigDecimal totalExpense,
         BigDecimal balance,
         BigDecimal previousBalance,
-        BigDecimal accumulatedBalance,
         BigDecimal paidExpense,
         BigDecimal pendingExpense,
         BigDecimal paidExpensePercent,

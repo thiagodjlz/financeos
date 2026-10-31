@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -605,12 +606,17 @@ class TransactionResourceTest {
 
     private UUID createTransaction(UUID userId, String description, LocalDate date, TransactionType type,
             TransactionStatus status, UUID categoryId) {
+        return createTransaction(userId, description, date, type, status, categoryId, "10.00");
+    }
+
+    private UUID createTransaction(UUID userId, String description, LocalDate date, TransactionType type,
+            TransactionStatus status, UUID categoryId, String amount) {
         return QuarkusTransaction.requiringNew().call(() -> {
             FinancialTransaction transaction = new FinancialTransaction();
             transaction.userId = userId;
             transaction.description = description;
             transaction.transactionDate = date;
-            transaction.amount = new BigDecimal("10.00");
+            transaction.amount = new BigDecimal(amount);
             transaction.type = type;
             transaction.status = status;
             transaction.categoryId = categoryId;
@@ -843,6 +849,45 @@ class TransactionResourceTest {
                 .body("items.size()", equalTo(0))
                 .body("totalItems", equalTo(11))
                 .body("totalPages", equalTo(2));
+    }
+
+    @Test
+    void shouldOrderByAmountMixingIncomesAndExpensesAcrossPages() {
+        String prefix = "Teste mercado ordem " + UUID.randomUUID();
+        createTransaction(TEST_USER_ID, prefix + " receita 500", LocalDate.of(2026, 5, 3),
+                TransactionType.INCOME, null, null, "500.00");
+        createTransaction(TEST_USER_ID, prefix + " despesa 800", LocalDate.of(2026, 5, 1),
+                TransactionType.EXPENSE, TransactionStatus.PAID, null, "800.00");
+        createTransaction(TEST_USER_ID, prefix + " receita 120", LocalDate.of(2026, 5, 10),
+                TransactionType.INCOME, null, null, "120.00");
+        createTransaction(TEST_USER_ID, prefix + " despesa 300 antiga", LocalDate.of(2026, 5, 2),
+                TransactionType.EXPENSE, TransactionStatus.PENDING, null, "300.00");
+        createTransaction(TEST_USER_ID, prefix + " despesa 300 recente", LocalDate.of(2026, 5, 20),
+                TransactionType.EXPENSE, TransactionStatus.PAID, null, "300.00");
+        createTransaction(TEST_USER_ID, prefix + " receita 50", LocalDate.of(2026, 5, 15),
+                TransactionType.INCOME, null, null, "50.00");
+
+        List<String> descriptions = new ArrayList<>();
+        for (int page = 1; page <= 2; page++) {
+            descriptions.addAll(given()
+                    .queryParam("description", prefix)
+                    .queryParam("size", 3)
+                    .queryParam("page", page)
+                    .when().get("/transactions")
+                    .then()
+                    .statusCode(200)
+                    .body("totalItems", equalTo(6))
+                    .body("totalPages", equalTo(2))
+                    .extract().jsonPath().getList("items.description", String.class));
+        }
+
+        assertEquals(List.of(
+                prefix + " despesa 800",
+                prefix + " receita 500",
+                prefix + " despesa 300 recente",
+                prefix + " despesa 300 antiga",
+                prefix + " receita 120",
+                prefix + " receita 50"), descriptions);
     }
 
     @Test
