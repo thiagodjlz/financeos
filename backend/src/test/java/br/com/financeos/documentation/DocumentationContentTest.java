@@ -472,4 +472,35 @@ class DocumentationContentTest {
                 "Auditoria ainda diz que Impressão não tem registros");
         assertTrue(published.contains("A Impressão é registrada quando alguém usa o botão Imprimir"));
     }
+
+    @Test
+    void shouldDescribeRegistersBeforeReportsInTheMenuOrder() {
+        String menuOrder = "Resumo, Lançamentos, Categorias, Relatórios - Lançamentos, Usuários, Perfis, Auditoria, "
+                + "Documentação e Novidades por versão";
+
+        List<String> navegacao = CONTENT.introduction().sections().stream()
+                .filter(section -> "Como navegar".equals(section.title()))
+                .flatMap(section -> section.blocks().stream())
+                .flatMap(block -> block.text() == null ? block.items().stream() : Stream.of(block.text()))
+                .toList();
+        int registers = navegacao.indexOf("Cadastros: seção com a tela de Categorias.");
+        int reports = navegacao.indexOf("Relatórios: seção com o relatório de Lançamentos.");
+        assertTrue(registers >= 0 && reports > registers, "Como navegar não põe Cadastros antes de Relatórios");
+        assertTrue(String.join(" ", navegacao).contains("(Cadastros, Relatórios, Configurações e Sobre)"),
+                "Painel Mais fora da ordem do menu");
+
+        String entrada = CONTENT.introduction().sections().stream()
+                .filter(section -> "Entrar no sistema".equals(section.title()))
+                .flatMap(section -> section.blocks().stream())
+                .flatMap(block -> block.items().stream())
+                .reduce("", (left, right) -> left + " " + right);
+        assertTrue(entrada.contains("na ordem do menu: " + menuOrder + "."), entrada);
+
+        String profiles = areaText(CONTENT.areas().stream()
+                .filter(area -> "Perfis".equals(area.title()))
+                .findFirst()
+                .orElseThrow());
+        assertTrue(profiles.contains("As linhas da matriz são " + menuOrder + ", na mesma ordem em que as telas "
+                + "aparecem no menu."), profiles);
+    }
 }

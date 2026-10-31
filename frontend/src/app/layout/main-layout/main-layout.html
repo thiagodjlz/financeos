@@ -1,7 +1,11 @@
 <div class="app-shell" [class.menu-collapsed]="collapsed()" [class.form-route]="formRoute()">
   <aside class="sidebar" aria-label="Menu lateral">
     <div class="brand-block">
-      <div class="mark" aria-hidden="true">F</div>
+      <div class="mark" aria-hidden="true">
+        <svg width="34" height="34" viewBox="0 0 34 34" fill="currentColor" aria-hidden="true">
+          <path fill-rule="evenodd" d="M2.125 17a14.875 14.875 0 1 0 29.75 0a14.875 14.875 0 1 0-29.75 0zM4.25 17a12.75 12.75 0 1 0 25.5 0a12.75 12.75 0 1 0-25.5 0zM6.375 17a10.625 10.625 0 1 0 21.25 0a10.625 10.625 0 1 0-21.25 0zM12.75 10.625h8.5v2.125h-6.375v2.125h4.25V17h-4.25v6.375H12.75z"></path>
+        </svg>
+      </div>
       <div class="brand-text">
         <strong>{{ appName }}</strong>
         <span>Controle financeiro</span>
@@ -57,25 +61,6 @@
         </button>
       </div>
 
-      <div class="nav-section" *ngIf="canSeeReports()">
-        <span class="nav-section-title">Relatórios</span>
-        <button
-          *ngIf="authService.can('TRANSACTION_REPORTS', 'VIEW')"
-          type="button"
-          routerLink="/transaction-reports"
-          routerLinkActive="active"
-          (click)="onNavigate()"
-          [attr.title]="collapsed() ? 'Relatórios - Lançamentos' : null"
-          [attr.aria-label]="collapsed() ? 'Relatórios - Lançamentos' : null"
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M6 3.5h8l4 4V20a.5.5 0 0 1-.5.5h-11A.5.5 0 0 1 6 20z"></path>
-            <path d="M9.5 16.5v-3M12.5 16.5v-6M15.5 16.5v-4"></path>
-          </svg>
-          <span class="nav-label">Lançamentos</span>
-        </button>
-      </div>
-
       <div class="nav-section" *ngIf="canSeeRegisters()">
         <span class="nav-section-title">Cadastros</span>
         <button
@@ -92,6 +77,25 @@
             <circle cx="16" cy="12" r="5.2"></circle>
           </svg>
           <span class="nav-label">Categorias</span>
+        </button>
+      </div>
+
+      <div class="nav-section" *ngIf="canSeeReports()">
+        <span class="nav-section-title">Relatórios</span>
+        <button
+          *ngIf="authService.can('TRANSACTION_REPORTS', 'VIEW')"
+          type="button"
+          routerLink="/transaction-reports"
+          routerLinkActive="active"
+          (click)="onNavigate()"
+          [attr.title]="collapsed() ? 'Relatórios - Lançamentos' : null"
+          [attr.aria-label]="collapsed() ? 'Relatórios - Lançamentos' : null"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M6 3.5h8l4 4V20a.5.5 0 0 1-.5.5h-11A.5.5 0 0 1 6 20z"></path>
+            <path d="M9.5 16.5v-3M12.5 16.5v-6M15.5 16.5v-4"></path>
+          </svg>
+          <span class="nav-label">Lançamentos</span>
         </button>
       </div>
 
@@ -283,21 +287,6 @@
       </button>
     </div>
     <div class="sheet-list">
-      <span class="sheet-section-title" *ngIf="canSeeReports()">Relatórios</span>
-      <button
-        *ngIf="authService.can('TRANSACTION_REPORTS', 'VIEW')"
-        type="button"
-        class="sheet-item"
-        routerLink="/transaction-reports"
-        routerLinkActive="active"
-        (click)="onNavigate()"
-      >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M6 3.5h8l4 4V20a.5.5 0 0 1-.5.5h-11A.5.5 0 0 1 6 20z"></path>
-          <path d="M9.5 16.5v-3M12.5 16.5v-6M15.5 16.5v-4"></path>
-        </svg>
-        <span>Lançamentos</span>
-      </button>
       <span class="sheet-section-title" *ngIf="canSeeRegisters()">Cadastros</span>
       <button
         *ngIf="authService.can('CATEGORIES', 'VIEW')"
@@ -312,6 +301,21 @@
           <circle cx="16" cy="12" r="5.2"></circle>
         </svg>
         <span>Categorias</span>
+      </button>
+      <span class="sheet-section-title" *ngIf="canSeeReports()">Relatórios</span>
+      <button
+        *ngIf="authService.can('TRANSACTION_REPORTS', 'VIEW')"
+        type="button"
+        class="sheet-item"
+        routerLink="/transaction-reports"
+        routerLinkActive="active"
+        (click)="onNavigate()"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M6 3.5h8l4 4V20a.5.5 0 0 1-.5.5h-11A.5.5 0 0 1 6 20z"></path>
+          <path d="M9.5 16.5v-3M12.5 16.5v-6M15.5 16.5v-4"></path>
+        </svg>
+        <span>Lançamentos</span>
       </button>
       <span class="sheet-section-title" *ngIf="canSeeSettings()">Configurações</span>
       <button

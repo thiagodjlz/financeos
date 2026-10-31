@@ -19,8 +19,8 @@ const PROFILE: Profile = {
 const SCREEN_ROWS = [
   'Resumo',
   'Lançamentos',
-  'Relatórios - Lançamentos',
   'Categorias',
+  'Relatórios - Lançamentos',
   'Usuários',
   'Perfis',
   'Auditoria',

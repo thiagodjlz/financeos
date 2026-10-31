@@ -57,15 +57,15 @@ final class OverviewContent {
                 DocumentationBlock.list(
                         "Resumo: os totais e os gráficos do mês escolhido.",
                         "Lançamentos: o cadastro das receitas e despesas.",
-                        "Relatórios: seção com o relatório de Lançamentos.",
                         "Cadastros: seção com a tela de Categorias.",
+                        "Relatórios: seção com o relatório de Lançamentos.",
                         "Configurações: seção com as telas de Usuários, Perfis e Auditoria.",
                         "Sobre: seção com esta Central de Documentação e a tela de Novidades por versão."),
                 DocumentationBlock.paragraph(
                         "Em telas estreitas, como as de celular, o menu dá lugar a uma barra fixa na parte de "
                                 + "baixo da tela, com Resumo, Lançamentos, o botão + (Novo lançamento) e Mais. O "
                                 + "item Mais abre um painel com as demais telas, nas mesmas seções do menu "
-                                + "(Relatórios, Cadastros, Configurações e Sobre); o painel fecha ao escolher um item, ao tocar "
+                                + "(Cadastros, Relatórios, Configurações e Sobre); o painel fecha ao escolher um item, ao tocar "
                                 + "fora dele ou ao pressionar a tecla Esc. O botão Sair fica no painel Mais."));
     }
 
@@ -100,7 +100,7 @@ final class OverviewContent {
                                 + "novamente. O mesmo aviso aparece para quem está inativo, mesmo que a senha "
                                 + "esteja correta.",
                         "Depois de entrar, abre a primeira tela que o seu perfil pode ver, na ordem do menu: "
-                                + "Resumo, Lançamentos, Relatórios - Lançamentos, Categorias, Usuários, Perfis, "
+                                + "Resumo, Lançamentos, Categorias, Relatórios - Lançamentos, Usuários, Perfis, "
                                 + "Auditoria, Documentação e Novidades por versão.",
                         "Se o seu perfil não pode ver nenhuma tela, abre a tela Sem acesso."));
     }
