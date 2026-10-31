@@ -5,7 +5,7 @@ title: "Desconto do saldo acumulado"
 domains: [dashboard, transactions, documentation]
 target: v1.0.3
 branch: fix/issue-117-desconto-saldo-acumulado
-stage: validated
+stage: pr-open
 created: 2026-10-30
 ---
 
