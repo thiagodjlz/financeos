@@ -54,7 +54,7 @@
         <div class="balance-head">
           <span class="balance-label">Saldo do mês</span>
           <strong class="balance-value tabular">{{ formatMoney(summary()?.balance) }}</strong>
-          <span class="balance-hint">Receitas menos despesas pagas</span>
+          <span class="balance-hint">Saldo anterior mais receitas menos despesas pagas</span>
         </div>
         <div class="balance-ratio">
           <div class="balance-track" aria-hidden="true">
@@ -65,9 +65,6 @@
         <div class="balance-carry">
           <span class="balance-ratio-text">
             Saldo anterior<strong class="tabular">{{ formatMoney(summary()?.previousBalance) }}</strong>
-          </span>
-          <span class="balance-ratio-text accumulated">
-            Saldo acumulado<strong class="tabular">{{ formatMoney(summary()?.accumulatedBalance) }}</strong>
           </span>
         </div>
       </div>
@@ -248,7 +245,6 @@
           <span><small>Receita</small>{{ block.income }}</span>
           <span><small>Despesa</small>{{ block.expense }}</span>
           <span><small>Saldo</small>{{ block.balance }}</span>
-          <span><small>Acumulado</small>{{ block.accumulated }}</span>
         </div>
         <span class="month-block-hint only-mobile">Toque em um mês do gráfico para ver os valores.</span>
         <span class="month-block-hint only-desktop">Clique em um mês do gráfico para ver os valores.</span>

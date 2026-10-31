@@ -28,10 +28,10 @@ export interface DashboardSummary {
   period: Period;
   totalIncome: number;
   totalExpense: number;
+  // Saldo anterior mais receitas menos despesas pagas do mês (issue #117).
   balance: number;
-  // Soma dos saldos desde out/2026 até o mês anterior (limitada ao mês corrente) e esse total mais o saldo do mês.
+  // Soma de receitas menos despesas pagas de cada mês desde out/2026 até o mês anterior, limitada ao mês corrente.
   previousBalance: number;
-  accumulatedBalance: number;
   paidExpense: number;
   pendingExpense: number;
   // Despesas pagas sobre as receitas, com uma casa; nulo sem receita no mês.
@@ -57,8 +57,9 @@ export interface MonthlySummary {
   month: number;
   income: number;
   expense: number;
+  // O balance já inclui o previousBalance, como no summary do mesmo mês.
+  previousBalance: number;
   balance: number;
-  accumulatedBalance: number;
 }
 
 export interface Category {

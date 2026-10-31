@@ -143,37 +143,6 @@ export function isoDate(date: Date): string {
   return `${date.getFullYear()}-${month}-${day}`;
 }
 
-// Título do grupo de lançamentos por dia no celular. `today` chega em ISO local para o teste
-// fixar o "hoje" sem depender do relógio da máquina. Hoje e Ontem tomam o lugar do dia da semana.
-export function dayHeading(value: string, today: string): string {
-  const [year, month, day] = value.split('-').map(Number);
-  if (!year || !month || !day) {
-    return value;
-  }
-
-  const [todayYear, todayMonth, todayDay] = today.split('-').map(Number);
-  const yesterday = isoDate(new Date(todayYear, todayMonth - 1, todayDay - 1));
-  const date = new Date(year, month - 1, day);
-  const monthLabel = new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(date);
-  const label = `${day} de ${monthLabel}${year === todayYear ? '' : ` de ${year}`}`;
-
-  if (value === today) {
-    return `Hoje, ${label}`;
-  }
-
-  if (value === yesterday) {
-    return `Ontem, ${label}`;
-  }
-
-  return `${weekdayName(date)}, ${label}`;
-}
-
-// "Segunda", e não "Segunda-feira": o título do dia segue curto, como no desenho da issue #109.
-function weekdayName(date: Date): string {
-  const label = new Intl.DateTimeFormat('pt-BR', { weekday: 'long' }).format(date).replace(/-feira$/, '');
-  return label.charAt(0).toUpperCase() + label.slice(1);
-}
-
 // O percentual chega pronto da API, com uma casa (issue #109): aqui ele só ganha a vírgula.
 export function percentLabel(value: number): string {
   return `${new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(value)}%`;

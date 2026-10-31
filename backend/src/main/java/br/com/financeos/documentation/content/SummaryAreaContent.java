@@ -26,9 +26,9 @@ final class SummaryAreaContent {
                 "Descrição",
                 DocumentationBlock.paragraph(
                         "O Resumo é a tela de abertura do sistema. Ele consolida, para um único mês, o que você "
-                                + "recebeu, o que gastou, o que ainda está em aberto e quanto sobrou. Também mostra "
-                                + "quanto você juntou desde 1º de outubro de 2026, somando o que sobrou de cada "
-                                + "mês."),
+                                + "recebeu, o que gastou, o que ainda está em aberto e quanto sobrou. O Saldo do mês já "
+                                + "traz o que sobrou dos meses anteriores desde 1º de outubro de 2026, mostrado à "
+                                + "parte como Saldo anterior."),
                 DocumentationBlock.paragraph(
                         "Nada é cadastrado aqui: a tela apenas lê os lançamentos já registrados e os apresenta em "
                                 + "quadros, gráfico e listas. Todos os números são sempre os seus — lançamentos "
@@ -44,9 +44,10 @@ final class SummaryAreaContent {
         return DocumentationSection.of(
                 "Funcionalidades",
                 DocumentationBlock.list(
-                        "Quadro Saldo do mês, com o saldo, uma barra com a frase Despesas pagas equivalem a 29,3% "
-                                + "das receitas, as linhas Saldo anterior e Saldo acumulado e, logo abaixo, as "
-                                + "Receitas (entradas no mês) e as Despesas (já pagas no mês).",
+                        "Quadro Saldo do mês, com o saldo e a legenda Saldo anterior mais receitas menos despesas "
+                                + "pagas, uma barra com a frase Despesas pagas equivalem a 29,3% das receitas, a "
+                                + "linha Saldo anterior e, logo abaixo, as Receitas (entradas no mês) e as Despesas "
+                                + "(já pagas no mês).",
                         "Quadro Pendentes · despesas a pagar, com a soma das despesas em aberto do mês e o atalho "
                                 + "Ver pendentes (no celular, só Ver), que abre Lançamentos já filtrado.",
                         "Gráfico Evolução anual, com os doze meses do ano do período escolhido e o mês do período "
@@ -86,13 +87,13 @@ final class SummaryAreaContent {
                                 List.of("Receitas", "Soma das receitas do mês."),
                                 List.of("Despesas", "Soma apenas das despesas com situação Pago no mês."),
                                 List.of("Pendentes", "Soma apenas das despesas com situação Pendente no mês."),
-                                List.of("Saldo do mês", "Receitas menos Despesas pagas."),
+                                List.of("Saldo do mês",
+                                        "Saldo anterior mais Receitas menos Despesas pagas. Pode ficar "
+                                                + "negativo."),
                                 List.of("Saldo anterior",
-                                        "Soma do Saldo do mês de cada mês desde outubro de 2026 até o mês "
-                                                + "anterior ao escolhido. Num mês futuro, a soma para no mês "
-                                                + "atual. Antes de outubro de 2026, fica em zero."),
-                                List.of("Saldo acumulado",
-                                        "Saldo anterior mais o Saldo do mês. Pode ficar negativo."),
+                                        "Soma de Receitas menos Despesas pagas de cada mês desde outubro de 2026 "
+                                                + "até o mês anterior ao escolhido. Num mês futuro, a soma para no "
+                                                + "mês atual. Antes de outubro de 2026, fica em zero."),
                                 List.of("Despesas pagas equivalem a",
                                         "Despesas pagas divididas pelas Receitas do mês, com uma casa decimal. "
                                                 + "Passa de 100% quando as despesas pagas superam as receitas, "
@@ -112,28 +113,34 @@ final class SummaryAreaContent {
         return DocumentationSection.of(
                 "Regras de negócio",
                 DocumentationBlock.list(
-                        "O Saldo é sempre Receitas menos as Despesas pagas do mês; despesas em aberto ficam de fora.",
+                        "O Saldo do mês é o Saldo anterior mais as Receitas menos as Despesas pagas do mês; despesas "
+                                + "em aberto ficam de fora. Para usar o que sobrou, basta lançar a despesa.",
                         "Despesas pendentes aparecem em um único lugar da tela: o quadro Pendentes.",
                         "Um lançamento excluído em Lançamentos deixa de contar em todos os totais, inclusive no "
-                                + "Saldo acumulado dos meses seguintes. Alterar o valor ou a data de um lançamento "
-                                + "antigo também muda o acumulado na mesma hora.",
-                        "O Saldo acumulado vale a partir de 1º de outubro de 2026, igual para todos: lançamentos "
-                                + "de datas anteriores nunca entram no Saldo anterior, e nos meses antes de outubro "
-                                + "de 2026 o Saldo acumulado é igual ao Saldo do mês.",
+                                + "Saldo anterior e no Saldo do mês dos meses seguintes. Alterar o valor ou a data "
+                                + "de um lançamento antigo também muda esses saldos na mesma hora.",
+                        "O Saldo anterior vale a partir de 1º de outubro de 2026, igual para todos: lançamentos "
+                                + "de datas anteriores nunca entram nele, e nos meses antes de outubro de 2026 o "
+                                + "Saldo do mês é só Receitas menos Despesas pagas.",
                         "O que sobra de cada mês (Receitas menos Despesas pagas) passa para o mês seguinte. Um mês "
-                                + "com saldo negativo desconta do acumulado, e essa diferença também segue adiante.",
+                                + "com saldo negativo desconta do Saldo anterior, e essa diferença também segue "
+                                + "adiante. A mesma sobra nunca é contada duas vezes.",
                         "Despesas pendentes não entram no Saldo anterior; passam a contar quando marcadas como "
                                 + "Pagas.",
                         "Ao abrir um mês futuro, o Saldo anterior soma só até o mês atual: os meses entre o atual "
                                 + "e o escolhido, que ainda não aconteceram, ficam de fora.",
-                        "Um mês sem lançamentos não é erro, em qualquer ano: a tela mostra todos os valores "
-                                + "zerados e o painel Por categoria exibe o aviso Sem dados no período.",
+                        "Um mês sem lançamentos não é erro, em qualquer ano: Receitas, Despesas e Pendentes ficam "
+                                + "zerados, o Saldo do mês fica igual ao Saldo anterior e o painel Por categoria "
+                                + "exibe o aviso Sem dados no período.",
+                        "No mês atual, o Saldo do mês conta o mês inteiro, inclusive lançamentos com data ainda "
+                                + "por vir. Já o Saldo atual de Relatórios - Lançamentos vai só até hoje; por isso "
+                                + "os dois podem mostrar valores diferentes.",
                         "O atalho Ver pendentes só aparece para quem pode ver a tela de Lançamentos, e o botão "
                                 + "Novo lançamento, para quem pode incluir lançamentos. Sem a permissão, o quadro "
                                 + "Pendentes continua mostrando o valor."),
                 DocumentationBlock.highlight(
-                        "Os botões e o seletor não pulam os meses sem movimento: chegar a um mês zerado é "
-                                + "esperado e não indica erro."));
+                        "Os botões e o seletor não pulam os meses sem movimento: chegar a um mês sem lançamentos "
+                                + "é esperado e não indica erro."));
     }
 
     private static DocumentationSection particularidades() {
@@ -143,15 +150,14 @@ final class SummaryAreaContent {
                         "O gráfico Evolução anual sempre desenha os doze meses do ano escolhido, mesmo os que não "
                                 + "têm movimento. O mês do período aparece com uma faixa de fundo e o nome em "
                                 + "negrito.",
-                        "A linha de saldo do gráfico mostra o saldo de cada mês isolado, e não um acumulado do ano. "
-                                + "O Saldo acumulado aparece só no quadro Saldo do mês e no quadro abaixo do "
-                                + "gráfico.",
+                        "A linha de saldo do gráfico mostra o Saldo do mês de cada mês, já com o Saldo anterior: de "
+                                + "outubro de 2026 em diante, o que sobrou de um mês segue nos seguintes.",
                         "Essa linha termina no último mês que teve movimento, para não sugerir saldo zero em um mês "
                                 + "que ainda não aconteceu.",
                         "Passar o ponteiro sobre o gráfico, tocá-lo ou percorrê-lo com as setas do teclado abre "
                                 + "um informativo com a receita, a despesa e o saldo daquele mês.",
-                        "Um quadro logo abaixo do gráfico mostra a receita, a despesa, o saldo e o acumulado do "
-                                + "mês do período, com uma dica: no celular, Toque em um mês do gráfico para ver os "
+                        "Um quadro logo abaixo do gráfico mostra a receita, a despesa e o saldo do mês do "
+                                + "período, com uma dica: no celular, Toque em um mês do gráfico para ver os "
                                 + "valores. No computador, a dica é Clique em um mês do gráfico para ver os "
                                 + "valores. Tocar ou clicar em outro mês troca o quadro para ele, e trocar o "
                                 + "período o devolve ao mês do período.",

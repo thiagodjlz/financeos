@@ -8,8 +8,6 @@ import { FilterPanel } from '../../core/filter-panel/filter-panel';
 import {
   YearMonth,
   currentMonth,
-  dayHeading,
-  isoDate,
   money,
   monthKey,
   monthLabel,
@@ -46,7 +44,6 @@ const TYPE_LABELS: Record<string, string> = { EXPENSE: 'Despesa', INCOME: 'Recei
 
 interface TransactionRow {
   transaction: Transaction;
-  heading: string | null;
   groupStart: boolean;
   groupEnd: boolean;
 }
@@ -127,24 +124,16 @@ export class Transactions implements OnInit {
     return chips;
   });
 
-  // Cabeçalho por dia só aparece no celular (o CSS esconde `tr.day-row` acima de 680px): a mesma
-  // tabela vira a lista em cartões agrupada por data, sem template por largura. `groupStart`/`groupEnd`
-  // arredondam o cartão de cada dia.
+  // Sem título por dia: a lista vem ordenada por valor (issue #117), então datas iguais não ficam juntas.
+  // No celular as linhas formam um cartão só; `groupStart`/`groupEnd` arredondam as pontas dele.
   protected readonly rows = computed<TransactionRow[]>(() => {
-    const today = isoDate(new Date());
     const items = this.list.items();
 
-    return items.map((transaction, index) => {
-      const previous = items[index - 1]?.transactionDate;
-      const next = items[index + 1]?.transactionDate;
-      const groupStart = transaction.transactionDate !== previous;
-      return {
-        transaction,
-        heading: groupStart ? dayHeading(transaction.transactionDate, today) : null,
-        groupStart,
-        groupEnd: transaction.transactionDate !== next,
-      };
-    });
+    return items.map((transaction, index) => ({
+      transaction,
+      groupStart: index === 0,
+      groupEnd: index === items.length - 1,
+    }));
   });
 
   protected readonly hasMonth = computed(() => !!parseMonthKey(this.list.applied().month));

@@ -374,10 +374,15 @@ class DocumentationContentTest {
                 .findFirst()
                 .orElseThrow());
 
-        List.of("Saldo anterior", "Saldo acumulado", "1º de outubro de 2026", "Receitas menos Despesas pagas",
-                "saldo negativo desconta do acumulado", "segue adiante", "soma só até o mês atual",
-                "o saldo e o acumulado do mês do período", "muda o acumulado")
+        List.of("Saldo anterior mais Receitas menos Despesas pagas", "Saldo anterior mais receitas menos despesas pagas",
+                "Soma de Receitas menos Despesas pagas de cada mês", "1º de outubro de 2026",
+                "saldo negativo desconta do Saldo anterior", "segue adiante", "soma só até o mês atual",
+                "a receita, a despesa e o saldo do mês do período", "muda esses saldos",
+                "o Saldo do mês fica igual ao Saldo anterior", "basta lançar a despesa",
+                "o Saldo do mês conta o mês inteiro", "Saldo atual de Relatórios - Lançamentos vai só até hoje")
                 .forEach(expected -> assertTrue(summary.contains(expected), "Resumo sem mencionar " + expected));
+        assertFalse(summary.toLowerCase().contains("acumulad"), "Resumo ainda menciona o Saldo acumulado");
+        assertFalse(summary.contains("todos os valores zerados"), "Resumo ainda diz que o mês vazio zera o Saldo");
     }
 
     @Test
@@ -396,10 +401,13 @@ class DocumentationContentTest {
                 "Toque em um mês do gráfico para ver os valores.")
                 .forEach(expected -> assertTrue(summary.contains(expected), "Resumo sem mencionar " + expected));
         List.of("Todo o período", "Mês anterior", "Próximo mês", "Todos, Despesas e Receitas", "detalhe",
-                "Hoje e Ontem", "Sábado, 10 de outubro", "O valor é obrigatório.", "Salvando…",
-                "Tentar novamente")
+                "Hoje e Ontem", "do maior valor para o menor", "receitas e despesas juntas",
+                "cada cartão mostra a sua data", "O valor é obrigatório.", "Salvando…", "Tentar novamente")
                 .forEach(expected -> assertTrue(transactions.contains(expected),
                         "Lançamentos sem mencionar " + expected));
+        List.of("agrupados por dia", "Sábado, 10 de outubro", "do mais recente para o mais antigo, com até")
+                .forEach(removed -> assertFalse(transactions.contains(removed),
+                        "Lançamentos ainda menciona " + removed));
         assertTrue(published.contains("linhas cinzas"), "Central sem mencionar a lista carregando");
         assertTrue(summary.contains("Clique em um mês do gráfico para ver os valores."),
                 "Resumo sem a dica do computador");
@@ -449,7 +457,7 @@ class DocumentationContentTest {
                 "Mês atual", "Personalizado", "Parcelados", "Sem status", "Sem categoria", "sem páginas",
                 "Escolha ao menos uma coluna.", "A data inicial não pode ser posterior à data final.",
                 "ninguém mais a vê", "desmarca a anterior", "acompanha a data", "inativa continua", "Imprimir",
-                "rola para os lados")
+                "rola para os lados", "pode ser diferente do Saldo do mês atual no Resumo")
                 .forEach(expected -> assertTrue(report.contains(expected), "Relatório sem mencionar " + expected));
 
         String navegacao = CONTENT.introduction().sections().stream()

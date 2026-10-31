@@ -167,9 +167,6 @@
       </thead>
       <tbody>
         <ng-container *ngFor="let row of rows()">
-          <tr class="day-row" *ngIf="row.heading">
-            <th colspan="6" scope="rowgroup">{{ row.heading }}</th>
-          </tr>
           <tr
             class="transaction-row"
             [class.group-start]="row.groupStart"

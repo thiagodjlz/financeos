@@ -120,10 +120,6 @@
   strong {
     color: var(--on-accent);
   }
-
-  .accumulated strong {
-    font-size: 18px;
-  }
 }
 
 .balance-split {
@@ -394,7 +390,7 @@
 
 .month-block-values {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
 
   span {
@@ -581,10 +577,6 @@
 
   .balance-item {
     align-items: flex-start;
-  }
-
-  .month-block-values {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .balance-item-icon {
