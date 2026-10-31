@@ -4,7 +4,7 @@ url: https://github.com/thiagodjlz/financeos/issues/120
 title: "Icone da guia"
 domains: [auth, transactions, documentation]
 target: v1.0.3
-stage: validated
+stage: pr-open
 branch: fix/issue-120-icone-guia-ordem-menu
 created: 2026-10-31
 ---
