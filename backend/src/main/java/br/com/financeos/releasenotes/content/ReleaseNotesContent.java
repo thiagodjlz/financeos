@@ -62,7 +62,8 @@ public final class ReleaseNotesContent {
                         + "Lançamentos a falha de carga traz o botão Tentar novamente.",
                 "Lançamentos por valor: a lista mostra os lançamentos do maior valor para o menor, com receitas "
                         + "e despesas juntas, e no celular cada lançamento traz a sua data.",
-                "Ícone da guia: a guia do navegador passa a mostrar a marca do FinanceOS.");
+                "Ícone da guia: a guia do navegador, o topo do menu lateral e a tela de entrada passam a "
+                        + "mostrar a marca do FinanceOS, uma moeda com a letra F.");
 
         addIfPresent(categories, Kind.FIX,
                 "Versão no menu: o número da versão aparece inteiro, numa linha abaixo do nome FinanceOS, no "
