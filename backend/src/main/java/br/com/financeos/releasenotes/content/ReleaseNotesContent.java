@@ -19,7 +19,13 @@ public final class ReleaseNotesContent {
     // quando X.Y.Z muda (scripts/new-version.ps1 lembra disso). Blocos de versões anteriores são
     // histórico e não mudam; um bloco ainda sem itens sai sem categorias e a tela avisa isso.
     public static List<ReleaseNoteVersion> build() {
-        return List.of(versao_1_0_3(), versao_1_0_2());
+        return List.of(versao_1_0_4(), versao_1_0_3(), versao_1_0_2());
+    }
+
+    private static ReleaseNoteVersion versao_1_0_4() {
+        List<ReleaseNoteCategory> categories = new ArrayList<>();
+
+        return new ReleaseNoteVersion("1.0.4", List.copyOf(categories));
     }
 
     private static ReleaseNoteVersion versao_1_0_3() {
@@ -29,9 +35,9 @@ public final class ReleaseNotesContent {
                 "Auditoria: nova tela, no menu Configurações, que mostra quem incluiu, alterou ou excluiu cada "
                         + "registro, com o valor anterior e o novo de cada campo, e os acessos ao sistema, como "
                         + "entradas, saídas e telas abertas.",
-                "Saldo acumulado: a partir de outubro de 2026, o que sobra de cada mês passa para o seguinte, e "
-                        + "o Resumo mostra o Saldo anterior e o Saldo acumulado no quadro Saldo do mês e no quadro "
-                        + "abaixo do gráfico.",
+                "Sobra do mês anterior: a partir de outubro de 2026, o que sobra de cada mês passa para o "
+                        + "seguinte e já entra no Saldo do mês do Resumo, que mostra essa sobra na linha Saldo "
+                        + "anterior.",
                 "Relatório de lançamentos: nova tela, no menu Relatórios, que reúne os seus lançamentos com os "
                         + "filtros, agrupamentos e colunas que você escolher, mostra o Saldo do período e o Saldo "
                         + "atual, salva a montagem como preferência e imprime ou gera PDF pelo navegador.");
@@ -53,7 +59,14 @@ public final class ReleaseNotesContent {
                 "Cadastro de lançamento mais rápido: o Valor vem logo depois do Tipo e aceita vírgula nos "
                         + "centavos, e os botões Hoje e Ontem preenchem a data com um toque.",
                 "Listas mais claras: enquanto carregam, mostram linhas de espera no lugar dos registros, e em "
-                        + "Lançamentos a falha de carga traz o botão Tentar novamente.");
+                        + "Lançamentos a falha de carga traz o botão Tentar novamente.",
+                "Lançamentos por valor: a lista mostra os lançamentos do maior valor para o menor, com receitas "
+                        + "e despesas juntas, e no celular cada lançamento traz a sua data.",
+                "Ícone da guia: a guia do navegador passa a mostrar a marca do FinanceOS.");
+
+        addIfPresent(categories, Kind.FIX,
+                "Versão no menu: o número da versão aparece inteiro, numa linha abaixo do nome FinanceOS, no "
+                        + "rodapé do menu e no painel Mais do celular.");
 
         return new ReleaseNoteVersion("1.0.3", List.copyOf(categories));
     }

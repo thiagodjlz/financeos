@@ -81,7 +81,9 @@ final class TransactionReportsAreaContent {
                                 + "aparece na lista, mas não entra no Saldo. O mesmo cálculo vale para o subtotal de "
                                 + "cada grupo e para o Total do período.",
                         "Saldo atual: Receitas menos Despesas pagas de 1º de outubro de 2026 até hoje, inclusive. "
-                                + "Ele não muda com os filtros nem com o período escolhido.",
+                                + "Ele não muda com os filtros nem com o período escolhido. Como vai só até hoje, pode ser "
+                                + "diferente do Saldo do mês atual no Resumo, que conta o mês inteiro, inclusive "
+                                + "lançamentos com data ainda por vir.",
                         "A Data inicial não pode ser posterior à Data final: o sistema recusa com A data inicial "
                                 + "não pode ser posterior à data final.",
                         "O Valor mínimo não pode ser maior que o Valor máximo, e nenhum dos dois pode ser "

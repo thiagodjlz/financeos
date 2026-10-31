@@ -1,7 +1,6 @@
 import {
   dateTimeLabel,
   currentMonth,
-  dayHeading,
   formatAmountInput,
   initials,
   longMonthName,
@@ -84,30 +83,6 @@ describe('shortDate', () => {
   it('devolve o valor original quando não é uma data ISO', () => {
     expect(shortDate('')).toBe('');
     expect(shortDate('24/09/2026')).toBe('24/09/2026');
-  });
-});
-
-describe('dayHeading', () => {
-  it('usa Hoje e Ontem relativos ao dia informado, no lugar do dia da semana', () => {
-    expect(dayHeading('2026-09-24', '2026-09-24')).toBe('Hoje, 24 de setembro');
-    expect(dayHeading('2026-09-23', '2026-09-24')).toBe('Ontem, 23 de setembro');
-  });
-
-  it('abre os demais dias do mesmo ano com o dia da semana, sem "-feira"', () => {
-    expect(dayHeading('2026-10-10', '2026-10-03')).toBe('Sábado, 10 de outubro');
-    expect(dayHeading('2026-10-05', '2026-10-03')).toBe('Segunda, 5 de outubro');
-    expect(dayHeading('2026-10-01', '2026-10-03')).toBe('Quinta, 1 de outubro');
-    expect(dayHeading('2026-03-08', '2026-09-24')).toBe('Domingo, 8 de março');
-  });
-
-  it('reconhece Ontem na virada de mês e de ano', () => {
-    expect(dayHeading('2026-08-31', '2026-09-01')).toBe('Ontem, 31 de agosto');
-    expect(dayHeading('2025-12-31', '2026-01-01')).toBe('Ontem, 31 de dezembro de 2025');
-  });
-
-  it('acrescenta o ano só quando o dia é de outro ano', () => {
-    expect(dayHeading('2025-09-22', '2026-09-24')).toBe('Segunda, 22 de setembro de 2025');
-    expect(dayHeading('2027-01-02', '2026-09-24')).toBe('Sábado, 2 de janeiro de 2027');
   });
 });
 

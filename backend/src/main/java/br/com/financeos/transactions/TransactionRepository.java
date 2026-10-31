@@ -52,7 +52,7 @@ public class TransactionRepository implements PanacheRepositoryBase<FinancialTra
             params.put("endDate", filter.endDate());
         }
 
-        String query = String.join(" and ", filters) + " order by transactionDate desc, createdAt desc, id";
+        String query = String.join(" and ", filters) + " order by amount desc, transactionDate desc, createdAt desc, id";
         return find(query, params);
     }
 

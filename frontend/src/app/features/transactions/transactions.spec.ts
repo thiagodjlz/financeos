@@ -2,7 +2,6 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
-import { dayHeading, isoDate } from '../../core/formatters';
 import { API_BASE, Category, Page, Transaction } from '../../core/models';
 import { AuthService } from '../../core/services/auth.service';
 import { ListStateService } from '../../core/services/list-state.service';
@@ -895,26 +894,34 @@ describe('Transactions', () => {
     expect(buttonByText('Novo lançamento')).toBeUndefined();
   });
 
-  it('titula cada dia com o dia da semana, ou Hoje e Ontem', async () => {
-    const dates = ['2026-09-15', '2026-09-14', '2026-09-12', '2025-09-12'];
+  it('não titula os dias: cada linha mostra a sua data, mesmo com datas repetidas fora de ordem', async () => {
+    const dates = ['2026-09-12', '2026-09-15', '2026-09-12', '2025-09-12'];
     await render(page(dates.map((date, index) => ({ ...TRANSACTION, id: `t${index}`, transactionDate: date }))));
 
-    expect(queryAll('tbody tr.day-row th').map((cell) => cell.textContent?.trim())).toEqual([
-      'Hoje, 15 de setembro',
-      'Ontem, 14 de setembro',
-      'Sábado, 12 de setembro',
-      'Sexta, 12 de setembro de 2025',
+    expect(queryAll('tbody tr.day-row')).toHaveLength(0);
+    expect(queryAll('tbody th')).toHaveLength(0);
+    const rows = queryAll('tbody tr.transaction-row');
+    expect(rows.map((row) => row.querySelector('.date-cell')?.textContent?.trim())).toEqual([
+      '12/09/2026',
+      '15/09/2026',
+      '12/09/2026',
+      '12/09/2025',
     ]);
+    expect(rows.map((row) => row.classList.contains('group-start'))).toEqual([true, false, false, false]);
+    expect(rows.map((row) => row.classList.contains('group-end'))).toEqual([false, false, false, true]);
   });
 
-  it('agrupa as linhas por dia com um cabeçalho de data para os cartões do celular', async () => {
-    const other: Transaction = { ...TRANSACTION, id: 't2', transactionDate: '2026-06-30' };
-    await render(page([TRANSACTION, { ...TRANSACTION, id: 't3' }, other]));
+  it('mantém as seis colunas da tabela do computador', async () => {
+    await render(page([TRANSACTION]));
 
-    const headings = queryAll('tbody tr.day-row th').map((cell) => cell.textContent?.trim());
-    const today = isoDate(new Date());
-    expect(headings).toEqual([dayHeading('2026-07-01', today), dayHeading('2026-06-30', today)]);
-    expect(query('tbody tr.day-row th').getAttribute('colspan')).toBe('6');
-    expect(queryAll('tbody tr.transaction-row')).toHaveLength(3);
+    expect(queryAll('thead th').map((cell) => cell.textContent?.trim())).toEqual([
+      'Data',
+      'Descrição',
+      'Categoria',
+      'Status',
+      'Valor',
+      'Ações',
+    ]);
+    expect(queryAll('tbody tr.transaction-row td')).toHaveLength(6);
   });
 });

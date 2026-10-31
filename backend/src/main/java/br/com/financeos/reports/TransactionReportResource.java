@@ -26,7 +26,7 @@ import jakarta.ws.rs.core.UriInfo;
 @Authenticated
 public class TransactionReportResource {
 
-    // Mesmo início do saldo acumulado do Resumo (issue #113).
+    // Mesmo início do Saldo anterior do Resumo (issues #113 e #117).
     static final LocalDate CURRENT_BALANCE_START = LocalDate.of(2026, 10, 1);
 
     private final TransactionReportRepository repository;

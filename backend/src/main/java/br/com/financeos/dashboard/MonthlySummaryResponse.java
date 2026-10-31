@@ -7,19 +7,22 @@ public record MonthlySummaryResponse(
         int month,
         BigDecimal income,
         BigDecimal expense,
-        BigDecimal balance,
-        BigDecimal accumulatedBalance) {
+        BigDecimal previousBalance,
+        BigDecimal balance) {
 
     public static MonthlySummaryResponse empty(int year, int month) {
         return of(year, month, BigDecimal.ZERO, BigDecimal.ZERO);
     }
 
     public static MonthlySummaryResponse of(int year, int month, BigDecimal income, BigDecimal expense) {
-        BigDecimal balance = income.subtract(expense);
-        return new MonthlySummaryResponse(year, month, income, expense, balance, balance);
+        return new MonthlySummaryResponse(year, month, income, expense, BigDecimal.ZERO, income.subtract(expense));
     }
 
-    public MonthlySummaryResponse withAccumulatedBalance(BigDecimal value) {
-        return new MonthlySummaryResponse(year, month, income, expense, balance, value);
+    BigDecimal monthResult() {
+        return income.subtract(expense);
+    }
+
+    public MonthlySummaryResponse withPreviousBalance(BigDecimal value) {
+        return new MonthlySummaryResponse(year, month, income, expense, value, value.add(monthResult()));
     }
 }

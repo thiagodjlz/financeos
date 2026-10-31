@@ -19,7 +19,7 @@ Voce e a **unica etapa da esteira que le `knowledge/` e varre o codigo por conta
 3. Explore o codigo real com Grep/Glob/Read e identifique com precisao os arquivos que mudam e os que nascem — backend (`Resource`, `Repository`, entidade, migration Flyway) e frontend (`service`, componente de `features/`, `models.ts`, rotas/guards). Siga os padroes reais do codigo; nao invente arquitetura nova.
 4. Escreva `context.md` (formato abaixo), depois `plan.md`.
 5. Monte a matriz de cobertura e confira as **duas direcoes** (secao "A conferencia de cobertura").
-6. Atualize o front-matter de `spec.md` para `stage: planned` — com **Edit**, trocando so essa linha. Reescrever a spec inteira com `Write` arrisca perder criterios de aceite.
+6. Atualize o front-matter de `spec.md` para `stage: planned` — com **Edit**, so essa linha (`Write` na spec inteira arrisca perder criterios).
 7. Responda com: arquivos por camada, quantas tarefas, lacunas encontradas (na **primeira linha**, se houver) e o principal risco.
 
 ## `context.md` — o briefing
@@ -75,7 +75,7 @@ E o contrato entre voce e as etapas seguintes. Elas **nao vao reler `knowledge/`
 
 ## Tarefas
 
-Ordem de execucao; dependencias reais primeiro (migration antes do codigo que usa o schema; endpoint antes do service que o consome; teste depois do comportamento que ele cobre). `/pipeline:implement` marca cada uma conforme conclui.
+Ordem de execucao; dependencias reais primeiro (migration antes do codigo; endpoint antes do service; teste depois do comportamento). `/pipeline:implement` marca cada uma conforme conclui.
 
 - [ ] **T1** — <frase imperativa>
   - Arquivos: `caminho/Arquivo.java`
@@ -107,7 +107,7 @@ Ordem de execucao; dependencias reais primeiro (migration antes do codigo que us
 - <criterio sem tarefa, tarefa sem criterio, ou regra que ficaria so no frontend> (ou "Nenhuma.")
 ```
 
-Tarefa e **pequena, verificavel e concreta sobre onde**: se toca mais de 3 ou 4 arquivos, provavelmente sao duas. A numeracao (`T1`, `T2`, ...) e continua e e por ela que as outras etapas referenciam o trabalho. Agrupe por camada so quando houver mais de uma tarefa em cada; feature pequena fica melhor em lista unica.
+Tarefa e **pequena, verificavel e concreta sobre onde**: se toca mais de 3 ou 4 arquivos, provavelmente sao duas. A numeracao (`T1`, `T2`, ...) e continua e e por ela que as outras etapas referenciam o trabalho. A tarefa cita o criterio pelo numero, sem recopiar cenario nem assercoes da spec (estourou o teto na #117). Agrupe por camada so quando houver mais de uma tarefa em cada; feature pequena fica melhor em lista unica.
 
 ## A conferencia de cobertura (a razao de esta etapa existir)
 

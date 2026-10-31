@@ -5,6 +5,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { API_BASE, PermissionEntry, Screen } from '../../core/models';
 import { AuthService } from '../../core/services/auth.service';
+import { APP_VERSION } from '../../core/version';
 import { MainLayout } from './main-layout';
 
 @Component({ template: '' })
@@ -294,6 +295,20 @@ describe('MainLayout', () => {
       expect(footer.querySelector('.current-user')?.textContent?.trim()).toBe('Ana Souza');
       expect(footer.querySelector('.app-version')?.textContent).toContain('FinanceOS');
       expect(footer.querySelector('button[aria-label="Sair"]')).not.toBeNull();
+    });
+
+    it('mostra o nome e a versão em linhas separadas, sem o ponto, no rodapé e no painel Mais', () => {
+      asSuperAdmin();
+      const fixture = createFixture();
+
+      for (const place of ['.sidebar-footer', '#sheet-more']) {
+        const version = root(fixture).querySelector(`${place} .app-version`) as HTMLElement;
+        expect(version, place).not.toBeNull();
+        expect(version.querySelector('.app-name')?.textContent?.trim()).toBe('FinanceOS');
+        expect(version.querySelector('.app-version-number')?.textContent?.trim()).toBe(`v${APP_VERSION}`);
+        expect(version.children).toHaveLength(2);
+        expect(version.textContent).not.toContain('·');
+      }
     });
 
     it('move o foco para o conteúdo ao navegar por um item do menu', async () => {

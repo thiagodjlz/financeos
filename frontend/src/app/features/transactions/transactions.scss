@@ -114,10 +114,6 @@ col.col-actions {
   }
 }
 
-.day-row {
-  display: none;
-}
-
 .amount-cell {
   &.income {
     color: var(--income-amount);
@@ -164,37 +160,14 @@ col.col-actions {
     min-width: 0;
   }
 
-  tbody .day-row {
-    display: block;
-    border: 0;
-    padding: 16px 2px 8px;
-    background: transparent;
-
-    margin-top: 0;
-
-    &:first-child {
-      padding-top: 2px;
-    }
-
-    th {
-      display: block;
-      height: auto;
-      border: 0;
-      padding: 0;
-      background: transparent;
-      color: var(--text-label);
-      font-size: var(--fs-day-heading);
-      font-weight: 600;
-    }
-  }
-
-  // O cartão de cada dia: as linhas dele se encostam, com divisória entre elas.
+  // As linhas se encostam num cartão só, com divisória entre elas; cada uma traz a sua data.
   .transaction-row {
     display: grid;
     grid-template-columns: var(--card-icon) minmax(0, 1fr) auto;
     grid-template-areas:
       'icon desc amount'
-      'icon cat status';
+      'icon cat status'
+      'icon date date';
     align-items: center;
     column-gap: 12px;
     row-gap: 2px;
@@ -222,8 +195,7 @@ col.col-actions {
       border-bottom-left-radius: var(--radius-xl);
     }
 
-    td.row-actions,
-    .date-cell {
+    td.row-actions {
       display: none;
     }
 
@@ -231,6 +203,12 @@ col.col-actions {
     .description-inner {
       display: contents;
     }
+  }
+
+  .date-cell {
+    grid-area: date;
+    color: var(--text-muted);
+    font-size: var(--fs-small);
   }
 
   .category-cell {
