@@ -41,8 +41,9 @@ describe('resolveEntryRoute', () => {
     expect(resolveEntryRoute(authWith([entry('TRANSACTION_REPORTS')]))).toBe('/transaction-reports');
   });
 
-  it('põe o relatório depois de Lançamentos e antes de Categorias na ordem do menu', () => {
-    expect(resolveEntryRoute(authWith([entry('CATEGORIES'), entry('TRANSACTION_REPORTS')]))).toBe(
+  it('põe o relatório depois de Categorias e antes de Usuários na ordem do menu', () => {
+    expect(resolveEntryRoute(authWith([entry('TRANSACTION_REPORTS'), entry('CATEGORIES')]))).toBe('/categories');
+    expect(resolveEntryRoute(authWith([entry('USERS'), entry('TRANSACTION_REPORTS')]))).toBe(
       '/transaction-reports',
     );
     expect(resolveEntryRoute(authWith([entry('TRANSACTION_REPORTS'), entry('TRANSACTIONS')]))).toBe(

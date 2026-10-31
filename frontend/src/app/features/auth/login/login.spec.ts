@@ -7,6 +7,10 @@ import { UNEXPECTED_ERROR_MESSAGE } from '../../../core/http-error';
 import { ToastService } from '../../../core/services/toast.service';
 import { Login } from './login';
 
+// Mesmo "d" do frontend/public/favicon.svg: a marca da tela de entrada é o símbolo do ícone da guia.
+const FAVICON_SYMBOL_PATH =
+  'M2.125 17a14.875 14.875 0 1 0 29.75 0a14.875 14.875 0 1 0-29.75 0zM4.25 17a12.75 12.75 0 1 0 25.5 0a12.75 12.75 0 1 0-25.5 0zM6.375 17a10.625 10.625 0 1 0 21.25 0a10.625 10.625 0 1 0-21.25 0zM12.75 10.625h8.5v2.125h-6.375v2.125h4.25V17h-4.25v6.375H12.75z';
+
 describe('Login', () => {
   let fixture: ComponentFixture<Login>;
   let httpMock: HttpTestingController;
@@ -53,6 +57,21 @@ describe('Login', () => {
   function feedbackBanner(): HTMLElement | null {
     return query<HTMLElement>('form [class*="status"]');
   }
+
+  it('mostra na marca o símbolo do ícone da guia, a moeda com o F desenhado (sem texto)', () => {
+    const mark = query<HTMLElement>('.brand-block .mark') as HTMLElement;
+    expect(mark).not.toBeNull();
+    expect(mark.textContent?.trim()).toBe('');
+    expect(mark.getAttribute('aria-hidden')).toBe('true');
+    const svg = mark.querySelector('svg') as SVGElement;
+    expect(svg.getAttribute('viewBox')).toBe('0 0 34 34');
+    expect(svg.getAttribute('width')).toBe('44');
+    expect(svg.getAttribute('height')).toBe('44');
+    expect(svg.getAttribute('fill')).toBe('currentColor');
+    const path = svg.querySelector('path') as SVGPathElement;
+    expect(path.getAttribute('d')).toBe(FAVICON_SYMBOL_PATH);
+    expect(path.getAttribute('fill-rule')).toBe('evenodd');
+  });
 
   it('alterna a senha entre oculta e visível pelo botão Mostrar senha, sem requisição', () => {
     const password = () => query<HTMLInputElement>('input[name="password"]') as HTMLInputElement;
