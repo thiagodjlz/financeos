@@ -19,7 +19,13 @@ public final class ReleaseNotesContent {
     // quando X.Y.Z muda (scripts/new-version.ps1 lembra disso). Blocos de versões anteriores são
     // histórico e não mudam; um bloco ainda sem itens sai sem categorias e a tela avisa isso.
     public static List<ReleaseNoteVersion> build() {
-        return List.of(versao_1_0_3(), versao_1_0_2());
+        return List.of(versao_1_0_4(), versao_1_0_3(), versao_1_0_2());
+    }
+
+    private static ReleaseNoteVersion versao_1_0_4() {
+        List<ReleaseNoteCategory> categories = new ArrayList<>();
+
+        return new ReleaseNoteVersion("1.0.4", List.copyOf(categories));
     }
 
     private static ReleaseNoteVersion versao_1_0_3() {
