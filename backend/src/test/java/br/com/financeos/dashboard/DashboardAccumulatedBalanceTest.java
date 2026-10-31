@@ -3,6 +3,8 @@ package br.com.financeos.dashboard;
 import static io.restassured.RestAssured.given;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -50,116 +52,155 @@ class DashboardAccumulatedBalanceTest {
     }
 
     @Test
-    void shouldStartAccumulationInOctober2026() {
+    void shouldAddThePreviousBalanceToTheMonthBalance() {
         fixCurrentMonth(2026, 12);
-        createCriterion2Scenario();
+        createCriterion1Scenario();
 
         JsonPath october = summary(2026, 10);
-        assertMoney(october, "balance", "400.00");
         assertMoney(october, "previousBalance", "0");
-        assertMoney(october, "accumulatedBalance", "400.00");
+        assertMoney(october, "balance", "400.00");
 
-        assertMoney(october, "monthlyEvolution[9].accumulatedBalance", "400.00");
-        assertMoney(october, "monthlyEvolution[10].accumulatedBalance", "200.00");
-        assertMoney(october, "monthlyEvolution[11].accumulatedBalance", "200.00");
+        JsonPath november = summary(2026, 11);
+        assertMoney(november, "previousBalance", "400.00");
+        assertMoney(november, "balance", "600.00");
+
+        JsonPath december = summary(2026, 12);
+        assertMoney(december, "previousBalance", "600.00");
+        assertMoney(december, "balance", "600.00");
+
+        JsonPath february = summary(2027, 2);
+        assertMoney(february, "previousBalance", "600.00");
+        assertMoney(february, "balance", "600.00");
+    }
+
+    @Test
+    void shouldIgnoreTransactionsBeforeOctober2026() {
+        fixCurrentMonth(2026, 12);
+        createCriterion1Scenario();
+        createTransaction(TEST_USER_ID, "2026-09-15", "setembro receita", 100, TransactionType.INCOME, null);
+
+        JsonPath september = summary(2026, 9);
+        assertMoney(september, "balance", "100.00");
+        assertMoney(september, "previousBalance", "0");
+
+        assertMoney(summary(2026, 10), "previousBalance", "0");
+        assertMoney(summary(2026, 11), "previousBalance", "400.00");
+        assertMoney(summary(2026, 12), "previousBalance", "600.00");
+    }
+
+    @Test
+    void shouldNeverCarryTheNewMonthBalanceIntoThePreviousBalance() {
+        fixCurrentMonth(2026, 12);
+        createCriterion1Scenario();
+        createTransaction(TEST_USER_ID, "2026-12-05", "dezembro receita", 50, TransactionType.INCOME, null);
+
+        JsonPath december = summary(2026, 12);
+        assertMoney(december, "previousBalance", "600.00");
+        assertMoney(december, "balance", "650.00");
+
+        JsonPath january = summary(2027, 1);
+        assertMoney(january, "previousBalance", "650.00");
+        assertMoney(january, "balance", "650.00");
+    }
+
+    @Test
+    void shouldMatchTheMonthlyEvolutionWithTheSummaryOfEachMonth() {
+        fixCurrentMonth(2026, 12);
+        createCriterion1Scenario();
+        createTransaction(TEST_USER_ID, "2026-03-10", "marco despesa", 250, TransactionType.EXPENSE,
+                TransactionStatus.PAID);
+
+        JsonPath body = summary(2026, 11);
+        assertMoney(body, "monthlyEvolution[9].balance", "400.00");
+        assertMoney(body, "monthlyEvolution[10].balance", "600.00");
+        assertMoney(body, "monthlyEvolution[11].balance", "600.00");
+        assertMoney(body, "monthlyEvolution[2].balance", "-250.00");
+
         for (int index = 0; index < 12; index++) {
-            assertNotNull(october.get("monthlyEvolution[%d].accumulatedBalance".formatted(index)));
+            String item = "monthlyEvolution[%d].".formatted(index);
+            BigDecimal income = money(body, item + "income");
+            BigDecimal expense = money(body, item + "expense");
+            BigDecimal previous = money(body, item + "previousBalance");
+            assertMoney(body, item + "balance", previous.add(income).subtract(expense).toPlainString());
+            if (index < 9) {
+                assertMoney(body, item + "previousBalance", "0");
+            }
+
+            JsonPath month = summary(2026, index + 1);
+            assertMoney(body, item + "balance", month.getString("balance"));
+            assertMoney(body, item + "previousBalance", month.getString("previousBalance"));
+        }
+    }
+
+    @Test
+    void shouldNotExposeTheAccumulatedBalance() {
+        fixCurrentMonth(2026, 12);
+        createCriterion1Scenario();
+
+        JsonPath november = summary(2026, 11);
+        assertTrue(november.getMap("").keySet().stream().noneMatch(key -> key.toString().contains("accumulated")));
+        for (int index = 0; index < 12; index++) {
+            assertNull(november.get("monthlyEvolution[%d].accumulatedBalance".formatted(index)));
+            assertNotNull(november.get("monthlyEvolution[%d].previousBalance".formatted(index)));
         }
     }
 
     @Test
     void shouldCarryNegativeBalanceToTheNextMonths() {
         fixCurrentMonth(2026, 12);
-        createCriterion2Scenario();
+        createTransaction(TEST_USER_ID, "2026-10-05", "outubro receita", 100, TransactionType.INCOME, null);
+        createTransaction(TEST_USER_ID, "2026-10-10", "outubro despesa", 300, TransactionType.EXPENSE,
+                TransactionStatus.PAID);
+        createTransaction(TEST_USER_ID, "2026-11-05", "novembro receita", 500, TransactionType.INCOME, null);
 
         JsonPath november = summary(2026, 11);
-        assertMoney(november, "balance", "-200.00");
-        assertMoney(november, "previousBalance", "400.00");
-        assertMoney(november, "accumulatedBalance", "200.00");
-
-        JsonPath december = summary(2026, 12);
-        assertMoney(december, "balance", "0");
-        assertMoney(december, "previousBalance", "200.00");
-        assertMoney(december, "accumulatedBalance", "200.00");
+        assertMoney(november, "previousBalance", "-200.00");
+        assertMoney(november, "balance", "300.00");
     }
 
     @Test
     void shouldSumFutureMonthsOnlyUntilTheCurrentMonth() {
-        createCriterion2Scenario();
+        createCriterion1Scenario();
         createTransaction(TEST_USER_ID, "2026-12-05", "dezembro receita", 1000, TransactionType.INCOME, null);
         createTransaction(TEST_USER_ID, "2027-01-05", "janeiro receita", 300, TransactionType.INCOME, null);
 
         fixCurrentMonth(2026, 11);
         JsonPath december = summary(2026, 12);
-        assertMoney(december, "previousBalance", "200.00");
-        assertMoney(december, "accumulatedBalance", "1200.00");
+        assertMoney(december, "previousBalance", "600.00");
+        assertMoney(december, "balance", "1600.00");
 
         JsonPath january = summary(2027, 1);
-        assertMoney(january, "previousBalance", "200.00");
-        assertMoney(january, "accumulatedBalance", "500.00");
+        assertMoney(january, "previousBalance", "600.00");
+        assertMoney(january, "balance", "900.00");
 
         fixCurrentMonth(2026, 12);
         JsonPath januaryAfterDecember = summary(2027, 1);
-        assertMoney(januaryAfterDecember, "previousBalance", "1200.00");
-        assertMoney(januaryAfterDecember, "accumulatedBalance", "1500.00");
-    }
-
-    @Test
-    void shouldIgnoreTransactionsBeforeOctober2026() {
-        fixCurrentMonth(2026, 12);
-        createCriterion2Scenario();
-        createTransaction(TEST_USER_ID, "2026-09-15", "setembro receita", 5000, TransactionType.INCOME, null);
-
-        assertMoney(summary(2026, 10), "accumulatedBalance", "400.00");
-
-        JsonPath november = summary(2026, 11);
-        assertMoney(november, "previousBalance", "400.00");
-        assertMoney(november, "accumulatedBalance", "200.00");
-
-        JsonPath december = summary(2026, 12);
-        assertMoney(december, "previousBalance", "200.00");
-        assertMoney(december, "accumulatedBalance", "200.00");
-    }
-
-    @Test
-    void shouldKeepAccumulatedEqualToBalanceBeforeOctober2026() {
-        fixCurrentMonth(2026, 12);
-        createCriterion2Scenario();
-        createTransaction(TEST_USER_ID, "2026-09-15", "setembro receita", 5000, TransactionType.INCOME, null);
-        createTransaction(TEST_USER_ID, "2026-03-10", "marco despesa", 250, TransactionType.EXPENSE,
-                TransactionStatus.PAID);
-
-        JsonPath september = summary(2026, 9);
-        assertMoney(september, "balance", "5000.00");
-        assertMoney(september, "previousBalance", "0");
-        assertMoney(september, "accumulatedBalance", "5000.00");
-
-        for (int index = 0; index < 9; index++) {
-            assertMoney(september, "monthlyEvolution[%d].accumulatedBalance".formatted(index),
-                    september.getString("monthlyEvolution[%d].balance".formatted(index)));
-        }
-        assertMoney(september, "monthlyEvolution[2].accumulatedBalance", "-250.00");
+        assertMoney(januaryAfterDecember, "previousBalance", "1600.00");
+        assertMoney(januaryAfterDecember, "balance", "1900.00");
     }
 
     @Test
     void shouldIgnorePendingExpenseInPreviousBalance() {
         fixCurrentMonth(2026, 12);
-        createCriterion2Scenario();
+        createCriterion1Scenario();
         createTransaction(TEST_USER_ID, "2026-10-20", "outubro pendente", 300, TransactionType.EXPENSE,
                 TransactionStatus.PENDING);
 
         assertMoney(summary(2026, 11), "previousBalance", "400.00");
+        assertMoney(summary(2026, 12), "previousBalance", "600.00");
     }
 
     @Test
     void shouldAccumulateOnlyTheLoggedUserTransactions() {
         fixCurrentMonth(2026, 12);
-        createCriterion2Scenario();
+        createCriterion1Scenario();
         createTransaction(OTHER_USER_ID, "2026-10-12", "outro usuario receita", 900, TransactionType.INCOME, null);
         createTransaction(OTHER_USER_ID, "2026-10-13", "outro usuario despesa", 50, TransactionType.EXPENSE,
                 TransactionStatus.PAID);
 
-        assertMoney(summary(2026, 11), "previousBalance", "400.00");
+        JsonPath november = summary(2026, 11);
+        assertMoney(november, "previousBalance", "400.00");
+        assertMoney(november, "balance", "600.00");
     }
 
     @Test
@@ -171,50 +212,46 @@ class DashboardAccumulatedBalanceTest {
                 TransactionType.EXPENSE, TransactionStatus.PAID);
 
         assertMoney(summary(2026, 11), "previousBalance", "400.00");
+        assertMoney(summary(2026, 12), "balance", "400.00");
 
         QuarkusTransaction.requiringNew().run(() -> repository.findByIdOptional(UUID.fromString(octoberIncome))
                 .ifPresent(transaction -> transaction.amount = new BigDecimal("1500.00")));
         assertMoney(summary(2026, 11), "previousBalance", "900.00");
+        assertMoney(summary(2026, 12), "balance", "900.00");
 
         given()
                 .when().delete("/transactions/{id}", octoberExpense)
                 .then()
                 .statusCode(204);
         assertMoney(summary(2026, 11), "previousBalance", "1500.00");
+        assertMoney(summary(2026, 12), "balance", "1500.00");
     }
 
     @Test
     void shouldKeepExistingTotalsUnchanged() {
         fixCurrentMonth(2026, 12);
-        createCriterion2Scenario();
-        createTransaction(TEST_USER_ID, "2026-11-20", "novembro pendente", 80, TransactionType.EXPENSE,
-                TransactionStatus.PENDING);
+        createCriterion1Scenario();
 
         JsonPath november = summary(2026, 11);
-        assertMoney(november, "totalIncome", "500.00");
-        assertMoney(november, "totalExpense", "700.00");
-        assertMoney(november, "paidExpense", "700.00");
-        assertMoney(november, "pendingExpense", "80.00");
-        assertMoney(november, "balance", "-200.00");
-        assertMoney(november, "paidExpensePercent", "140.0");
+        assertMoney(november, "totalIncome", "3000.00");
+        assertMoney(november, "totalExpense", "2800.00");
+        assertMoney(november, "paidExpense", "2800.00");
+        assertMoney(november, "pendingExpense", "500.00");
+        assertMoney(november, "paidExpensePercent", "93.3");
         assertEquals(3, november.getInt("transactionCount"));
-
-        assertMoney(november, "monthlyEvolution[9].balance", "400.00");
-        assertMoney(november, "monthlyEvolution[10].balance", "-200.00");
-        for (int index = 0; index < 12; index++) {
-            BigDecimal income = money(november, "monthlyEvolution[%d].income".formatted(index));
-            BigDecimal expense = money(november, "monthlyEvolution[%d].expense".formatted(index));
-            assertMoney(november, "monthlyEvolution[%d].balance".formatted(index), income.subtract(expense).toPlainString());
-        }
+        assertMoney(november, "monthlyEvolution[10].income", "3000.00");
+        assertMoney(november, "monthlyEvolution[10].expense", "2800.00");
     }
 
-    private void createCriterion2Scenario() {
+    private void createCriterion1Scenario() {
         createTransaction(TEST_USER_ID, "2026-10-05", "outubro receita", 1000, TransactionType.INCOME, null);
         createTransaction(TEST_USER_ID, "2026-10-10", "outubro despesa", 600, TransactionType.EXPENSE,
                 TransactionStatus.PAID);
-        createTransaction(TEST_USER_ID, "2026-11-05", "novembro receita", 500, TransactionType.INCOME, null);
-        createTransaction(TEST_USER_ID, "2026-11-10", "novembro despesa", 700, TransactionType.EXPENSE,
+        createTransaction(TEST_USER_ID, "2026-11-05", "novembro receita", 3000, TransactionType.INCOME, null);
+        createTransaction(TEST_USER_ID, "2026-11-10", "novembro despesa", 2800, TransactionType.EXPENSE,
                 TransactionStatus.PAID);
+        createTransaction(TEST_USER_ID, "2026-11-15", "novembro pendente", 500, TransactionType.EXPENSE,
+                TransactionStatus.PENDING);
     }
 
     private static void fixCurrentMonth(int year, int month) {

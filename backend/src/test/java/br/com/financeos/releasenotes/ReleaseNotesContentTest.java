@@ -92,9 +92,34 @@ class ReleaseNotesContentTest {
                 .flatMap(category -> category.items().stream())
                 .toList();
 
-        assertTrue(news.stream().anyMatch(item -> item.startsWith("Saldo acumulado:")
-                && item.contains("Saldo anterior") && item.contains("outubro de 2026")),
-                "1.0.3 sem a novidade do Saldo acumulado");
+        assertTrue(news.stream().anyMatch(item -> item.startsWith("Sobra do mês anterior:")
+                && item.contains("Saldo do mês") && item.contains("Saldo anterior")
+                && item.contains("outubro de 2026")),
+                "1.0.3 sem a novidade da sobra do mês anterior");
+        version("1.0.3").categories().forEach(category -> category.items().forEach(item -> assertFalse(
+                item.contains("Saldo acumulado"), "1.0.3 ainda promete o Saldo acumulado: " + item)));
+    }
+
+    @Test
+    void shouldAnnounceAmountOrderTabIconAndVersionFixIn103() {
+        List<String> improvements = version("1.0.3").categories().stream()
+                .filter(category -> category.kind() == ReleaseNoteCategory.Kind.IMPROVEMENT)
+                .flatMap(category -> category.items().stream())
+                .toList();
+        List<String> fixes = version("1.0.3").categories().stream()
+                .filter(category -> category.kind() == ReleaseNoteCategory.Kind.FIX)
+                .flatMap(category -> category.items().stream())
+                .toList();
+
+        assertTrue(improvements.stream().anyMatch(item -> item.startsWith("Lançamentos por valor:")
+                && item.contains("do maior valor para o menor") && item.contains("receitas e despesas juntas")),
+                "1.0.3 sem a melhoria da ordem por valor");
+        assertTrue(improvements.stream().anyMatch(item -> item.startsWith("Ícone da guia:")
+                && item.contains("marca do FinanceOS")),
+                "1.0.3 sem a melhoria do ícone da guia");
+        assertTrue(fixes.stream().anyMatch(item -> item.startsWith("Versão no menu:")
+                && item.contains("abaixo do nome FinanceOS") && item.contains("inteiro")),
+                "1.0.3 sem a correção da versão no menu");
     }
 
     @Test

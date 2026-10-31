@@ -61,18 +61,16 @@ public class DashboardResource {
         LocalDate endDate = period.atEndOfMonth();
 
         DashboardTotals totals = repository.totals(currentUser.id(), startDate, endDate);
-        BigDecimal balance = totals.totalIncome().subtract(totals.paidExpense());
-        List<MonthlySummaryResponse> evolution = withAccumulatedBalance(
+        List<MonthlySummaryResponse> evolution = withPreviousBalance(
                 repository.monthlyEvolution(currentUser.id(), period.getYear()), period.getYear(), current);
-        BigDecimal accumulatedBalance = evolution.get(period.getMonthValue() - 1).accumulatedBalance();
+        MonthlySummaryResponse month = evolution.get(period.getMonthValue() - 1);
 
         return new DashboardSummaryResponse(
                 new PeriodResponse(period.getYear(), period.getMonthValue(), startDate, endDate),
                 totals.totalIncome(),
                 totals.totalExpense(),
-                balance,
-                accumulatedBalance.subtract(balance),
-                accumulatedBalance,
+                month.balance(),
+                month.previousBalance(),
                 totals.paidExpense(),
                 totals.pendingExpense(),
                 percent(totals.paidExpense(), totals.totalIncome()),
@@ -100,9 +98,10 @@ public class DashboardResource {
         return List.copyOf(periods);
     }
 
-    // O saldo anterior soma o saldo de cada mês desde ACCUMULATION_START até o mês corrente, inclusive:
-    // mês futuro não carrega os meses que ainda não aconteceram entre o corrente e ele (PA-7 da issue #113).
-    private List<MonthlySummaryResponse> withAccumulatedBalance(List<MonthlySummaryResponse> months, int year,
+    // O saldo anterior soma o resultado cru (receitas menos despesas pagas) de cada mês desde ACCUMULATION_START
+    // até o mês corrente, inclusive. Somar o balance de cada mês, que já traz o anterior, contaria a mesma sobra
+    // duas vezes (issue #117). Mês futuro não carrega os meses entre o corrente e ele (PA-7 da issue #113).
+    private List<MonthlySummaryResponse> withPreviousBalance(List<MonthlySummaryResponse> months, int year,
             YearMonth current) throws Exception {
         YearMonth lastBeforeYear = YearMonth.of(year - 1, 12);
         YearMonth carriedUntil = lastBeforeYear.isBefore(current) ? lastBeforeYear : current;
@@ -110,16 +109,16 @@ public class DashboardResource {
                 ? BigDecimal.ZERO
                 : repository.balanceBetween(currentUser.id(), ACCUMULATION_START.atDay(1), carriedUntil.atEndOfMonth());
 
-        List<MonthlySummaryResponse> accumulated = new ArrayList<>(months.size());
+        List<MonthlySummaryResponse> result = new ArrayList<>(months.size());
         for (MonthlySummaryResponse month : months) {
             YearMonth yearMonth = YearMonth.of(month.year(), month.month());
-            accumulated.add(month.withAccumulatedBalance(previous.add(month.balance())));
+            result.add(month.withPreviousBalance(previous));
             if (!yearMonth.isBefore(ACCUMULATION_START) && !yearMonth.isAfter(current)) {
-                previous = previous.add(month.balance());
+                previous = previous.add(month.monthResult());
             }
         }
 
-        return List.copyOf(accumulated);
+        return List.copyOf(result);
     }
 
     private static List<CategoryBreakdownResponse> withSharePercent(List<CategoryBreakdownResponse> items) {
